@@ -8,9 +8,9 @@ DMFTpack is the software for DFT+DMFT calculation. Various projection methods an
 
 * Hybridization expansion quantum Monte Carlo impurity solver:
   (It is strongly recommended to install at least one of the following solvers.)
-  * implemented in ALPS library
+  * Implemented in ALPS library
     http://hauleweb.rutgers.edu/tutorials/Tutorial0.html
-  * implemented by K. Haule at Rutgers University
+  * Implemented by K. Haule at Rutgers University
     http://www.physics.rutgers.edu/~haule/
 
 ### Eigen (>=3.3)
@@ -57,7 +57,7 @@ DMFTpack is the software for DFT+DMFT calculation. Various projection methods an
 ## Example
 ### Hubbard model
 
-* Test calculation can be performed for single band Hubbard model as following:
+* Test calculation can be performed for single-band Hubbard model as following:
 
   ```ShellSession
   $ cd ../example/Hubb_model/primitive_Cell_ipt
@@ -66,18 +66,20 @@ DMFTpack is the software for DFT+DMFT calculation. Various projection methods an
   $ gnuplot sw_Im.gnuplot
   ```
 
-* Now, one may want to do analytic continuate of the self-energy to obtain band structure and/or density of states. While any continuation code or technique can be used, we recommend MQEM code developed by J.-H. Sim
+* Now, one may want to do analytic continuation of the self-energy to obtain band structure and/or density of states. 
+  * Any continuation method can be used to obtain the imaginary part of the retarded self-energy. Using Kramers–Kronig relations, generate  "realFreq_Sw.dat_i_j" file. Here i and j are orbital indices. Each file contains omega for the first column and real and imaginary part of the self-energy for the second and third column, respectively.
+  * We recommend MQEM code developed by J.-H. Sim (Not available yet and a public release via GitHub will be ready soon. (updated: 2018-09-10)).
 
-  ```ShellSession
-  $ mkdir realFreqSpectrum; cd realFreqSpectrum
-  $ mkdir continuation; cd continuation
-  $ cp ../../Sw_SOLVER.full.dat  ./
-  $ julia $(MQEM_dir)/src/mem.jl Sw_SOLVER.full.dat | tee "std.out"
-  ```
+    ```ShellSession
+    $ mkdir realFreqSpectrum; cd realFreqSpectrum
+    $ mkdir continuation; cd continuation
+    $ cp ../../Sw_SOLVER.full.dat  ./
+    $ julia $(MQEM_dir)/src/mem.jl Sw_SOLVER.full.dat | tee "std.out"
+    ```
 
-* mqem.input.toml file is generated, one can control parameters for MQEM continuation method as following  (See https://github.com/ElectronicStructureTheory-KAIST/MQEM for more details):
+    * mqem.input.toml file is generated, one can control parameters for MQEM continuation method as following (See https://github.com/KAIST-ELST/MQEM.jl for more details):
 
-* (key) = (variable)
+    * (key) = (variable)
 
 * band structure: To do calculate band structure, SOLVER_TYPE=TB and RESTART>1 in input.pam is required.
 
@@ -126,11 +128,11 @@ four input files required for DMFT calculation.
     * N_ATOMS = {1,2,..}, number of atoms in the unit cell
     * N_CORRELATED_ATOMS = {1,2,...}, number of atoms containing strong correlated orbitals.
     * N_ELECTRONS = {1,2,...} total number of the electrons in the unit cell.
-    * MAGNETISM ={0,1,[2]} (default: 2).
+    * MAGNETISM ={0,1,[2]} (default: 2)
     * K_POINTS = The numbers (nk1,nk2,nk3) of grids to discretize the first Brillouin zone.
   * DFT+DMFT option
     * H0_FROM_OPENMX = {0,1}  =1 if "SYSTEM_NAME".scfout file is exist. Otherwise, Hk.HWR file should b exist in the work folder with "H0_FROM_OPENMX"=0.
-    * num_subshell = number of nl subshell for each orbital, e.g., num_subshell=5 for s2p2d1 basis.
+    * num_subshell = number of nl subshell for each orbital, e.g., num_subshell=5 for s2p2d1 basis
     * rot_sym =  Quantum number l of the angular momentum for each subshell.
     * subshell = dimension of the subshell.
     * Rydberg_set = 0 for nominally occupied orbitals, 1 for empty
@@ -139,25 +141,25 @@ four input files required for DMFT calculation.
     * MODEL_WINDOW_D = Correlated orbitals are projected into the model window (default: -10)
     * DC_TYPE = {nominal, [fll]}, double counting method (default: fll)
     * N_d = {0,1,..}, nominal charge in the correlated orbitals
-    * HARTREE_ATOMS = {1,2,...} Atom indices of the correlated atoms.
+    * HARTREE_ATOMS = {1,2,...} Atom indices of the correlated atoms
     * HARTREE_ORBITALS_RANGE = the range of the correlated orbitals indices 
   * DOS & Band calculation
-    * MODE = {band, qsband, dos, qsband}, specifies the band/dos calculation for non-interacting (or quasi-particle) dispersion.
+    * MODE = {band, qsband, dos, qsband}, specifies the band/dos calculation for non-interacting (or quasi-particle) dispersion
     * K_GRID_BAND = (default: 40)
     * SPECTRAL_ENERGY_GRID = (default: 1000)
-    * N_K_PATH = The number of paths for the band calculation. 
-    * K_PATH = This keword specifies the paths of the band dispersion.
+    * N_K_PATH = The number of paths for the band calculation
+    * K_PATH = This keword specifies the paths of the band dispersion
 * input.solver
   * impurity_information
-    * N_ORBITALS = number of orbitals in impurity site.
-    * N_HARTREE_ORBITALS = number of the correlated orbitals.
+    * N_ORBITALS = number of orbitals in impurity site
+    * N_HARTREE_ORBITALS = number of the correlated orbitals
     * U = intra-orbital interaction
     * U' = inter-orbital interaction
     * J = Hund's coupling
     * BETA = inverse temperature
   * Matsubara_frequency
-    * N_MATSUBARA = Number of the matubara frequancies
-    * N_TAU = The number of mesh grids in the imaginary time axis.
+    * N_MATSUBARA = Number of the Matsubara frequencies
+    * N_TAU = The number of mesh grids in the imaginary time axis
   * ALPS_CT_HYB_input
     * MEASURE_legendre = should be choose "1"
     * MEASURE_freq = should be choose "1"
