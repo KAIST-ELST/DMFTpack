@@ -1,0 +1,175 @@
+#
+# File Name
+#
+System.CurrrentDirectory         ./    # default=./
+System.Name                     SVO113
+DATA.PATH                            /home/users1/jhsim/DFT_DATA13
+
+##########################
+#Iter optoins
+scf.restart                 off              # on|off| onDM|onH
+scf.maxIter                 100 #5000        # default=40
+##########################
+
+#output
+level.of.stdout                   1    # default=1 (1-3)
+level.of.fileout                  1    # default=1 (0-2)
+HS.fileout                  on
+Wannier.Func.Calc           off
+MO.fileout                  off     
+Dos.fileout                 off
+band.dispersion             off
+Voronoi.charge              off
+##########################
+
+
+#Physics
+scf.SpinPolarization         off #off         # On|Off|NC
+scf.Constraint.NC.Spin       off      
+scf.NC.Zeeman.Spin           off      
+scf.NC.Zeeman.Orbital        off      
+scf.SpinOrbit.Coupling       off      
+scf.Hubbard.U	             off      
+##########################
+
+# Atoms
+Species.Number       5
+<Definition.of.Atomic.Species
+ Sr     Sr10.0-s2p2d1  Sr_PBE13
+ V      V6.0-s2p2d2f1    V_PBE13
+ O      O5.0-s2p2d2    O_PBE13
+ V_WF   V6.0-s1p1d1f1    V_PBE13
+ O_WF   O5.0-s1p1d1f1    O_PBE13
+Definition.of.Atomic.Species>
+scf.system.charge   0
+
+<Hubbard.U.values  #eV
+Sr  1s 0.0 2s 0.0 1p 0.0  2p 0.0   1d 0.0
+V   1s 0.0 2s 0.0 1p 0.0  2p 0.0   1d 0.0    2d 0.0    1f 0.0
+O   1s 0.0 2s 0.0 1p 0.0  2p 0.0   1d 0.0    2d 0.0
+Hubbard.U.values>
+##########################
+
+#Lattice
+Atoms.Number     5
+Atoms.SpeciesAndCoordinates.Unit   FRAC  # Ang|AU
+<Atoms.SpeciesAndCoordinates           
+1        Sr       +0.0000000000  +0.0000000000  +0.0000000000                5.0 5.0      on
+2        V        +0.5000000000  +0.5000000000  +0.5000000000                6.5 6.5      on
+3        O        +0.5000000000  +0.5000000000  +0.0000000000                3.0 3.0      on
+4        O        +0.5000000000  +0.0000000000  +0.5000000000                3.0 3.0      on
+5        O        +0.0000000000  +0.5000000000  +0.5000000000                3.0 3.0      on
+Atoms.SpeciesAndCoordinates>                                     
+
+Atoms.UnitVectors.Unit             Ang # Ang|AU
+<Atoms.UnitVectors                     
+3.841  0 0
+0  3.841 0
+0  0 3.841
+Atoms.UnitVectors>
+##########################
+
+# SCF options
+scf.XcType                 GGA-PBE     # LDA|LSDA-CA|LSDA-PW|GGA-PBE
+scf.ElectronicTemperature  300.0       # default=300 (K)
+scf.energycutoff           600.0       # default=150 (Ry)
+scf.EigenvalueSolver       band        # DC|GDC|Cluster|Band
+scf.Kgrid                  13 13 13       # means n1 x n2 x n3
+scf.Mixing.Type            rmm-diis    # Simple|Rmm-Diis|Gr-Pulay|Kerker|Rmm-Diisk
+scf.Init.Mixing.Weight     0.1        # default=0.30 
+scf.Min.Mixing.Weight      0.001       # default=0.001 
+scf.Max.Mixing.Weight      0.6       # default=0.40 
+scf.Mixing.History          10         # default=5
+scf.Mixing.StartPulay       100         # default=6
+scf.Mixing.EveryPulay       1
+scf.criterion             1.0e-8       # default=1.0e-6 (Hartree) 
+scf.Hubbard.Occupation      dual       # onsite|full|dual, default=dual
+#set diisk_rst_everypulay
+##########################
+
+
+##########################
+#External field, note : \mu_B = 5.7883818012e−5 * (eV/Tesla),
+scf.Constraint.NC.Spin.v    0.01      # default=0.0(eV)
+scf.NC.Mag.Field.Spin       100.0      # default=0.0(Tesla)
+scf.NC.Mag.Field.Orbital    100.0      # default=0.0(Tesla)
+##########################
+
+# MD or Geometry Optimization
+MD.Type                      nomd      # Nomd|Constant_Energy_MD|Opt
+MD.maxIter                    1        # default=1
+MD.TimeStep                   1        # default=0.5 (fs)
+MD.Opt.criterion         1.0e-5        # default=1.0e-4 (Hartree/bohr)
+##########################
+
+
+
+##########################
+#DOS and Band
+Dos.Erange              -30.0  30.0  
+Dos.Kgrid                12 12 12
+
+
+Band.Nkpath                  5   
+<Band.kpath    
+  15  0.0 0.0 0.0   0.5 0.0 0.0   g X 
+  15  0.5 0.0 0.0   0.5 0.5 0.0   X M 
+  15  0.5 0.5 0.0   0.5 0.5 0.5   M A 
+  15  0.5 0.5 0.5   0.0 0.0 0.0   A g 
+  15  0.0 0.0 0.0   0.0 0.0 0.5   g Z 
+Band.kpath>
+##########################
+
+
+
+
+# MO output
+num.HOMOs                   0          # default=1
+num.LUMOs                   0          # default=1
+MO.Nkpoint            1           # default=1
+<MO.kpoint
+0.0 0.0 0.0
+ MO.kpoint>
+##########################
+
+
+
+#Wannier
+Wannier.Func.Num                 12
+Wannier.Outer.Window.Top        2.0
+Wannier.Inner.Window.Top        0.5
+Wannier.Outer.Window.Bottom    -8.0
+Wannier.Inner.Window.Bottom    -8.0
+Wannier.Initial.Guess            on 
+Wannier.Initial.Projectors.Unit  FRAC     # AU, ANG or FRAC 
+
+<Wannier.Initial.Projectors
+  V_WF-dxy           0.500  0.500  0.500                      0 0 1   1 0 0
+  V_WF-dxz           0.500  0.500  0.500                      0 0 1   1 0 0
+  V_WF-dyz           0.500  0.500  0.500                      0 0 1   1 0 0
+  O_WF-p           0.500  0.500  0.000                      0 0 1   1 0 0
+  O_WF-p           0.500  0.000  0.500                      0 0 1   1 0 0
+  O_WF-p           0.000  0.500  0.500                      0 0 1   1 0 0
+Wannier.Initial.Projectors>
+
+Wannier.Kgrid        13 13 13
+Wannier.MaxShells    12
+
+Wannier.Interpolated.Bands             on   # on|off, default=off
+
+Wannier.Function.Plot                  off   # on|off, default=off
+Wannier.Function.Plot.SuperCells    0 0 0   # default=0 0 0 
+
+Wannier.Dis.Mixing.Para         0.4
+Wannier.Dis.Conv.Criterion      1e-11
+Wannier.Dis.SCF.Max.Steps       5000
+
+Wannier.Minimizing.Max.Steps            1000
+Wannier.Minimizing.Scheme               2
+Wannier.Minimizing.StepLength           3
+Wannier.Minimizing.Secant.Steps         100
+Wannier.Minimizing.Secant.StepLength    0.5
+Wannier.Minimizing.Conv.Criterion       1e-8
+Wannier.Readin.Overlap.Matrix           off
+##########################
+

@@ -1,0 +1,68 @@
+//Computational information
+SYSTEM_NAME = SVO113
+SOLVER_TYPE =     2PT    //ALPS_CTSEG, RUTGERS_CTSET, RUTGERS_CTHYB, SC2PT, TB
+MAX_DMFT_ITER =   10             //default: 20
+MIXING =          0.8            //default: 0.8
+RESTART =         0
+
+
+//Lattice information
+
+N_ATOMS              = 5   //number of atoms in the unit cell
+N_CORRELATED_ATOMS   = 1   //number of transition-metal atoms in the unit cell
+N_ELECTRONS          = 41  //Total number of electrons in the system
+MAGNETISM            = 0   //0 for paramagnetic state
+K_POINTS             = 13 13 13
+UNIT_VECTORS =
+3.841  0 0
+0  3.841 0
+0  0 3.841
+
+
+
+//DFT+DMFT option
+H0_FROM_OPENMX = 1
+
+UNIT_VECTORS =
+ 3.841  0 0
+ 0  3.841 0
+ 0  0 3.841
+
+num_subshell =
+5 7 6 6 6 6
+
+subshell =
+2 2 6 6 10
+2 2 6 6 10 10 14
+2 2 6 6 10 10 
+2 2 6 6 10 10 
+2 2 6 6 10 10 
+
+
+Rydberg_set =
+0 1    0 1     0
+0 1    0 1     0 1 1
+0 1    0 1     0 1
+0 1    0 1     0 1
+0 1    0 1     0 1
+0 1    0 1     0 1
+
+//Projection 
+
+MODEL_WINDOW_U  =  2
+MODEL_WINDOW_D  = -2
+DC_TYPE =   fll   //double counting {fll, nominal}
+HARTREE_ATOMS = 2
+HARTREE_ORBITALS_RANGE = 21 26
+
+//DOS_Band_option, meaningfull only when  SOLVER_TYPE = TB
+MODE = qsband  //{dos, band, qsdos, qsband}
+K_GRID_BAND = 30
+SPECTRAL_ENERGY_GRID = 1000
+N_K_PATH = 4
+K_PATH = 
+0.0 0.0 0.0
+0.0 0.0 0.5
+0.0 0.5 0.5
+0.5 0.5 0.5
+0.0 0.0 0.0

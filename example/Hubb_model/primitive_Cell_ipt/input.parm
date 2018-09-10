@@ -1,0 +1,40 @@
+//Computational information:
+SYSTEM_NAME =     Hub_model
+SOLVER_TYPE =      IPT
+MAX_DMFT_ITER =   50
+MIXING =          0.5
+RESTART =         0
+
+//Lattice information
+N_ATOMS             = 1
+N_CORRELATED_ATOMS  = 1
+N_ELECTRONS         = 1
+MAGNETISM =           0
+K_POINTS  =   22 22 1
+UNIT_VECTORS =
+1 0 0
+0 1 0
+0 0 1
+
+
+//Projection method
+MODEL_WINDOW_U  =          9
+MODEL_WINDOW_D  =         -9
+DC_TYPE =   nominal   //none, fll, nominal
+N_d = 1
+HARTREE_ATOMS = 1
+HARTREE_ORBITALS_RANGE = 1 2
+
+
+//DOS_Band_option
+MODE = qsband
+K_GRID_BAND =       30
+SPECTRAL_ENERGY_GRID  = 1000
+N_K_PATH = 5
+K_PATH =
+0.0  0.0  0.0
+0.5  0.0  0.0
+0.5  0.5  0.0
+0.0  0.0  0.0
+0.0  0.0  0.5
+0.5  0.5  0.5

@@ -1,0 +1,30 @@
+//impurity_information
+N_ORBITALS =         6
+N_HARTREE_ORBITALS  =  6
+U   =   4
+U'  =   2.7
+J   =   0.65
+BETA =  40
+
+//ALPS CT_HYB
+N_MATSUBARA =     100
+N_TAU =           900
+THERMALIZATION = 1e+07
+SWEEPS = 5e+13
+MAX_TIME = 1800
+N_MEAS = 10
+
+SPINFLIP =   1
+GLOBALFLIP = 0
+MEASURE_sector_statistics = 0
+MEASURE_nn = 0
+
+MEASURE_legendre = 1
+N_LEGENDRE = 30
+N_HISTOGRAM_ORDERS = 100
+SEED = 10
+MEASURE_freq = 1
+TEXT_OUTPUT = 1
+
+MU_VECTOR = mu_vector.alps.dat
+DELTA = delta_t.dat
