@@ -89,7 +89,8 @@ if(len(sys.argv)>1):
   num_of_seg = int(sys.argv[1])
   grid_per_seg = int(numOf_lda_K_point/num_of_seg)
   xtic_points =[k_grid[k] for k in np.arange(0,numOf_K_point,grid_per_seg)]
-  if(len(sys.argv)-2 == int(int(numOf_K_point)/int(sys.argv[1]))+1   ):
+#  if(len(sys.argv)-2 == int(int(numOf_K_point)/int(sys.argv[1]))+1   ):
+  if(len(sys.argv)-2 == int(sys.argv[1])+1   ):
     xtic_label = sys.argv[2:]
   else:
     xtic_label = np.arange(0,numOf_K_point, grid_per_seg)

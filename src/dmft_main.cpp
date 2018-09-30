@@ -168,7 +168,7 @@ int main(int argc, char *argv[]) {
         cp_comm = std::string("mkdir Inputfiles");
         system(cp_comm.c_str());
 
-        cp_comm = std::string("cp   ")+  "Hk.HWR input.parm input.parm2 input.solver  OverlapMatrix*.HWR  PARAMS ./Inputfiles"   ;
+        cp_comm = std::string("cp   ")+  "Hk.HWR input.parm   input.solver  OverlapMatrix*.HWR  PARAMS ./Inputfiles"   ;
         system(cp_comm.c_str());
 
         FILE * betaWrite = fopen("./Restart/beta.dat","w");

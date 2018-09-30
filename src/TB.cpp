@@ -218,12 +218,10 @@ double  TightBinding(double mu, const std::string &hamiltonian, ImgFreqFtn & Sel
         for(int k=1; k<knum_mpiGlobal; k++) {
             int k0 = (k-1)/k_grid;
             int k1 = k0+1;
-//            int k_in_path=(k+myksta)%k_grid;
             kdist_band[k] = kdist_band[k-1];
             kdist_band[k]+=(1.0)/(k_grid) *
                            (   (KpathPoint[k1*3+0] *RecipUnitVector_b1 + KpathPoint[k1*3+1] *RecipUnitVector_b2+  KpathPoint[k1*3+2] *RecipUnitVector_b3)
                                -(KpathPoint[k0*3+0] *RecipUnitVector_b1 + KpathPoint[k0*3+1] *RecipUnitVector_b2+  KpathPoint[k0*3+2] *RecipUnitVector_b3) ).norm();
-//            kdist_band[k] = k;
         }
     }
     ifroot printf("kmesh was created ....\n");

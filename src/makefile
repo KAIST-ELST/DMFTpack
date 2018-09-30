@@ -33,11 +33,11 @@ CC = mpic++
 INTEL = /opt/intel/intel_2017_beta
 MKL = ${INTEL}/mkl
 
-CCFLAGS=   -std=c++11   -I${MKL}/include -ip  -inline-level=2   -inline-forceinline   -w2 # -check-pointers=rw
-OFLAGS = -O3       -g  -ggdb  
+#CCFLAGS=   -std=c++11   -I${MKL}/include -ip  -inline-level=2   -inline-forceinline   -w2 # -check-pointers=rw
+#OFLAGS = -O0       -g  -ggdb  
 
-#OFLAGS = -O3
-#CCFLAGS=   -std=c++11   -I${MKL}/include -ip  -inline-level=2   -inline-forceinline   -w2  
+OFLAGS = -O3
+CCFLAGS=   -std=c++11   -I${MKL}/include -ip  -inline-level=2   -inline-forceinline   -w2  
 
 DEFINES= -DMPI_ENABLED   \
          -L${MKL}/lib/intel64 -lmkl_intel_lp64  -lmkl_core -lifcore   -lmkl_sequential\
