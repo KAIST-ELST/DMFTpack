@@ -310,8 +310,8 @@ void FourierTransform (Eigen::MatrixXcd * delta_w, Eigen::MatrixXcd  & delta_t, 
 void FT_t_to_w (Eigen::MatrixXcd * delta_w, Eigen::MatrixXcd * delta_t, int N_freq) {
     /*Parallelized, Trapezoidal Method for continuous time integral  */
     int N_segment=N_tau;
-    Eigen::MatrixXcd at[N_segment];
-    Eigen::MatrixXcd bt[N_segment];
+    std::vector<Eigen::MatrixXcd> at(N_segment);
+    std::vector<Eigen::MatrixXcd> bt(N_segment);
     double    dt=beta/N_segment;
     for ( int n=0; n<N_freq; n++) {
         delta_w[n].setZero(delta_t[0].rows(), delta_t[0].cols());

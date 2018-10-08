@@ -8,8 +8,12 @@
 #include <algorithm>
 void  sort_eigen_vectors( Eigen::MatrixXcd & evec, Eigen::VectorXd & eval, int dim ) ;
 
+
 void get_preNAOs(Eigen::MatrixXcd weightMatrix,
                  Eigen::MatrixXcd & principal_number_tfm, Eigen::MatrixXcd & weightMatrix_preNAOs) {
+
+//The principal quantum number is redefined to diagonalize the local density matrix.
+
 ///*subshell averaging*/
 ///*
     weightMatrix_preNAOs.setZero(NumOrbit, NumOrbit);
@@ -30,7 +34,7 @@ void get_preNAOs(Eigen::MatrixXcd weightMatrix,
         }
     }
 //            */
-//N
+//N, diagonalize Al subspace.
 // /*
     Eigen::MatrixXcd densityMat_Al_block;
     densityMat_Al_block.setZero(num_subshell, num_subshell);
@@ -70,23 +74,29 @@ void get_preNAOs(Eigen::MatrixXcd weightMatrix,
 }
 
 
-void get_NAO_transfrom( Eigen::MatrixXcd & Sk, Eigen::MatrixXcd weightMatrix, Eigen::MatrixXcd & transformMatrix,
+
+
+//////////////////////////////////////////////////////////////////////////////
+void get_NAO_transfrom( Eigen::MatrixXcd & Sk, Eigen::MatrixXcd &  KS_evec_k,
+                        Eigen::MatrixXcd weightMatrix_preNAOs, Eigen::MatrixXcd & transformMatrix,
+                        int kpoint,std::vector<int> & accumulated_Num_SpinOrbital,
                         Eigen::MatrixXcd principal_number_tfm ,  bool WSW   ) {
 
 //preNAO
-    Eigen::MatrixXcd Sk_preNAOs, weightMatrix_preNAOs;
+    Eigen::MatrixXcd KS_evec_preNAOs = Sk * KS_evec_k;
+    KS_evec_preNAOs = principal_number_tfm.adjoint()* KS_evec_preNAOs ;
 
+    Eigen::MatrixXcd Sk_preNAOs;
     Sk_preNAOs = (principal_number_tfm.adjoint()* Sk *principal_number_tfm).eval();
-    weightMatrix_preNAOs = weightMatrix;
 
     Eigen::MatrixXcd Os, Ow,   principal_number_tfm_rediag;
 
-    principal_number_tfm_rediag.setIdentity(weightMatrix.rows(), weightMatrix.cols());
-    Os.setIdentity(weightMatrix.rows(), weightMatrix.cols());
-    Ow.setIdentity(weightMatrix.rows(), weightMatrix.cols());
+    principal_number_tfm_rediag.setIdentity(weightMatrix_preNAOs.rows(), weightMatrix_preNAOs.cols());
+    Os.setIdentity(weightMatrix_preNAOs.rows(), weightMatrix_preNAOs.cols());
+    Ow.setIdentity(weightMatrix_preNAOs.rows(), weightMatrix_preNAOs.cols());
 
     if(WSW==true) {
-//S
+//S, Gram-Schmidt transformation for Rydberg set, to remove large overlap between minimal set and rydberg set.
 //    /*
         int dim_minimal=0;
         int dim_rydberg=0;
@@ -150,7 +160,8 @@ void get_NAO_transfrom( Eigen::MatrixXcd & Sk, Eigen::MatrixXcd weightMatrix, Ei
         }
 
 
-        Sk_preNAOs =              (Os.adjoint() * Sk_preNAOs           * Os).eval();
+        Sk_preNAOs =              (Os.adjoint() * Sk_preNAOs           * Os).eval();  //adjoint? inverse?
+        KS_evec_preNAOs =         (Os.adjoint() *KS_evec_preNAOs   ).eval();
         weightMatrix_preNAOs =    (Os.adjoint() * weightMatrix_preNAOs * Os).eval();
         double check_Os=0;
         for(int nl=0; nl<num_subshell; nl++) {
@@ -169,20 +180,176 @@ void get_NAO_transfrom( Eigen::MatrixXcd & Sk, Eigen::MatrixXcd weightMatrix, Ei
         }
     }
 
-//occupancy-weighted symmetric orthogonalization for minimal set and SO for $ydberg set,
-//since we don't interested in Rydberg set
 
 ////Ow
+//occupancy-weighted symmetric orthogonalization for minimal set and SO for Rydberg set,
+//since we don't interested in Rydberg set
     Eigen::MatrixXd weightMatrix_diag =   (weightMatrix_preNAOs.real().diagonal().asDiagonal());
-    for(int nl=0; nl<num_subshell; nl++) {
-        if( Rydberg_set[nl]==1) {
-            for(int j = subshell(nl); j<subshell(nl+1); j++) {
-                weightMatrix_diag( j , j )  =  1.0;
-            }//for, j
+//    for(int nl=0; nl<num_subshell; nl++) {
+//        if( Rydberg_set[nl]==1) {
+//            for(int j = subshell(nl); j<subshell(nl+1); j++) {
+//                weightMatrix_diag( j , j )  =  1.0;
+//            }//for, j
+//        }
+//    }//for nl
+
+// /*
+//input:  weightMatrix_diag, KS_evec_preNAOs    , NBAND_k,   Sk_preNAOs,    FromValToKS_k, accumulated_Num_SpinOrbital
+//output:  weightMatrix_tilde
+
+    Eigen::MatrixXcd weightMatrix_tilde = weightMatrix_diag;
+    bool constrainedNAOs   =  true;
+//    bool constrainedNAOs   =  false;
+    if(constrainedNAOs == true) {
+        Eigen::MatrixXd Pwbar, Pc;
+        Eigen::MatrixXcd c_Pwbar_cinv;
+        Pwbar.setIdentity(NumOrbit, NumOrbit);
+        for (int i=0; i<NBAND[kpoint]; i++) {
+            Pwbar(FromValToKS[kpoint][i], FromValToKS[kpoint][i]) =  0.0;
         }
-    }//for nl
-    Eigen::SelfAdjointEigenSolver<Eigen::MatrixXcd> ces2( (weightMatrix_diag*  Sk_preNAOs* weightMatrix_diag) );
-    Ow = weightMatrix_diag * ces2.operatorInverseSqrt();
+        c_Pwbar_cinv  = Sk_preNAOs.inverse() * KS_evec_preNAOs * Pwbar * KS_evec_preNAOs.adjoint();
+
+        Pc.setZero(NumOrbit, NumOrbit);
+        for(int at=0; at<NumAtom; at++) {
+            for(int h1=accumulated_Num_SpinOrbital[at]; h1<accumulated_Num_SpinOrbital[at+1]; h1++) {
+                if(isOrbitalHartrDFT[h1])  Pc(h1,h1) = 1.0;
+            }
+        }
+
+        double mixing =0.1;
+        int iter = 0;
+        double resid, resid_prev=0;
+
+        Eigen::MatrixXcd H = (weightMatrix_tilde.adjoint()*Sk_preNAOs*weightMatrix_tilde );
+        Eigen::SelfAdjointEigenSolver<Eigen::MatrixXcd> ces( H );
+        H= ces.operatorInverseSqrt();
+
+
+        Eigen::MatrixXcd H_diag_inv;
+        H_diag_inv.setIdentity(NumOrbit, NumOrbit);
+        for(int at=0; at<NumAtom; at++) {
+            for(int h1=accumulated_Num_SpinOrbital[at]; h1<accumulated_Num_SpinOrbital[at+1]; h1++) {
+                for(int h2=accumulated_Num_SpinOrbital[at]; h2<accumulated_Num_SpinOrbital[at+1]; h2++) {
+                    if(isOrbitalHartrDFT[h1] and isOrbitalHartrDFT[h2])  H_diag_inv(h1,h2) = H(h1,h2);
+                }
+            }
+        }
+        H_diag_inv = H_diag_inv.inverse();
+
+        Eigen::MatrixXcd H_pHp_inv = H*(Pc*H_diag_inv*Pc);
+        Eigen::MatrixXcd  H_pHp_inv_out ;
+        pulayMixing mixing_weight_matrix(3, 20, 1, NumOrbit, NumOrbit, true );
+        std::cout <<"NBAND: " <<  NBAND[kpoint] <<"\n";
+        do {
+
+//
+//            for (int m=0; m<N_peratom_HartrOrbit; m++) {
+//                double norm=0;
+//                double norm1=0;
+//                double norm2=0;
+//                double norm3=0;
+//                int m0 = HartrIndex_inDFT[m];
+//                for (int i0=0; i0<NBAND[kpoint]; i0++) {
+//                    Eigen::MatrixXcd temp = H*weightMatrix_tilde.adjoint()*KS_evec_preNAOs;
+//                    norm+=std::pow(std::abs(  temp(m0,FromValToKS[kpoint][i0])),2);
+//                    norm1+=std::pow(std::abs(  KS_evec_preNAOs(m0,FromValToKS[kpoint][i0])),2);
+//                    norm3+=std::pow(std::abs(  (Sk*KS_evec_k)(m0,FromValToKS[kpoint][i0])),2);
+//                }
+//                for (int i0=0; i0<NumOrbit; i0++) {
+//                    norm2+=std::pow(std::abs(  KS_evec_preNAOs(m0,i0) ),2);
+//
+//                }
+//                std::cout <<m0<<": "<< norm << " " << norm1<<" " <<norm3<<" "  << norm2  <<"\n";
+//            }
+//
+
+            Eigen::MatrixXcd id;
+            id.setIdentity( NumOrbit,NumOrbit);
+            weightMatrix_tilde = weightMatrix_diag - c_Pwbar_cinv *weightMatrix_diag*H_pHp_inv  ;
+//
+//            H = (Sk_preNAOs );
+//            Eigen::SelfAdjointEigenSolver<Eigen::MatrixXcd> ces11( NumOrbit );
+//            ces11.compute(H);
+//            std::cout << std::setprecision(15) << "min_eval1: "<<ces11.eigenvalues()[0] <<"\n";
+//
+//            H = (weightMatrix_tilde.adjoint()*weightMatrix_tilde );
+//            Eigen::SelfAdjointEigenSolver<Eigen::MatrixXcd> ces2( NumOrbit );
+//            ces2.compute(H);
+//            std::cout << std::setprecision(15) << "min_eval2: "<<ces2.eigenvalues()[0] <<"\n";
+
+
+
+            H = (weightMatrix_tilde.adjoint()*Sk_preNAOs*weightMatrix_tilde );
+
+            for (int n=0; n<NumOrbit; n++) {
+                for (int m=0; m<NumOrbit; m++) {
+                    if( ( std::isnan(std::abs(H(n,m)) ) or   std::isinf(std::abs(H(n,m)))      ))   {
+                        std::cout <<"nan1\n";
+                    }
+                }
+            }
+            Eigen::SelfAdjointEigenSolver<Eigen::MatrixXcd> ces( H );
+            H= ces.operatorInverseSqrt();
+
+            for (int n=0; n<NumOrbit; n++) {
+                for (int m=0; m<NumOrbit; m++) {
+                    if( ( std::isnan(std::abs(H(n,m)) ) or   std::isinf(std::abs(H(n,m)))      ))   {
+
+
+
+
+                        H = (weightMatrix_tilde.adjoint()*Sk_preNAOs*weightMatrix_tilde );
+                        Eigen::SelfAdjointEigenSolver<Eigen::MatrixXcd> ces33( NumOrbit );
+                        ces33.compute(H);
+                        std::cout << std::setprecision(15) << "min_eval3: "<<ces33.eigenvalues()[0] <<"\n";
+
+
+                        std::cout <<"nan2\n";
+                    }
+                }
+            }
+
+
+
+
+
+
+
+            H_diag_inv.setIdentity(NumOrbit, NumOrbit);
+            for(int at=0; at<NumAtom; at++) {
+                for(int h1=accumulated_Num_SpinOrbital[at]; h1<accumulated_Num_SpinOrbital[at+1]; h1++) {
+                    for(int h2=accumulated_Num_SpinOrbital[at]; h2<accumulated_Num_SpinOrbital[at+1]; h2++) {
+                        if(isOrbitalHartrDFT[h1] and isOrbitalHartrDFT[h2])  H_diag_inv(h1,h2) = H(h1,h2);
+                    }
+                }
+            }
+            H_diag_inv = H_diag_inv.inverse();
+
+
+
+            H_pHp_inv_out =  H*(Pc*H_diag_inv*Pc);
+
+            resid = (H_pHp_inv - H_pHp_inv_out).norm() ;
+            if(iter ==0 ) resid_prev = resid;
+            else if((iter)%10 ==0) {
+                mixing_checker(resid, resid_prev, mixing, 0.1, 1e-4);
+                resid_prev = resid;
+                std::cout << "rank"<< mpi_rank <<  iter<< ": "<<resid << " " << mixing  <<"\n";
+
+            }
+
+            mixing_weight_matrix.mixing( &H_pHp_inv, &H_pHp_inv_out, mixing, iter, 1);
+            H_pHp_inv = H_pHp_inv_out;
+            iter++;
+        } while(resid>1e-4);
+        std::cout <<"done, rank:" << mpi_rank <<"\n";
+        weightMatrix_tilde = weightMatrix_diag - c_Pwbar_cinv *weightMatrix_diag*  H_pHp_inv  ;
+    }
+// */
+
+
+    Eigen::SelfAdjointEigenSolver<Eigen::MatrixXcd> ces2( (weightMatrix_tilde.adjoint() *  Sk_preNAOs* weightMatrix_tilde) );
+    Ow = weightMatrix_tilde * ces2.operatorInverseSqrt();
 
     Sk_preNAOs =              ( Ow.adjoint() * Sk_preNAOs           * Ow  ).eval();
     weightMatrix_preNAOs =    ( Ow.adjoint() * weightMatrix_preNAOs * Ow  ).eval();
@@ -358,18 +525,20 @@ void lowdin_symmetric_orthogonalization( Eigen::MatrixXcd & Hk, Eigen::MatrixXcd
 
 
 void naturalAtomicOrbitals_population_weighted_symmetric_orthogonalization_r(
-    Eigen::MatrixXcd & Hk, Eigen::MatrixXcd & Sk,
-    Eigen::MatrixXcd & evec,  Eigen::VectorXd & eval, Eigen::MatrixXcd weightMatrix_preNAOs ,
+    Eigen::MatrixXcd & Hk, Eigen::MatrixXcd & Sk, int kpoint,  std::vector<int> & accumulated_Num_SpinOrbital,
+    Eigen::MatrixXcd & evec,  Eigen::VectorXd & eval,
+    Eigen::MatrixXcd weightMatrix_preNAOs ,
     Eigen::MatrixXcd & transformMatrix,
     Eigen::MatrixXcd  principal_number_tfm) {
 
     /*subshell averaging*/
 
 //    Eigen::MatrixXcd  Sk_preNAOs = preNAOs.adjoint() * (Sk) *preNAOs;    // <i|j> = <i|a> S^-1 <b|c> S^-1 <d|j> = <i|a> S^-1 <d|j>, plz check
-    get_NAO_transfrom(Sk, weightMatrix_preNAOs, transformMatrix, principal_number_tfm, true);   //  \ket{j_ortho} = \ket{preNAOs} T_{ij}
+    Eigen::MatrixXcd  KS_evec_k  =  evec;
+    get_NAO_transfrom(Sk, KS_evec_k, weightMatrix_preNAOs, transformMatrix, kpoint, accumulated_Num_SpinOrbital,
+                      principal_number_tfm, true);   //  \ket{j_ortho} = \ket{preNAOs} T_{ij}
 
     Hk  = (transformMatrix.adjoint() * Hk * transformMatrix).eval();
-//    Sk  = (transformMatrix.adjoint() * Sk * transformMatrix).eval();
 
     Eigen::SelfAdjointEigenSolver<Eigen::MatrixXcd> ces3( Hk );
     ces3.compute(Hk);
@@ -379,11 +548,11 @@ void naturalAtomicOrbitals_population_weighted_symmetric_orthogonalization_r(
 
 
 void direct_projection( Eigen::MatrixXcd & Hk, Eigen::MatrixXcd & Sk, Eigen::MatrixXcd  & evec,  Eigen::VectorXd & eval   ) {
-    Eigen::GeneralizedSelfAdjointEigenSolver<Eigen::MatrixXcd> ces1(NumOrbit);
-    ces1.compute( Hk, Sk );       //  HS \psi = S  \psi E
-
-    eval = ces1.eigenvalues();
-    evec = Sk*ces1.eigenvectors();
+//    Eigen::GeneralizedSelfAdjointEigenSolver<Eigen::MatrixXcd> ces1(NumOrbit);
+//    ces1.compute( Hk, Sk );       //  HS \psi = S  \psi E
+//
+//    eval = ces1.eigenvalues();
+    evec = (Sk*evec).eval();
 }
 
 

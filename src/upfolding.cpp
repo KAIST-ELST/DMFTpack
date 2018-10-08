@@ -39,8 +39,8 @@ void upfolding_density(std::vector<Eigen::MatrixXcd> &densityMatDFT, std::vector
                        std::vector<Eigen::MatrixXcd> & S_overlap,
                        std::vector<Eigen::MatrixXcd> & transformMatrix_k) {
 
-    Eigen::MatrixXcd dual_denMat_dual[knum];
-    Eigen::MatrixXcd dual_denMat_direct[knum];
+    std::vector<Eigen::MatrixXcd>   dual_denMat_dual(knum);
+    std::vector<Eigen::MatrixXcd> dual_denMat_direct(knum);
     for(int k=0; k<knum; k++) {
         if(downfolding == 1 ) {
             Eigen::MatrixXcd KS_eigenVectors_nonOrtho_DFT_direct_Basis = ((transformMatrix_k[k].adjoint().inverse())* KS_eigenVectors_orthoBasis[k]);

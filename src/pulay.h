@@ -19,9 +19,10 @@ void mixing_checker(double resid, double resid_prev, double & mixing,  double mi
 
 class pulayMixing {
 public:
-    pulayMixing (int mixing_history_, int start_mixing_,int dim_i, int dim_j, int dim_k );
+    pulayMixing (int mixing_history_, int start_mixing_,int dim_i, int dim_j, int dim_k, bool parallel_pulay_ = false );
     ~pulayMixing ();
     void mixing(Eigen::MatrixXcd  * inputDensity_n, Eigen::MatrixXcd * outputDensity_n, double  mixingSCGF, int SCGFloop, int mixingStep) ;
+//    void my_mixing(Eigen::MatrixXcd  * inputDensity_n, Eigen::MatrixXcd * outputDensity_n, double  mixingSCGF, int SCGFloop, int mixingStep) ;
     void mixing(Eigen::VectorXd   * inputDensity_n, Eigen::VectorXd * outputDensity_n, double  mixingPulay, int SCGFloop, int mixingStep) ;
 private:
     int mixing_history;
@@ -30,6 +31,7 @@ private:
     Eigen::MatrixXcd ** input_history;
     Eigen::MatrixXcd ** res_history;
     Eigen::MatrixXd OptimalMatrix;
+    bool parallel_pulay;
 };
 
 #endif

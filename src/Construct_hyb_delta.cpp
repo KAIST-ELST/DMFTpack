@@ -12,7 +12,8 @@ void Construct_hyb_delta(int impurityDim, std::vector<int> impurityOrbit,
     cmplx iw;
     Eigen::MatrixXcd   projimpurity_site_Hamiltonian, projSolverBasis ;
 
-    Eigen::MatrixXcd      projSw[N_freq], projGw[N_freq];
+    std::vector<Eigen::MatrixXcd>      projSw(N_freq);
+    std::vector<Eigen::MatrixXcd>     projGw(N_freq);
     for(int n=0; n<N_freq; n++) {
         projSw[n].setZero(impurityDim,impurityDim);
         projGw[n].setZero(impurityDim, impurityDim);
@@ -108,7 +109,7 @@ void Construct_hyb_delta(int impurityDim, std::vector<int> impurityOrbit,
 
 
 void write_hyb_t ( ImgFreqFtn & weiss_field, Eigen::MatrixXcd * delta_t, int atom) {
-    Eigen::MatrixXcd delta_w [N_freq];
+    Eigen::MatrixXcd * delta_w  = new Eigen::MatrixXcd [N_freq];
     for(int n=0; n<N_freq; n++) {
         delta_w[n].setZero(NSpinOrbit_per_atom,NSpinOrbit_per_atom);
         for(int h1=0; h1<NSpinOrbit_per_atom; h1++) {
@@ -119,4 +120,5 @@ void write_hyb_t ( ImgFreqFtn & weiss_field, Eigen::MatrixXcd * delta_t, int ato
     }
     std::string HYB = std::string("delta_w in write_hyb_t()");
     FourierTransform (delta_w, delta_t, HYB,1 ) ;
+    delete [] delta_w;
 }

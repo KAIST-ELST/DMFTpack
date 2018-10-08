@@ -133,7 +133,7 @@ void SOLVER(std::string SOLVERtype, int solverDim, std::vector<int> strongCorr, 
 
         if (SOLVERtype==std::string("ALPS_CTSEG")) {//ALPS_CTSEG
             /*hyb_t write*/
-            Eigen::MatrixXcd delta_t [N_tau+1];
+            Eigen::MatrixXcd * delta_t  = new Eigen::MatrixXcd  [N_tau+1];
             write_hyb_t (projweiss_field, delta_t, 0);
 
 
@@ -239,11 +239,12 @@ void SOLVER(std::string SOLVERtype, int solverDim, std::vector<int> strongCorr, 
 
             ifroot  std::cout << "Writing output data..\n";
             delete[] command_hyb;
+            delete [] delta_t;
         }//ALPS_CTSEG
         else if (SOLVERtype==std::string("RUTGERS_CTSEG")) {//RUTGERS_CTSEG
             ifroot std::cout << "Rutgers(K. Haule), CT-HYB(SEG) solver\n";
 
-            Eigen::MatrixXcd delta_t [N_tau+1];
+            Eigen::MatrixXcd * delta_t   = new Eigen::MatrixXcd  [N_tau+1];
             write_hyb_t (projweiss_field, delta_t, 0);
             ifroot std::cout <<"FILE OUT: delta_t.dat\n";
             ifroot{
@@ -319,6 +320,7 @@ void SOLVER(std::string SOLVERtype, int solverDim, std::vector<int> strongCorr, 
             ss << atom;
             ifroot system(  (std::string("cp ")+"rutgers_input.cix  rutgers_input.cix" +ss.str()).c_str());
             delete[] command_hyb;
+            delete [] delta_t;
         }//RUTGERS_CTSEG
 //        else if (SOLVERtype==std::string("ALPS_CTHYB")) {//ALPSCore;CT-HYB
 //            Eigen::MatrixXcd delta_t [N_tau+1];
@@ -490,7 +492,7 @@ void SOLVER(std::string SOLVERtype, int solverDim, std::vector<int> strongCorr, 
 
 
         if(high_level_solver == true) {
-            Eigen::MatrixXcd delta_t [N_tau+1];
+            Eigen::MatrixXcd * delta_t  =  new Eigen::MatrixXcd  [N_tau+1];
             write_hyb_t (projweiss_field, delta_t, 0);
             ifroot std::cout <<"FILE OUT: delta_t.dat\n";
             ifroot{
@@ -504,6 +506,7 @@ void SOLVER(std::string SOLVERtype, int solverDim, std::vector<int> strongCorr, 
                 }
                 fclose(datap4);
             }
+            delete [] delta_t;
         }
 
     }//SC2PT
@@ -517,7 +520,7 @@ void SOLVER(std::string SOLVERtype, int solverDim, std::vector<int> strongCorr, 
 
 
         if(high_level_solver == true) {
-            Eigen::MatrixXcd delta_t [N_tau+1];
+            Eigen::MatrixXcd * delta_t  =  new Eigen::MatrixXcd  [N_tau+1];
             write_hyb_t (projweiss_field, delta_t, 0);
             ifroot std::cout <<"FILE OUT: delta_t.dat\n";
             ifroot{
@@ -531,6 +534,7 @@ void SOLVER(std::string SOLVERtype, int solverDim, std::vector<int> strongCorr, 
                 }
                 fclose(datap4);
             }
+            delete [] delta_t;
         }
 
     }//SCHF
@@ -542,7 +546,8 @@ void SOLVER(std::string SOLVERtype, int solverDim, std::vector<int> strongCorr, 
                                  Uindex_stronglyCorr, Utensor_stronglyCorr,strongCorr );
 
         if(high_level_solver == true) {
-            Eigen::MatrixXcd delta_t [N_tau+1];
+//            Eigen::MatrixXcd delta_t [N_tau+1];
+            Eigen::MatrixXcd * delta_t  =  new Eigen::MatrixXcd  [N_tau+1];
             write_hyb_t (projweiss_field, delta_t, 0);
             ifroot std::cout <<"FILE OUT: delta_t.dat\n";
             ifroot{
@@ -556,6 +561,7 @@ void SOLVER(std::string SOLVERtype, int solverDim, std::vector<int> strongCorr, 
                 }
                 fclose(datap4);
             }
+            delete [] delta_t;
         }
 
 
@@ -565,7 +571,8 @@ void SOLVER(std::string SOLVERtype, int solverDim, std::vector<int> strongCorr, 
         IPT( solverDim, projimpurity_site_Hamiltonian, projweiss_field, projNumMatrix ,SE_out, Gwimp_temp, muTB, projUindex, projUtensor);
 
         if(high_level_solver == true) {
-            Eigen::MatrixXcd delta_t [N_tau+1];
+//            Eigen::MatrixXcd delta_t [N_tau+1];
+            Eigen::MatrixXcd * delta_t  =  new Eigen::MatrixXcd  [N_tau+1];
             write_hyb_t (projweiss_field, delta_t, 0);
             ifroot std::cout <<"FILE OUT: delta_t.dat\n";
             ifroot{
@@ -579,6 +586,7 @@ void SOLVER(std::string SOLVERtype, int solverDim, std::vector<int> strongCorr, 
                 }
                 fclose(datap4);
             }
+            delete [] delta_t;
         }
 
     }//IPT

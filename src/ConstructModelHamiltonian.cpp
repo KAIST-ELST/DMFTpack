@@ -18,7 +18,9 @@ void SpreadFtn( int knum,
 void direct_projection( Eigen::MatrixXcd & Hk, Eigen::MatrixXcd & Sk, Eigen::MatrixXcd  & evec,  Eigen::VectorXd & eval  ) ;
 void lowdin_symmetric_orthogonalization( Eigen::MatrixXcd & Hk, Eigen::MatrixXcd & Sk, Eigen::MatrixXcd  & evec,  Eigen::VectorXd & eval, Eigen::MatrixXcd & transformMatrix    );
 //void naturalAtomicOrbitals_population_weighted_symmetric_orthogonalization_k(Eigen::MatrixXcd & Hk, Eigen::MatrixXcd & Sk, Eigen::MatrixXcd  & evec,  Eigen::VectorXd & eval,int NumOrbit, double muDFT, Eigen::MatrixXcd & transformMatrix) ;
-void naturalAtomicOrbitals_population_weighted_symmetric_orthogonalization_r(Eigen::MatrixXcd & Hk, Eigen::MatrixXcd & Sk, Eigen::MatrixXcd  & evec,  Eigen::VectorXd & eval, Eigen::MatrixXcd weightMatrix, Eigen::MatrixXcd & transformMatri, Eigen::MatrixXcd principal_number_tfm);
+void naturalAtomicOrbitals_population_weighted_symmetric_orthogonalization_r(
+    Eigen::MatrixXcd & Hk, Eigen::MatrixXcd & Sk, int kpoint,  std::vector<int> & accumulated_Num_SpinOrbital,
+    Eigen::MatrixXcd  & evec,  Eigen::VectorXd & eval, Eigen::MatrixXcd weightMatrix, Eigen::MatrixXcd & transformMatri, Eigen::MatrixXcd principal_number_tfm);
 
 
 
@@ -36,7 +38,9 @@ int read_DensityMat(Eigen::MatrixXi &NumMat_Rindex,         Eigen::VectorXcd  &N
 
 int Construct_Hk_Sk(
     int knum, int knum_mpiGlobal,   Eigen::MatrixXi  H_Rindex, Eigen::VectorXcd H_RMatrix, double ** kmesh, std::vector<int> & accumulated_Num_SpinOrbital,
-    std::vector<Eigen::MatrixXcd> & H_k_inModelSpace,  std::vector<Eigen::MatrixXcd> & S_overlap
+    std::vector<Eigen::MatrixXcd> & H_k_inModelSpace,  std::vector<Eigen::MatrixXcd> & S_overlap,
+    std::vector<Eigen::MatrixXcd> & KS_eigenVectors_orthoBasis, Eigen::VectorXd  * KS_eigenEnergy
+
 )
 {
 
@@ -93,6 +97,17 @@ int Construct_Hk_Sk(
         }//if OverlapMatrix
     }//k
     if(mpi_rank==0 )   std::cout << "<TB> Construct Hk from HR :\n";
+
+
+    for(int k = 0;  k < knum; k++) {
+
+        Eigen::GeneralizedSelfAdjointEigenSolver<Eigen::MatrixXcd> ces1(NumOrbit);
+        ces1.compute( H_k_inModelSpace[k], S_overlap[k] );       //  HS \psi = S  \psi E
+
+        KS_eigenEnergy[k] = ces1.eigenvalues();
+        KS_eigenVectors_orthoBasis[k] = ces1.eigenvectors();
+
+    }
 
     return overlap_exist;
 }
@@ -213,12 +228,6 @@ void  ConstructModelHamiltonian
                     localOrbitalType.find(std::string("direct_F")) != std::string::npos  or
                     localOrbitalType.find(std::string("hyb_F")) != std::string::npos) {
 
-                //initial condition for  _sc
-                if(we_have_weightMatrix ==false) {
-                    weightMatrix.setIdentity(NumOrbit, NumOrbit);
-                    weightMatrix  *= NumberOfElectron/NumOrbit;
-                }
-
 
                 //get weightMatrix
                 if ( localOrbitalType.find(std::string("nao_recip")) != std::string::npos or localOrbitalType.find(std::string("nao_compl")) != std::string::npos) { //complement
@@ -231,6 +240,11 @@ void  ConstructModelHamiltonian
                     weightMatrix = getweight_direct(S_overlap,dual_DM_direct);
                 }
 //                else if ( localOrbitalType.find(std::string("nao_sc")) != std::string::npos ) {
+//                    //initial condition for  _sc
+//                    if(we_have_weightMatrix ==false) {
+//                        weightMatrix.setIdentity(NumOrbit, NumOrbit);
+//                        weightMatrix  *= NumberOfElectron/NumOrbit;
+//                    }
 //                    weightMatrix = getweight_sc( S_overlap, dual_DM_direct, weightMatrix, accumulated_Num_SpinOrbital);
 //                }
                 else {
@@ -252,13 +266,14 @@ void  ConstructModelHamiltonian
             Eigen::MatrixXcd weightMatrix_preNAOs;
             Eigen::MatrixXcd  principal_number_tfm;
             get_preNAOs(weightMatrix, principal_number_tfm, weightMatrix_preNAOs);
+            ifroot std::cout << "we have pre-NAOs\n";
 
             for(int k = 0;  k < knum; k++) {
                 naturalAtomicOrbitals_population_weighted_symmetric_orthogonalization_r(
-                    H_k_inModelSpace[k],S_overlap[k],KS_eigenVectors_orthoBasis[k],KS_eigenEnergy[k],
+                    H_k_inModelSpace[k],S_overlap[k], k, accumulated_Num_SpinOrbital,
+                    KS_eigenVectors_orthoBasis[k], KS_eigenEnergy[k],
                     weightMatrix_preNAOs, transformMatrix_k[k], principal_number_tfm   );
             }
-
         }//nao
         else if (localOrbitalType == std::string("lowdin")  ) {
             for(int k = 0;  k < knum; k++) {
@@ -273,19 +288,55 @@ void  ConstructModelHamiltonian
 //        SpreadFtn( knum,  S_overlap, transformMatrix_k, accumulated_Num_SpinOrbital);
 
     }//overlap
-    else {
-        for(int k = 0;  k < knum; k++) {
-            /* eigen problem  For DFT Hamiltonian,   */
-            Eigen::SelfAdjointEigenSolver<Eigen::MatrixXcd> ces(NumOrbit);
-            ces.compute(H_k_inModelSpace[k]);
-            KS_eigenVectors_orthoBasis[k] = ces.eigenvectors();
-            for(int i =0; i<NumOrbit; i++) {
-                KS_eigenEnergy[k][i] = (ces.eigenvalues()[i]) ;  //(V[0][0], V[1][0], V[2][0],..V[n][0]) = 0th eigenvector
+//    else {
+//        for(int k = 0;  k < knum; k++) {
+//            /* eigen problem  For DFT Hamiltonian,   */
+//            Eigen::SelfAdjointEigenSolver<Eigen::MatrixXcd> ces(NumOrbit);
+//            ces.compute(H_k_inModelSpace[k]);
+//            KS_eigenVectors_orthoBasis[k] = ces.eigenvectors();
+//            for(int i =0; i<NumOrbit; i++) {
+//                KS_eigenEnergy[k][i] = (ces.eigenvalues()[i]) ;  //(V[0][0], V[1][0], V[2][0],..V[n][0]) = 0th eigenvector
+//            }
+//        }
+//    }
+    /*info:spread function*/
+    std::cout << "Hk was constructed..\n"  ;
+
+
+
+
+    /*Find NBAND and FromValToKS with given KS_eigenEnergy and muDFT*/
+    ///////////////////////////////////////////////////////////////////
+    double  tempd2=0;
+
+    Eigen::VectorXd  HartreWeightInWindows_local;
+    Eigen::VectorXd  HartreWeightInWindows_global;
+    HartreWeightInWindows_local.setZero(N_peratom_HartrOrbit);
+    HartreWeightInWindows_global.setZero(N_peratom_HartrOrbit);
+
+    for(int k=0; k< knum ; k++) {
+        if (downfolding==1) {
+            /*Check d-orbital character in  energy window*/
+            for (int m=0; m<N_peratom_HartrOrbit; m++) {
+                int m0 = HartrIndex_inDFT[m];
+                for (int i0=0; i0<NumOrbit; i0++) {
+                    tempd2 += std::pow(std::abs(KS_eigenVectors_orthoBasis[k](m0,i0)),2);
+                    if( (KS_eigenEnergy[k][i0]-muDFT) < lower_model_window or KS_eigenEnergy[k][i0]-muDFT > upper_model_window  ) {
+                        HartreWeightInWindows_local[m]+=std::pow(std::abs(KS_eigenVectors_orthoBasis[k](m0,i0)),2);
+                    }
+                }
             }
         }
+    }//k
+    double tempd2GL=0;
+    MPI_Barrier(MPI_COMM_WORLD);
+    MPI_Allreduce(&tempd2, &tempd2GL, 1, MPI_DOUBLE, MPI_SUM,  MPI_COMM_WORLD);
+    ifroot std::cout << "d-orbital normalization       : "  << tempd2GL/(knum_mpiGlobal*N_peratom_HartrOrbit)<<"\n";
+    MPI_Allreduce(HartreWeightInWindows_local.data() , HartreWeightInWindows_global.data(), HartreWeightInWindows_global.size(), MPI_DOUBLE, MPI_SUM,  MPI_COMM_WORLD);
+    for (int m=0; m<N_peratom_HartrOrbit; m++) {
+        ifroot std::cout << "d-orbital in rest energy space: "  << HartreWeightInWindows_global[m] /(knum_mpiGlobal) <<"\n";
     }
-    /*info:spread function*/
-    ifroot std::cout << "Hk was constructed..\n"  ;
+
 }//ConstructModel
 
 

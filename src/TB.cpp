@@ -67,7 +67,8 @@ void        NumMat_PWF(  int knum, int knum_mpiGlobal, double muDFT,
 
 int Construct_Hk_Sk(
     int knum, int knum_mpiGlobal,   Eigen::MatrixXi  H_Rindex, Eigen::VectorXcd H_RMatrix, double ** kmesh, std::vector<int> & accumulated_Num_SpinOrbital,
-    std::vector<Eigen::MatrixXcd> & H_k_inModelSpace,  std::vector<Eigen::MatrixXcd> & S_overlap
+    std::vector<Eigen::MatrixXcd> & H_k_inModelSpace,  std::vector<Eigen::MatrixXcd> & S_overlap,
+    std::vector<Eigen::MatrixXcd> & KS_eigenVectors_orthoBasis, Eigen::VectorXd  * KS_eigenEnergy
 );
 
 
@@ -238,14 +239,22 @@ double  TightBinding(double mu, const std::string &hamiltonian, ImgFreqFtn & Sel
 
     int overlap_exist =  Construct_Hk_Sk(
                              knum, knum_mpiGlobal,   H_Rindex, H_RMatrix,  kmesh,  accumulated_Num_SpinOrbital,
-                             H_k_inModelSpace,   S_overlap);
+                             H_k_inModelSpace,   S_overlap,
+                             KS_eigenVectors_orthoBasis,  KS_eigenEnergy
+                         );
 
     if(mu_adjustTB == -1) {
         mu = Nele_non_Inter(knum, knum_mpiGlobal, H_k_inModelSpace, S_overlap);
 
 
+        low_energy_subspace_in_KS_basis(knum, knum_mpiGlobal, NBAND, FromValToKS, mu,
+                                        KS_eigenVectors_orthoBasis, KS_eigenEnergy);
+
+
         ConstructModelHamiltonian (   knum,  knum_mpiGlobal,  kmesh, accumulated_Num_SpinOrbital,
                                       H_k_inModelSpace, S_overlap, KS_eigenVectors_orthoBasis, transformMatrix_k,  KS_eigenEnergy, overlap_exist, mu);
+
+
         downfolding_ftn(knum, knum_mpiGlobal, NBAND, H_k_inModelSpace, KS_eigenVectors_orthoBasis, KS_eigenEnergy,  mu);
 
         Find_best_correlated_basis(H_k_inModelSpace, SolverBasis, mu);
@@ -255,8 +264,14 @@ double  TightBinding(double mu, const std::string &hamiltonian, ImgFreqFtn & Sel
         return mu;
     }
 
+
+    low_energy_subspace_in_KS_basis(knum, knum_mpiGlobal, NBAND, FromValToKS, muDFT,
+                                    KS_eigenVectors_orthoBasis, KS_eigenEnergy);
+
     ConstructModelHamiltonian (   knum,  knum_mpiGlobal,  kmesh, accumulated_Num_SpinOrbital,
                                   H_k_inModelSpace, S_overlap, KS_eigenVectors_orthoBasis, transformMatrix_k,  KS_eigenEnergy, overlap_exist, muDFT);
+
+
     downfolding_ftn(knum, knum_mpiGlobal, NBAND, H_k_inModelSpace, KS_eigenVectors_orthoBasis, KS_eigenEnergy,  muDFT);
 
 
