@@ -239,7 +239,7 @@ void get_NAO_transfrom( Eigen::MatrixXcd & Sk, Eigen::MatrixXcd &  KS_evec_k,
         Eigen::MatrixXcd H_pHp_inv = H*(Pc*H_diag_inv*Pc);
         Eigen::MatrixXcd  H_pHp_inv_out ;
         pulayMixing mixing_weight_matrix(3, 20, 1, NumOrbit, NumOrbit, true );
-        std::cout <<"NBAND: " <<  NBAND[kpoint] <<"\n";
+//        std::cout <<"NBAND: " <<  NBAND[kpoint] <<"\n";
         do {
 
 //
@@ -334,7 +334,7 @@ void get_NAO_transfrom( Eigen::MatrixXcd & Sk, Eigen::MatrixXcd &  KS_evec_k,
             else if((iter)%10 ==0) {
                 mixing_checker(resid, resid_prev, mixing, 0.1, 1e-4);
                 resid_prev = resid;
-                std::cout << "rank"<< mpi_rank <<  iter<< ": "<<resid << " " << mixing  <<"\n";
+//                std::cout << "rank"<< mpi_rank <<  iter<< ": "<<resid << " " << mixing  <<"\n";
 
             }
 
@@ -342,7 +342,7 @@ void get_NAO_transfrom( Eigen::MatrixXcd & Sk, Eigen::MatrixXcd &  KS_evec_k,
             H_pHp_inv = H_pHp_inv_out;
             iter++;
         } while(resid>1e-4);
-        std::cout <<"done, rank:" << mpi_rank <<"\n";
+//        std::cout <<"done, rank:" << mpi_rank <<"\n";
         weightMatrix_tilde = weightMatrix_diag - c_Pwbar_cinv *weightMatrix_diag*  H_pHp_inv  ;
     }
 // */
