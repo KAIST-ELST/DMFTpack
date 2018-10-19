@@ -1,4 +1,4 @@
-
+##### The software will be released soon. (Updated: 2018-10-19)
 # DMFTpack
 DMFTpack is the software for DFT+DMFT calculation. Various projection methods and the impurity solvers are available, e.g., iterative perturbation theory (IPT), self-consistent second-order perturbation theory (SC2PT), and CT-QMC. The interface connecting DFT package, e.g., OpenMX and impurity solvers is also provided.
 
@@ -66,9 +66,10 @@ DMFTpack is the software for DFT+DMFT calculation. Various projection methods an
   $ gnuplot sw_Im.gnuplot
   ```
 
-* Now, one may want to do analytic continuation of the self-energy to obtain band structure and/or density of states. 
-  * Any continuation method can be used to obtain the imaginary part of the retarded self-energy. Using Kramers–Kronig relations, generate  "realFreq_Sw.dat_i_j" file. Here i and j are orbital indices. Each file contains omega for the first column and real and imaginary part of the self-energy for the second and third column, respectively.
-  * We recommend MQEM code developed by J.-H. Sim (Not available yet and a public release via GitHub will be ready soon. (updated: 2018-09-10)).
+* Now, one may want to do analytic continuation from the imaginary Green's function to the real-frequency spectral function.
+  * Any continuation method can be used to obtain the density of states from the Green's function.
+  * To continuate self-energy, we recommend MQEM method developed by J.-H. Sim [PRB (in press); arXiv:1804.01683]. The source code will be public released via GitHub (updated: 2018-10-19).
+  * For the case of self-energy continuation, one may generate "realFreq_Sw.dat_i_j" file. Here i and j are orbital indices. Each file contains omega for the first column and real and imaginary part of the self-energy for the second and third column, respectively.
 
     ```ShellSession
     $ mkdir realFreqSpectrum; cd realFreqSpectrum
@@ -81,7 +82,7 @@ DMFTpack is the software for DFT+DMFT calculation. Various projection methods an
 
     * (key) = (variable)
 
-* band structure: To do calculate band structure, SOLVER_TYPE=TB and RESTART>1 in input.pam is required.
+* band structure: To do calculate band structure, SOLVER_TYPE=TB and RESTART>1 in input.pam is required, providing "realFreq_Sw.dat_i_j".
 
   ```ShellSession
   $ mkdir ../bandstruc; cd ../bandstruc
