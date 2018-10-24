@@ -69,7 +69,7 @@ DMFTpack is the software for DFT+DMFT calculation. Various projection methods an
 * Now, one may want to do analytic continuation from the imaginary Green's function to the real-frequency spectral function.
   * Any continuation method can be used to obtain the density of states from the Green's function.
   * For the case of self-energy continuation, one may generate "realFreq_Sw.dat_i_j" file. Here i and j are orbital indices. Each file contains omega for the first column and real and imaginary part of the self-energy for the second and third column, respectively.
-  * (optional) For the system with large spin-orbit coupling, we recommend MQEM method developed by J.-H. Sim [PRB (in press); arXiv:1804.01683]. The source code will be public released via GitHub (updated: 2018-10-19).
+  * (optional) For the system with large spin-orbit coupling, we recommend MQEM method developed by J.-H. Sim [PRB (in press); arXiv:1804.01683]. The source code will be available soon via GitHub (update: 2018-10-19).
 
     ```ShellSession
     $ mkdir realFreqSpectrum; cd realFreqSpectrum
