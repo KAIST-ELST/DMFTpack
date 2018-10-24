@@ -68,8 +68,8 @@ DMFTpack is the software for DFT+DMFT calculation. Various projection methods an
 
 * Now, one may want to do analytic continuation from the imaginary Green's function to the real-frequency spectral function.
   * Any continuation method can be used to obtain the density of states from the Green's function.
-  * To continuate self-energy, we recommend MQEM method developed by J.-H. Sim [PRB (in press); arXiv:1804.01683]. The source code will be public released via GitHub (updated: 2018-10-19).
   * For the case of self-energy continuation, one may generate "realFreq_Sw.dat_i_j" file. Here i and j are orbital indices. Each file contains omega for the first column and real and imaginary part of the self-energy for the second and third column, respectively.
+  * (optional) For the system with large spin-orbit, we recommend MQEM method developed by J.-H. Sim [PRB (in press); arXiv:1804.01683]. The source code will be public released via GitHub (updated: 2018-10-19).
 
     ```ShellSession
     $ mkdir realFreqSpectrum; cd realFreqSpectrum
@@ -111,7 +111,7 @@ DMFTpack is the software for DFT+DMFT calculation. Various projection methods an
 four input files required for DMFT calculation.
 
 * List of input files
-  * "input.parm": All the computational information written here. See below for more details.
+  * "input.parm": the computational information is written here. See below for more details.
   * "input.solver": information for impurity solver, e.g., U, N_TAU, ...
   * "Hk.HWR" and "OverlapMatrix.HWR"(optional): non-interacting Hamiltonian is written in the "Hk.HWR" file. When the non-orthogonal basis is used, the overlap matrix should be provided. 
   * Alternatively, "Hk.HWR" and "OverlapMatrix.HWR" are replaced by "SYSTEM_NAME.scfout", which can be obtained from OpenMX code output.
@@ -120,26 +120,26 @@ four input files required for DMFT calculation.
   * Computational information:
     * SYSTEM_NAME
     * SOLVER_TYPE = {ALPS_CTSEG, RUTGERS_CTSET, RUTGERS_CTHYB, IPT, SC2PT, 2PT, TB}
-    * SOLVER_DIR = Path to impurity solver (default: ~/bin/)
+    * SOLVER_DIR = path to impurity solver (default: ~/bin/)
     * SOLVER_EXE = executable impurity solver (default: hybridization)
-    * MAX_DMFT_ITER ={1,2...}, Maximum DMFT iteration (default: 20)
+    * MAX_DMFT_ITER ={1,2...}, maximum DMFT iteration (default: 20)
     * MIXING = (default: 0.8), self-energy mixing weight in the DMFT iteration
     * RESTART = {0,1,...}, for initial calculation, >0 to start self-energy obtained from previous calculation. (default: 0)
   * Lattice information
-    * N_ATOMS = {1,2,..}, number of atoms in the unit cell
-    * N_CORRELATED_ATOMS = {1,2,...}, number of atoms containing strong correlated orbitals.
+    * N_ATOMS = {1,2,..}, the number of atoms in the unit cell
+    * N_CORRELATED_ATOMS = {1,2,...}, the number of atoms containing strong correlated orbitals.
     * N_ELECTRONS = {1,2,...} total number of the electrons in the unit cell.
-    * MAGNETISM ={0,1,[2]} (default: 2)
-    * K_POINTS = The numbers (nk1,nk2,nk3) of grids to discretize the first Brillouin zone.
+    * MAGNETISM = {0,1,[2]} (default: 2)
+    * K_POINTS = (nk1,nk2,nk3) k-grids to discretize the first Brillouin zone.
   * DFT+DMFT option
-    * H0_FROM_OPENMX = {0,1}  =1 if "SYSTEM_NAME".scfout file is exist. Otherwise, Hk.HWR file should b exist in the work folder with "H0_FROM_OPENMX"=0.
-    * num_subshell = number of nl subshell for each orbital, e.g., num_subshell=5 for s2p2d1 basis
+    * H0_FROM_OPENMX = {0,1}  = 1 if "SYSTEM_NAME".scfout file is exist. Otherwise, Hk.HWR file should b exist in the work folder with "H0_FROM_OPENMX"=0.
+    * num_subshell = the number of nl subshell for each orbital, e.g., num_subshell=5 for s2p2d1 basis
     * rot_sym =  Quantum number l of the angular momentum for each subshell.
     * subshell = dimension of the subshell.
     * Rydberg_set = 0 for nominally occupied orbitals, 1 for empty
   * Projection method
-    * MODEL_WINDOW_U = Correlated orbitals are projected into the model window (default: 10)
-    * MODEL_WINDOW_D = Correlated orbitals are projected into the model window (default: -10)
+    * MODEL_WINDOW_U = upper bound of the energy window for the correlated subspace. The correlated orbitals are projected into the model window (default: 10).
+    * MODEL_WINDOW_D = lower bound of the energy window for the correlated subspace (default: -10)
     * DC_TYPE = {nominal, [fll]}, double counting method (default: fll)
     * N_d = {0,1,..}, nominal charge in the correlated orbitals
     * HARTREE_ATOMS = {1,2,...} Atom indices of the correlated atoms
@@ -148,19 +148,19 @@ four input files required for DMFT calculation.
     * MODE = {band, qsband, dos, qsband}, specifies the band/dos calculation for non-interacting (or quasi-particle) dispersion
     * K_GRID_BAND = (default: 40)
     * SPECTRAL_ENERGY_GRID = (default: 1000)
-    * N_K_PATH = The number of paths for the band calculation
-    * K_PATH = This keword specifies the paths of the band dispersion
+    * N_K_PATH = the number of paths for the band calculation
+    * K_PATH = this keword specifies the paths of the band dispersion
 * input.solver
   * impurity_information
-    * N_ORBITALS = number of orbitals in impurity site
-    * N_HARTREE_ORBITALS = number of the correlated orbitals
+    * N_ORBITALS = the number of orbitals in impurity site
+    * N_HARTREE_ORBITALS = the number of the correlated orbitals
     * U = intra-orbital interaction
     * U' = inter-orbital interaction
     * J = Hund's coupling
     * BETA = inverse temperature
   * Matsubara_frequency
-    * N_MATSUBARA = Number of the Matsubara frequencies
-    * N_TAU = The number of mesh grids in the imaginary time axis
+    * N_MATSUBARA = the number of the Matsubara frequencies
+    * N_TAU = mesh grids in the imaginary time axis
   * ALPS_CT_HYB_input
     * MEASURE_legendre = should be choose "1"
     * MEASURE_freq = should be choose "1"
