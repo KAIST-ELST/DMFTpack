@@ -9,7 +9,7 @@ DMFTpack is the software for DFT+DMFT calculation. Various projection methods an
 * Hybridization expansion quantum Monte Carlo impurity solver:
   (It is strongly recommended to install at least one of the following solvers.)
   * Implemented in ALPS library
-    [http://hauleweb.rutgers.edu/tutorials/Tutorial0.html](http://hauleweb.rutgers.edu/tutorials/Tutorial0.html)
+    [http://alps.comp-phys.org](http://alps.comp-phys.org)
   * Implemented by K. Haule at Rutgers University
     [http://www.physics.rutgers.edu/~haule/](http://www.physics.rutgers.edu/~haule/)
 
