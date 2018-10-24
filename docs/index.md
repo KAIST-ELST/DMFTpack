@@ -9,15 +9,15 @@ DMFTpack is the software for DFT+DMFT calculation. Various projection methods an
 * Hybridization expansion quantum Monte Carlo impurity solver:
   (It is strongly recommended to install at least one of the following solvers.)
   * Implemented in ALPS library
-    http://hauleweb.rutgers.edu/tutorials/Tutorial0.html
+    [http://hauleweb.rutgers.edu/tutorials/Tutorial0.html](http://hauleweb.rutgers.edu/tutorials/Tutorial0.html)
   * Implemented by K. Haule at Rutgers University
-    http://www.physics.rutgers.edu/~haule/
+    [http://www.physics.rutgers.edu/~haule/](http://www.physics.rutgers.edu/~haule/)
 
 ### Eigen (>=3.3)
 * C++ template library for linear algebra: matrices, vectors, numerical solvers, and related algorithms. http://eigen.tuxfamily.org
 * Since Eigen version 3.3 or later, you can use the BLAS / LAPACK or Intel MKL libraries.
-  * Using BLAS/LAPACK from Eigen http://eigen.tuxfamily.org/dox/TopicUsingBlasLapack.html
-  * Using Intel® MKL from Eigen http://eigen.tuxfamily.org/dox/TopicUsingIntelMKL.html
+  * Using BLAS/LAPACK from Eigen [http://eigen.tuxfamily.org/dox/TopicUsingBlasLapack.html](http://eigen.tuxfamily.org/dox/TopicUsingBlasLapack.html)
+  * Using Intel® MKL from Eigen [http://eigen.tuxfamily.org/dox/TopicUsingIntelMKL.html](http://eigen.tuxfamily.org/dox/TopicUsingIntelMKL.html)
 
 ## Installation 
 
