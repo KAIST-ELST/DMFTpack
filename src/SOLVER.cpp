@@ -103,7 +103,7 @@ void SOLVER(std::string SOLVERtype, int solverDim, std::vector<int> strongCorr, 
     }
 
     if(high_level_solver) {
-        projimpurity_site_Hamiltonian+= dc_weakCorr.at(N_freq);
+        projimpurity_site_Hamiltonian += dc_weakCorr.at(N_freq);
         for (int n=0; n<N_freq; n++) {
             projweiss_field.setMatrix(n,  projweiss_field.getMatrix(n) + dc_weakCorr.at(n));
         }
