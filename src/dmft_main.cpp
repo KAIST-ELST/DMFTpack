@@ -8,6 +8,8 @@
 #include <time.h>
 #include "ImgTimeFtn.h"
 #include "tight_common.h"
+#include "pulay.h"
+
 
 #include <Eigen/Eigenvalues>
 
@@ -351,6 +353,8 @@ int main(int argc, char *argv[]) {
      DMFT SC loop
     ***************************************************/
     int currentIt =1;
+
+    pulayMixing mixing_self_energy(2, 10, N_freq, N_peratom_HartrOrbit*NumCorrAtom, N_peratom_HartrOrbit*NumCorrAtom, true );
     while(true) {
         Eigen::MatrixXcd NumMatrixImp;
         Eigen::MatrixXcd NumMatrixLatt;
@@ -514,14 +518,20 @@ int main(int argc, char *argv[]) {
             }
 
 
-            if(mixingFtn==1)    SelfEnergy_w.update(     SE_out, mixing, at, 0 ); //self-energy_mixing
-            else                SelfEnergy_w.update(     SE_out,   1,    at, 0 );
+            if(mixingFtn==1)   {
+                mixing_self_energy.mixing ( &(SelfEnergy_w.getFtn_data()[0]), &(SE_out.getFtn_data()[0]), mixing, currentIt, 1);
+            }
+            SelfEnergy_w.update(     SE_out,   1,    at, 0 );
+
+
+
+//            if(mixingFtn==1)    SelfEnergy_w.update(     SE_out, mixing, at, 0 ); //self-energy_mixing
+//            else                SelfEnergy_w.update(     SE_out,   1,    at, 0 );
 //            if(mixingFtn==1)    SelfEnergy_w_weak.update(SE_weak_out, mixing, at, 0 ); //self-energy_mixing
 //            else                SelfEnergy_w_weak.update(SE_weak_out,   1,    at, 0 );
 
         }//at, solver
         SelfEnergy_w.dataOut_full(std::string("Sw_SOLVER.full.dat"));
-//        SelfEnergy_w_weak.dataOut_full(std::string("Sw_SOLVER_weak.full.dat"));
         SelfEnergy_w.dataOut(std::string("Sw_SOLVER.dat"));
 
 

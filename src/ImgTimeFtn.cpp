@@ -175,7 +175,11 @@ void ImgFreqFtn::Initialize(double beta, int N_freq,  int NSpinOrbitPerAtom,int 
     startIndx_ = startIndx;
 
     imgFreq = new double [Nfreq_];
-    Ftn_.setZero(Nfreq_+5, (Norbit)* (Norbit));
+//    Ftn_.setZero(Nfreq_+5, (Norbit)* (Norbit));
+    Ftn_.resize(Nfreq_+5);
+    for(int w=0; w<Nfreq_+5; w++) {
+        Ftn_[w].setZero(Norbit,Norbit);
+    }
     for(int w=0; w<Nfreq_; w++) {
         imgFreq[w] = pi*(2.*(w+startIndx_)+1)/beta;
     }
@@ -199,7 +203,8 @@ ImgFreqFtn::ImgFreqFtn(ImgFreqFtn & rhs) {
         imgFreq[w] = rhs.imgFreq[w];
         for (int i=0; i<rhs.Norbit; i++) {
             for (int j=0; j<rhs.Norbit; j++) {
-                Ftn_(w,i*rhs.Norbit+j) = rhs.Ftn_(w,i*rhs.Norbit+j);
+//                Ftn_(w,i*rhs.Norbit+j) = rhs.Ftn_(w,i*rhs.Norbit+j);
+                Ftn_.at(w)(i,j) = rhs.Ftn_.at(w)(i,j);
             }
         }
     }
@@ -227,7 +232,7 @@ cmplx ImgFreqFtn::getValue(int w, int n, int m) {
     assert(0<= m );
     assert(n < Norbit);
     assert(m < Norbit);
-    return Ftn_(w-startIndx_,n*Norbit+m);
+    return Ftn_.at(w-startIndx_)(n,m);
 }
 double ImgFreqFtn::getValue( int w) {
     return imgFreq[w-startIndx_];
@@ -236,10 +241,13 @@ Eigen::MatrixXcd ImgFreqFtn::getMatrix(int w) {
     Eigen::MatrixXcd result (Norbit, Norbit);
     for (int n =0; n<Norbit; n++) {
         for (int m =0; m<Norbit; m++) {
-            result(n,m) = Ftn_(w, n*Norbit + m);
+            result(n,m) = Ftn_.at(w)(n, m);
         }
     }
     return result;
+}
+std::vector<Eigen::MatrixXcd>  ImgFreqFtn::getFtn_data() {
+    return Ftn_;
 }
 
 Eigen::MatrixXcd ImgFreqFtn::getMatrix(int w, int site) {
@@ -248,7 +256,7 @@ Eigen::MatrixXcd ImgFreqFtn::getMatrix(int w, int site) {
         for (int m =0; m<NSpinOrbitPerAtom_; m++) {
             int n1 = site *  NSpinOrbitPerAtom_ + n;
             int m1 = site *  NSpinOrbitPerAtom_ + m;
-            result(n,m) = Ftn_(w, n1*Norbit + m1);
+            result(n,m) = Ftn_.at(w)( n1,  m1);
         }
     }
     return result;
@@ -263,7 +271,7 @@ void ImgFreqFtn::setMatrix(int w, int site,  Eigen::MatrixXcd value ) {
         for (int m =0; m<NSpinOrbitPerAtom_; m++) {
             int n1 = site *  NSpinOrbitPerAtom_ + n;
             int m1 = site *  NSpinOrbitPerAtom_ + m;
-            Ftn_(w, n1*Norbit + m1) = value(n,m);
+            Ftn_.at(w) (n1, m1) = value(n,m);
         }
     }
 }
@@ -276,14 +284,14 @@ void ImgFreqFtn::setMatrix(int w, Eigen::MatrixXcd value ) {
 
     for (int n =0; n<Norbit; n++) {
         for (int m =0; m<Norbit; m++) {
-            Ftn_(w, n*Norbit + m) = value(n,m);
+            Ftn_.at(w)( n ,  m) = value(n,m);
         }
     }
 }
 
 
 void ImgFreqFtn::setValue(int w, int n, int m, cmplx value) {
-    Ftn_(w-startIndx_,n*Norbit+m)= value;
+    Ftn_.at(w-startIndx_)(n, m)= value;
 }
 
 void  ImgFreqFtn::dataOut(const std::string &filename) {
@@ -293,7 +301,7 @@ void  ImgFreqFtn::dataOut(const std::string &filename) {
         for(w=0; w<Nfreq_; w++) {
             fprintf(datap4, "%0.8f", imgFreq[w]);
             for(n=0; n< Norbit; n++) {
-                fprintf(datap4, "     %0.10f  %0.10f", real(Ftn_(w,n*Norbit+n)), imag(Ftn_(w,n*Norbit+n)));
+                fprintf(datap4, "     %0.10f  %0.10f", real(Ftn_.at(w)(n,n)), imag(Ftn_.at(w)(n,n)));
             }
             fprintf(datap4,"\n");
         }
@@ -318,17 +326,19 @@ void  ImgFreqFtn::dataOut_full(const std::string &filename) {
         for(w=0; w<Nfreq_; w++) {
             for(m=0; m< Norbit; m++) {
                 for(n=0; n< Norbit; n++) {
-                    if( std::abs(Ftn_(w,m*Norbit+n)) >tol)  fprintf(datap4, "%d %d %d %+0.8f %+0.8f\n",w,m,n,real(Ftn_(w,m*Norbit+n)), imag(Ftn_(w,m*Norbit+n)));
+                    if( std::abs(Ftn_.at(w)(m,n)) >tol)  fprintf(datap4, "%d %d %d %+0.8f %+0.8f\n",w,m,n,
+                                real(Ftn_.at(w)(m,n)),
+                                imag(Ftn_.at(w)(m,n)));
                 }//n
             }//m
         }//w
         for(m=0; m< Norbit; m++) {
             for(n=0; n< Norbit; n++) {
-                fprintf(datap4, "-1 %d %d %+0.8f %+0.8f\n",m,n,real(Ftn_(Nfreq_+0,m*Norbit+n)), imag(Ftn_(Nfreq_+0,m*Norbit+n)));
-                fprintf(datap4, "-2 %d %d %+0.8f %+0.8f\n",m,n,real(Ftn_(Nfreq_+1,m*Norbit+n)), imag(Ftn_(Nfreq_+1,m*Norbit+n)));
-                fprintf(datap4, "-3 %d %d %+0.8f %+0.8f\n",m,n,real(Ftn_(Nfreq_+2,m*Norbit+n)), imag(Ftn_(Nfreq_+2,m*Norbit+n)));
-                fprintf(datap4, "-4 %d %d %+0.8f %+0.8f\n",m,n,real(Ftn_(Nfreq_+3,m*Norbit+n)), imag(Ftn_(Nfreq_+3,m*Norbit+n)));
-                fprintf(datap4, "-5 %d %d %+0.8f %+0.8f\n",m,n,real(Ftn_(Nfreq_+4,m*Norbit+n)), imag(Ftn_(Nfreq_+4,m*Norbit+n)));
+                fprintf(datap4, "-1 %d %d %+0.8f %+0.8f\n",m,n,real(Ftn_.at(Nfreq_+0)(m,n)), imag(Ftn_.at(Nfreq_+0)(m,n)));
+                fprintf(datap4, "-2 %d %d %+0.8f %+0.8f\n",m,n,real(Ftn_.at(Nfreq_+1)(m,n)), imag(Ftn_.at(Nfreq_+1)(m,n)));
+                fprintf(datap4, "-3 %d %d %+0.8f %+0.8f\n",m,n,real(Ftn_.at(Nfreq_+2)(m,n)), imag(Ftn_.at(Nfreq_+2)(m,n)));
+                fprintf(datap4, "-4 %d %d %+0.8f %+0.8f\n",m,n,real(Ftn_.at(Nfreq_+3)(m,n)), imag(Ftn_.at(Nfreq_+3)(m,n)));
+                fprintf(datap4, "-5 %d %d %+0.8f %+0.8f\n",m,n,real(Ftn_.at(Nfreq_+4)(m,n)), imag(Ftn_.at(Nfreq_+4)(m,n)));
             }//n
         }//m
         fclose(datap4);
@@ -347,7 +357,9 @@ void  ImgFreqFtn::dataOut_full_pararell(const std::string &filename) {
             for (int w=0; w< Nfreq_; w++) {
                 for(int m=0; m< Norbit; m++) {
                     for(int n=0; n< Norbit; n++) {
-                        if( std::abs(Ftn_(w,m*Norbit+n)) >tol)  fprintf(datap1, "%d %d %d %+0.8f %+0.8f\n", w+startIndx_, m, n, real(Ftn_(w,m*Norbit+n)), imag(Ftn_(w,m*Norbit+n)));
+                        if( std::abs(Ftn_.at(w)(m,n)) >tol)  fprintf(datap1, "%d %d %d %+0.8f %+0.8f\n", w+startIndx_, m, n,
+                                    real(Ftn_.at(w)(m,n)),
+                                    imag(Ftn_.at(w)(m,n)));
                     }//n
                 }//m
             }//w
@@ -542,7 +554,7 @@ void ImgFreqFtn::update(ImgFreqFtn & FtnOut_c, double mixing, int updateSite, in
         FtnOutM[w].setZero(dim,dim);
         for(int n=0; n < dim; n++) {
             for(int m=0; m < dim; m++) {
-                FtnOutM[w](n,m)=FtnOut_c.Ftn_(w,n*dim+m);
+                FtnOutM[w](n,m)=FtnOut_c.Ftn_.at(w)(n,m);
             }
         }
     }//w
@@ -554,7 +566,7 @@ void ImgFreqFtn::update(ImgFreqFtn & FtnOut_c, double mixing, int updateSite, in
                 for(int m=0; m < dim; m++) {
                     int n1 = updateSite *  NSpinOrbitPerAtom_ + n;
                     int m1 = updateSite *  NSpinOrbitPerAtom_ + m;
-                    Ftn_(w,n1*Norbit+m1) = (1-mixing) * Ftn_(w,n1*Norbit+m1) + mixing * (FtnOutM[w](n,m));
+                    Ftn_.at(w)(n1,m1) = (1-mixing) * Ftn_.at(w)(n1,m1) + mixing * (FtnOutM[w](n,m));
                 }
             }
         }
@@ -569,7 +581,7 @@ void ImgFreqFtn::update(Eigen::MatrixXcd *  FtnOutM, double mixing, int mixingTy
         for (int w=0; w < Nfreq_; w++ ) {
             for(int n=0; n < Norbit; n++) {
                 for(int m=0; m < Norbit; m++) {
-                    Ftn_(w,n*Norbit+m) = (1-mixing) * Ftn_(w,n*Norbit+m) + mixing * (FtnOutM[w](n,m));
+                    Ftn_.at(w)(n,+m) = (1-mixing) * Ftn_.at(w)(n,m) + mixing * (FtnOutM[w](n,m));
                 }
             }
         }
@@ -609,7 +621,7 @@ void ImgFreqFtn::update_full(const std::string &filename, double mixing) {
         fscanf(dataIN, "%d %d %d %lf %lf\n",&w,&m,&n,&Retemp, &Imtemp);
         if(n<0 or m<0 or n>=Norbit or m>=Norbit) exit(1);
 //        if(w-startIndx_< Nfreq_ and 0 <= w-startIndx_ ) Ftn_(w-startIndx_, m*Norbit+n) =  -0.0 -I*0.1;
-        if(w-startIndx_< Nfreq_ and 0 <= w-startIndx_ ) Ftn_(w-startIndx_, m*Norbit+n) =  Retemp + I* Imtemp;
+        if(w-startIndx_< Nfreq_ and 0 <= w-startIndx_ ) Ftn_.at(w-startIndx_)( m,n) =  Retemp + I* Imtemp;
         if (wmax < w) wmax=w;
     }//while
     fclose(dataIN);
@@ -676,7 +688,7 @@ void ImgFreqFtn::read_full(const std::string &filename,double beta, double beta_
         if(this_matsubara <= matsubara.at(0) ) {
             for(int m=0; m < Norbit; m++) {
                 for(int n=0; n < Norbit; n++) {
-                    Ftn_(w,m*Norbit+n)  = (Swread[1](m,n)-Swread[0](m,n))/(2*pi/beta_prev) *(this_matsubara - matsubara[0])  + Swread[0](m,n);
+                    Ftn_.at(w)(m,n)  = (Swread[1](m,n)-Swread[0](m,n))/(2*pi/beta_prev) *(this_matsubara - matsubara[0])  + Swread[0](m,n);
                 }
             }
         }
@@ -685,7 +697,7 @@ void ImgFreqFtn::read_full(const std::string &filename,double beta, double beta_
                 if( matsubara.at(wprime) < this_matsubara and this_matsubara <= matsubara.at(wprime+1)) {
                     for(int m=0; m < Norbit; m++) {
                         for(int n=0; n < Norbit; n++) {
-                            Ftn_(w,m*Norbit+n)  = (Swread[wprime+1](m,n)-Swread[wprime](m,n))/(2*pi/beta_prev) *(this_matsubara - matsubara.at(wprime))  + Swread[wprime](m,n);
+                            Ftn_.at(w)(m,n)        = (Swread[wprime+1](m,n)-Swread[wprime](m,n))/(2*pi/beta_prev) *(this_matsubara - matsubara.at(wprime))  + Swread[wprime](m,n);
                         }
                     }
                     break;
@@ -700,7 +712,7 @@ void ImgFreqFtn::read_full(const std::string &filename,double beta, double beta_
             Eigen::MatrixXcd ImagSw = (Swread[wmax-1]-Swread[wmax-1].adjoint())/(2.0*I);
             for(int m=0; m < Norbit; m++) {
                 for(int n=0; n < Norbit; n++) {
-                    Ftn_(w,m*Norbit+n)= RealSw(m,n) + (matsubara[wmax-1]*ImagSw/(this_matsubara))(m,n);
+                    Ftn_.at(w)(m,n)    = RealSw(m,n) + (matsubara[wmax-1]*ImagSw/(this_matsubara))(m,n);
                 }
             }
         }
@@ -712,9 +724,33 @@ void ImgFreqFtn::read_full(const std::string &filename,double beta, double beta_
 
 
 void ImgFreqFtn::mpiBcast(int root, MPI_Comm comm) {
+
+    Eigen::MatrixXcd Ftn_for_mpi;
+    Ftn_for_mpi.setZero(Nfreq_+5, (Norbit)* (Norbit));
+    for(int w=0; w<Nfreq_+5; w++) {
+        for (int n =0; n<Norbit; n++) {
+            for (int m =0; m<Norbit; m++) {
+                Ftn_for_mpi(w,n*Norbit+m) = Ftn_.at(w)(n,m);
+            }
+        }
+    }
+
+
     MPI_Bcast(imgFreq , Nfreq_, MPI_DOUBLE, root, comm);
-    MPI_Bcast(Ftn_.data(), Ftn_.size(), MPI_DOUBLE_COMPLEX, root, comm);
     MPI_Bcast(&startIndx_,1, MPI_INT, root, comm);
+
+    MPI_Bcast(Ftn_for_mpi.data(), Ftn_for_mpi.size(), MPI_DOUBLE_COMPLEX, root, comm);
+    for(int w=0; w<Nfreq_+5; w++) {
+        for (int n =0; n<Norbit; n++) {
+            for (int m =0; m<Norbit; m++) {
+                Ftn_.at(w)(n,m) = Ftn_for_mpi(w,n*Norbit+m);
+            }
+        }
+    }
+
+
+
+
 }
 
 
