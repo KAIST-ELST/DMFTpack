@@ -198,8 +198,8 @@ void get_NAO_transfrom( Eigen::MatrixXcd & Sk, Eigen::MatrixXcd &  KS_evec_k,
 //output:  weightMatrix_tilde
 
     Eigen::MatrixXcd weightMatrix_tilde = weightMatrix_diag;
-    bool constrainedNAOs   =  true;
-//    bool constrainedNAOs   =  false;
+//    bool constrainedNAOs   =  true;
+    bool constrainedNAOs   =  false;
     if(constrainedNAOs == true) {
         Eigen::MatrixXd Pwbar, Pc;
         Eigen::MatrixXcd c_Pwbar_cinv;
@@ -239,7 +239,6 @@ void get_NAO_transfrom( Eigen::MatrixXcd & Sk, Eigen::MatrixXcd &  KS_evec_k,
         Eigen::MatrixXcd H_pHp_inv = H*(Pc*H_diag_inv*Pc);
         Eigen::MatrixXcd  H_pHp_inv_out ;
         pulayMixing mixing_weight_matrix(3, 20, 1, NumOrbit, NumOrbit, true );
-//        std::cout <<"NBAND: " <<  NBAND[kpoint] <<"\n";
         do {
 
 //

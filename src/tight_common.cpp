@@ -141,7 +141,7 @@ void read_inputFile(const std::string &hamiltonian) {
     maxDmftIt    =read_int(std::string("input.parm"), std::string("MAX_DMFT_ITER"),20);
     restart =     read_int(std::string("input.parm"), std::string("RESTART"),-1)  ;
     mixing =      read_double(std::string("input.parm"), std::string("MIXING"), true , 0.8 )  ;
-    mixingFtn =  read_int(std::string("input.parm"), std::string("MIXING_FUNCTION"),1)  ;    //0=hyb,  [1=self-energy]
+    mixingFtn =  read_int(std::string("input.parm"), std::string("MIXING_FUNCTION"),1)  ;    //0=hybridization,  [1=self-energy]
 
 
     /*solver option*/
