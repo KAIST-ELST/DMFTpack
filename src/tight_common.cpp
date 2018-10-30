@@ -15,7 +15,7 @@
 Eigen::Vector3d cross_product(Eigen::Vector3d a, Eigen::Vector3d b) {
     Eigen::Vector3d c;
     c(0) =   a(1)*b(2)-a(2)*b(1);
-    c(1) = -(a(2)*b(0)-a(0)*b(2));
+    c(1) =   a(2)*b(0)-a(0)*b(2);
     c(2) =   a(0)*b(1)-a(1)*b(0);
     return c;
 }
@@ -129,7 +129,7 @@ void read_inputFile(const std::string &hamiltonian) {
 //ED outdated
 //input var. with  dependence
 
-    infinitesimal  = read_double(std::string("input.parm"), std::string("Infinitesimal"), true , 0.1)  ; //NOTE : EWIN / Spectral_E should be smaller than infinitesimal
+    infinitesimal  = read_double(std::string("input.parm"), std::string("Infinitesimal"), true , 0.05)  ; //NOTE : EWIN / Spectral_E should be smaller than infinitesimal
     Spectral_EnergyGrid             = read_double(std::string("input.parm"), std::string("SPECTRAL_ENERGY_GRID"), true , 1000) ;
 
 
@@ -141,7 +141,7 @@ void read_inputFile(const std::string &hamiltonian) {
     maxDmftIt    =read_int(std::string("input.parm"), std::string("MAX_DMFT_ITER"),20);
     restart =     read_int(std::string("input.parm"), std::string("RESTART"),-1)  ;
     mixing =      read_double(std::string("input.parm"), std::string("MIXING"), true , 0.8 )  ;
-    mixingFtn =  read_int(std::string("input.parm"), std::string("MIXING_FUNCTION"),1)  ;    //0=hyb,  [1=self-energy]
+    mixingFtn =  read_int(std::string("input.parm"), std::string("MIXING_FUNCTION"),1)  ;    //0=hybridization,  [1=self-energy]
 
 
     /*solver option*/
@@ -454,21 +454,23 @@ void read_inputFile(const std::string &hamiltonian) {
             Eigen::Vector3d UnitVector_a1(Rn[0] , Rn[1] ,Rn[2]);
             Eigen::Vector3d UnitVector_a2(Rn[3] , Rn[4] ,Rn[5]);
             Eigen::Vector3d UnitVector_a3(Rn[6] , Rn[7] ,Rn[8]);
-//            UnitVector_a1<<Rn[0] << Rn[1] << Rn[2];
-//            UnitVector_a2<<Rn[3] << Rn[4] << Rn[5];
-//            UnitVector_a3<<Rn[6] << Rn[7] << Rn[8];
+            ifroot std::cout <<"lattice vectors: "
+                             << UnitVector_a1<<"\n"
+                             << UnitVector_a2<<"\n"
+                             << UnitVector_a3<<"\n";
             Eigen::Vector3d temp =  cross_product(UnitVector_a2, UnitVector_a3);
             double volume = std::abs(UnitVector_a1.dot( temp));
+
             Eigen::Vector3d temp1 =  cross_product(UnitVector_a2, UnitVector_a3);
             Eigen::Vector3d temp2 =  cross_product(UnitVector_a3, UnitVector_a1);
             Eigen::Vector3d temp3 =  cross_product(UnitVector_a1, UnitVector_a2);
             RecipUnitVector_b1 = 2*pi * temp1 /volume;
             RecipUnitVector_b2 = 2*pi * temp2 /volume;
             RecipUnitVector_b3 = 2*pi * temp3 /volume;
-            //double volume = std::abs(UnitVector_a1.dot( UnitVector_a2.cross(UnitVector_a3)));
-            //RecipUnitVector_b1 = 2*pi * UnitVector_a2.cross(UnitVector_a3) /volume;
-            //RecipUnitVector_b2 = 2*pi * UnitVector_a3.cross(UnitVector_a1) /volume;
-            //RecipUnitVector_b3 = 2*pi * UnitVector_a1.cross(UnitVector_a2) /volume;
+            ifroot std::cout <<"Reciprocal vectors: "
+                             << RecipUnitVector_b1<<"\n"
+                             << RecipUnitVector_b2<<"\n"
+                             << RecipUnitVector_b3<<"\n";
         }
         mu_adjust = 0;                                                                      //chemical pot. is given by previous DMFT cal
         mixingType=0;

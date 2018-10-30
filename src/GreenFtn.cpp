@@ -67,7 +67,7 @@ double GreenFtn_w_adjust_mu( std::vector<Eigen::MatrixXcd> &   H_k_inModelSpace,
     time_t timeStartGreen, timeEndGreen;
     timeStartGreen = clock();
     ifroot printf(" Adjusting Chemical Potential...\n");
-    int i,j,k,l,m,n,tau;
+//    int i,j,k,l,m,n,tau;
     cmplx *** eigenVal = new cmplx ** [N_freq*highFreq2+1];
     for (int n=0; n<N_freq*highFreq2+1; n++) {
         eigenVal[n] = new cmplx * [knum];
@@ -182,8 +182,8 @@ void GreenFtn_w(  int NumCorrAtom, int N_peratom_HartrOrbit, std::vector<Eigen::
     time_t timeStart, timeEnd;
     ifroot std::cout << "To invert low-evergy model matrix, "<<knum*N_freq*highFreq2*NumSubSpace << "times...:\n";
     timeStart=clock();
-    Eigen::MatrixXcd staticHamiltonian_Model[knum];
-    Eigen::VectorXcd static_ev[knum];
+    Eigen::MatrixXcd * staticHamiltonian_Model= new Eigen::MatrixXcd [knum];
+    Eigen::VectorXcd * static_ev              = new Eigen::VectorXcd [knum];
     /*Gkw0*/
 
 
@@ -332,7 +332,13 @@ void GreenFtn_w(  int NumCorrAtom, int N_peratom_HartrOrbit, std::vector<Eigen::
                 NumMat_loc(l0,m0) += occtemp(ll0,mm0);
             }
         }
-    }
+    }//k
+    delete [] staticHamiltonian_Model;
+    delete [] static_ev;
+
+
+
+
     for(int l0=0; l0<NumCorrAtom*N_peratom_HartrOrbit; l0++) {
         for(int m0=0; m0<NumCorrAtom*N_peratom_HartrOrbit; m0++) {
             NumMat_loc(l0,m0) /=  knum_mpiGlobal ;
@@ -369,6 +375,9 @@ void GreenFtn_w(  int NumCorrAtom, int N_peratom_HartrOrbit, std::vector<Eigen::
             }
         }
     }
+
+
+
     ifroot {
         for(int ATOM=0 ; ATOM < NumCorrAtom; ATOM++) {
             std::stringstream ss;
@@ -507,7 +516,7 @@ double GiwToNele (double muTB, ImgFreqFtn & SelfE_w, cmplx *** eigenVal, int pre
         timeStart=clock();
         for(int k=0; k<knum; k++) {
             for(int n=0; n<N_freq*highFreq2; n++) {
-                cmplx model_qp_hamiltonian[NBAND[k] * NBAND[k] ];
+                std::vector<cmplx > model_qp_hamiltonian(NBAND[k] * NBAND[k] );
                 for(int i1=0; i1<NBAND[k]; i1++) {
                     for(int m1=0; m1<NBAND[k]; m1++) {
                         model_qp_hamiltonian[i1* NBAND[k] +    m1] = 0;
@@ -539,7 +548,7 @@ double GiwToNele (double muTB, ImgFreqFtn & SelfE_w, cmplx *** eigenVal, int pre
         /*highFreq*/
         for(int k=0; k<knum; k++) {
             int n=N_freq*highFreq2;
-            cmplx model_qp_hamiltonian[  NBAND[k] * NBAND[k] ];
+            std::vector<cmplx > model_qp_hamiltonian(  NBAND[k] * NBAND[k] );
             for(int i1=0; i1<NBAND[k]; i1++) {
                 for(int m1=0; m1<NBAND[k]; m1++) {
                     model_qp_hamiltonian[i1* NBAND[k] +    m1] = 0;

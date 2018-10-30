@@ -10,51 +10,16 @@
 void  downfolding_ftn
 (
     int knum,  int knum_mpiGlobal,
-    std::vector<int> & NBAND,   std::vector<Eigen::MatrixXcd> &   H_k_inModelSpace,std::vector<Eigen::MatrixXcd> & KS_eigenVectors_orthoBasis, Eigen::VectorXd  * KS_eigenEnergy,
+    std::vector<int> & NBAND,   std::vector<Eigen::MatrixXcd> &   H_k_inModelSpace,
+    std::vector<Eigen::MatrixXcd> & KS_eigenVectors_orthoBasis, Eigen::VectorXd  * KS_eigenEnergy,
     double muDFT
 ) {
 
-    Eigen::VectorXd  HartreWeightInWindows_local;
-    Eigen::VectorXd  HartreWeightInWindows_global;
-    HartreWeightInWindows_local.setZero(N_peratom_HartrOrbit);
-    HartreWeightInWindows_global.setZero(N_peratom_HartrOrbit);
-    double  tempd2=0;
 
 
-    for(int k = 0;  k < knum; k++) {
-        if (downfolding==1) {
-            /*Check d-orbital character in  energy window*/
-            for (int m=0; m<N_peratom_HartrOrbit; m++) {
-                int m0 = HartrIndex_inDFT[m];
-                for (int i0=0; i0<NumOrbit; i0++) {
-                    tempd2 += std::pow(std::abs(KS_eigenVectors_orthoBasis[k](m0,i0)),2);
-                    if( (KS_eigenEnergy[k][i0]-muDFT) < lower_model_window or KS_eigenEnergy[k][i0]-muDFT > upper_model_window  ) {
-                        HartreWeightInWindows_local[m]+=std::pow(std::abs(KS_eigenVectors_orthoBasis[k](m0,i0)),2);
-                    }
-                }
-            }
-            NBAND[k] = 0;
-            for(int i=0; i<NumOrbit; i++) {
-                if(  lower_model_window < (KS_eigenEnergy[k][i]-muDFT) and (KS_eigenEnergy[k][i]-muDFT) <  upper_model_window  ) NBAND[k]++;
-            }
 
-            /*index for correlated (d-p) space */
-            FromValToKS.at(k).resize(NBAND[k]);
-            int i1=0;
-            for(int i=0; i<NumOrbit; i++) {
-                if(  lower_model_window < (KS_eigenEnergy[k][i]-muDFT) and (KS_eigenEnergy[k][i]-muDFT) <  upper_model_window  ) {
-                    FromValToKS.at(k).at(i1) = i;
-                    i1++;
-                }
-            }
-            assert ( NBAND[k] != 0) ;
-            assert ( i1 == NBAND[k]);
-            if(mpi_rank==0 and k==0) std::cout << "<down-folding> NBAND at k=0 is " <<  NBAND[0] <<"\n";
-            if(NBAND[k] < N_peratom_HartrOrbit*NumCorrAtom) {
-                std::cout << "NBAND at rank " <<mpi_rank <<"k-point: " << k <<" = " << NBAND[k] <<"\n";
-                exit(1);
-            }
-
+    if (downfolding==1) {
+        for(int k = 0;  k < knum; k++) {
             /*project out rest space ;*/
             /*d-orbital space extraction*/
             Eigen::MatrixXcd  S_overlap_dSpace;
@@ -89,7 +54,7 @@ void  downfolding_ftn
                 }
             }
 
-            if(mpi_rank==0 and k==0) std::cout << "We have model projected-legand orbital\n";
+            if(mpi_rank==0 and k==0) std::cout << "We have model projected-ligand orbital\n";
 
             H_k_inModelSpace[k].setZero(NBAND[k],NBAND[k]);
             for (int i=0; i<NBAND[k]; i++) H_k_inModelSpace[k](i,i) = KS_eigenEnergy[k][FromValToKS[k][i]];
@@ -97,20 +62,7 @@ void  downfolding_ftn
             H_k_inModelSpace[k]          = DF_CorrBase[k] * H_k_inModelSpace[k] * DF_CorrBase[k].adjoint();
 
             if(mpi_rank==0 and k==0)   std::cout << "ConstructModel: downfolding done\n";
-
-        }/*downfolding*/
-        else {
-            /* No downfolding, */
-            FromValToKS.at(k).resize(NumOrbit);
-            if(mpi_rank==0 and k==0 ) std::cout << "no downfolding\n";
-            NBAND[k] = NumOrbit;
-            for(int i=0; i<NumOrbit; i++) {
-                FromValToKS[k][i] = i;
-            }
-        }
-    }/*downfolding,k*/
-
-    if(downfolding==1)  {
+        }//k
         std::vector<int>  HartreeOrbital_idx(NumCorrAtom * 2);
         for(int i=0; i<NumCorrAtom; i++) {
             HartreeOrbital_idx[i*2+0] = N_peratom_HartrOrbit*i;
@@ -122,15 +74,8 @@ void  downfolding_ftn
         }
         // HartrRange was modified here.
         setCorrelatedSpaceIndex(HartreeOrbital_idx, NumCorrAtom);
-    }
-    double tempd2GL=0;
-    MPI_Allreduce(&tempd2, &tempd2GL, 1, MPI_DOUBLE, MPI_SUM,  MPI_COMM_WORLD);
-    ifroot std::cout << "d-orbital normalization       : "  << tempd2GL/(knum_mpiGlobal*N_peratom_HartrOrbit)<<"\n";
+    }/*downfolding*/
 
-    MPI_Allreduce(HartreWeightInWindows_local.data() , HartreWeightInWindows_global.data(), HartreWeightInWindows_global.size(), MPI_DOUBLE, MPI_SUM,  MPI_COMM_WORLD);
-    for (int m=0; m<N_peratom_HartrOrbit; m++) {
-        ifroot std::cout << "d-orbital in rest energy space: "  << HartreWeightInWindows_global[m] /(knum_mpiGlobal) <<"\n";
-    }
 
 
 
@@ -188,4 +133,79 @@ void  downfolding_ftn
     for(int at=0; at<NumCorrAtom; at++) {
         ifroot std::cout << std::fixed << std::setprecision(4)<< (impurity_site_Hamiltonian[at])  <<"\n";
     }
+}
+
+
+
+
+
+
+
+void low_energy_subspace_in_KS_basis(
+    int knum,  int knum_mpiGlobal,
+    std::vector<int> & NBAND,  std::vector<std::vector<int> >  & FromValToKS,double muDFT,
+    std::vector<Eigen::MatrixXcd> & KS_eigenVectors_orthoBasis, Eigen::VectorXd  * KS_eigenEnergy
+) {
+    /*Find NBAND and FromValToKS with given KS_eigenEnergy and muDFT*/
+    ///////////////////////////////////////////////////////////////////
+//    double  tempd2=0;
+//    Eigen::VectorXd  HartreWeightInWindows_local;
+//    HartreWeightInWindows_local.setZero(N_peratom_HartrOrbit);
+//    Eigen::VectorXd  HartreWeightInWindows_global;
+//    HartreWeightInWindows_global.setZero(N_peratom_HartrOrbit);
+
+    for(int k=0; k< knum ; k++) {
+
+        if (downfolding==1) {
+            /*Check d-orbital character in  energy window*/
+//            for (int m=0; m<N_peratom_HartrOrbit; m++) {
+//                int m0 = HartrIndex_inDFT[m];
+//                for (int i0=0; i0<NumOrbit; i0++) {
+//                    tempd2 += std::pow(std::abs(KS_eigenVectors_orthoBasis[k](m0,i0)),2);
+//                    if( (KS_eigenEnergy[k][i0]-muDFT) < lower_model_window or KS_eigenEnergy[k][i0]-muDFT > upper_model_window  ) {
+//                        HartreWeightInWindows_local[m]+=std::pow(std::abs(KS_eigenVectors_orthoBasis[k](m0,i0)),2);
+//                    }
+//                }
+//            }
+            NBAND[k] = 0;
+            for(int i=0; i<NumOrbit; i++) {
+                if(  lower_model_window < (KS_eigenEnergy[k][i]-muDFT) and (KS_eigenEnergy[k][i]-muDFT) <  upper_model_window  ) NBAND[k]++;
+            }
+
+            /*index for correlated (d-p) space */
+            FromValToKS.at(k).resize(NBAND[k]);
+            int i1=0;
+            for(int i=0; i<NumOrbit; i++) {
+                if(  lower_model_window < (KS_eigenEnergy[k][i]-muDFT) and (KS_eigenEnergy[k][i]-muDFT) <  upper_model_window  ) {
+                    FromValToKS.at(k).at(i1) = i;
+                    i1++;
+                }
+            }
+            assert ( NBAND[k] != 0) ;
+            assert ( i1 == NBAND[k]);
+            if(mpi_rank==0 and k==0) std::cout << "<down-folding> NBAND at k=0 is " <<  NBAND[0] <<"\n";
+            if(NBAND[k] < N_peratom_HartrOrbit*NumCorrAtom) {
+                std::cout << "NBAND at rank " <<mpi_rank <<"k-point: " << k <<" = " << NBAND[k] <<"\n";
+                exit(1);
+            }
+        }
+        else {
+            /* No downfolding, */
+            FromValToKS.at(k).resize(NumOrbit);
+            if(mpi_rank==0 and k==0 ) std::cout << "no downfolding\n";
+            NBAND[k] = NumOrbit;
+            for(int i=0; i<NumOrbit; i++) {
+                FromValToKS[k][i] = i;
+            }
+        }
+    }//k
+//    double tempd2GL=0;
+//    MPI_Allreduce(&tempd2, &tempd2GL, 1, MPI_DOUBLE, MPI_SUM,  MPI_COMM_WORLD);
+//    ifroot std::cout << "d-orbital normalization       : "  << tempd2GL/(knum_mpiGlobal*N_peratom_HartrOrbit)<<"\n";
+//    MPI_Allreduce(HartreWeightInWindows_local.data() , HartreWeightInWindows_global.data(), HartreWeightInWindows_global.size(), MPI_DOUBLE, MPI_SUM,  MPI_COMM_WORLD);
+//    for (int m=0; m<N_peratom_HartrOrbit; m++) {
+//        ifroot std::cout << "d-orbital in rest energy space: "  << HartreWeightInWindows_global[m] /(knum_mpiGlobal) <<"\n";
+//    }
+
+    ///////////////////////////////////////////////////////////////////
 }

@@ -53,12 +53,14 @@ public:
     double                 getValue(int freq_indx);
     Eigen::MatrixXcd       getMatrix(int w) ;
     Eigen::MatrixXcd       getMatrix(int w,int site) ;
+std::vector<Eigen::MatrixXcd> getFtn_data();
     void    setMatrix(int w, Eigen::MatrixXcd value ) ;
     void    setMatrix(int w, int site,  Eigen::MatrixXcd value ) ;
     void    setValue(int freq_indx, int orbit1, int orbit2,  std::complex<double> value);
 
     void    read_diag  (const std::string &filename );
     void    read_uppertrian  (const std::string &filename );
+    void    update  (ImgFreqFtn & rhs, double mixing) ;
     void    update  (ImgFreqFtn & FtnOut_c,           double mixing, int updateSite,  int mixingType  ) ;
     void    update  (Eigen::MatrixXcd * FtnOutM,      double mixing,                  int mixingType  ) ;
     void    update_full  (const std::string &filename, double mixing);
@@ -73,12 +75,11 @@ void read_full(const std::string &filename,double beta, double beta_prev) ;
 void estimate_asymto(int order);
 
 private:
-    Eigen::MatrixXcd Ftn_;
+    std::vector<Eigen::MatrixXcd> Ftn_;
     double *imgFreq;
     int *MEMCHECK;
     int mixingType_;
     int startIndx_;
-
 
     /*broyden_mixing options*/
 //int ftncount;

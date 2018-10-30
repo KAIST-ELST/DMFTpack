@@ -1,3 +1,7 @@
+#J.-H. Sim
+
+#How to use: qsband.plot.py  [band_num::Int]  [xtic_label1]  [2] ...
+
 import matplotlib.pyplot as plt
 import numpy as np
 import sys
@@ -11,9 +15,6 @@ numOf_K_point    = int( np.amax(data_raw[:,0]+1))
 numOf_w_point = int(data_raw.shape[0]/ numOf_K_point)
 
 
-lda_band_raw = np.loadtxt("band.dat")
-numOf_lda_K_point    = int( np.amax(lda_band_raw[:,0]+1))
-numOf_bands = int(lda_band_raw.shape[0] / numOf_lda_K_point)
 
 
 #data_raw[:,0:3]
@@ -21,8 +22,6 @@ numOf_bands = int(lda_band_raw.shape[0] / numOf_lda_K_point)
 print("k-grid:", numOf_K_point)
 print("w-grid:", numOf_w_point)
 
-print("k-grid_lda  :", numOf_lda_K_point)
-print("num_of_Bands:", numOf_bands)
 
 
 k_grid = np.zeros(numOf_K_point)
@@ -67,17 +66,27 @@ plt.colorbar()
 
 
 
-###LDA BAND
-ax=fig.add_subplot(111)
-lda_band_disper = np.zeros((numOf_lda_K_point, numOf_bands))
-lda_k_grid = np.zeros(numOf_lda_K_point)
-for k in range(numOf_lda_K_point):
-    lda_k_grid[k] = lda_band_raw[k][1]
-    for w in range(numOf_bands):
-        lda_band_disper[k][w] = lda_band_raw[w*numOf_lda_K_point+k][2]
-
-ax.plot(lda_k_grid,lda_band_disper,c='k',ls='-',linewidth="0.5")
-
+##################################################################
+####LDA BAND
+#lda_band_raw = np.loadtxt("band.dat")
+#numOf_lda_K_point    = int( np.amax(lda_band_raw[:,0]+1))
+#numOf_bands = int(lda_band_raw.shape[0] / numOf_lda_K_point)
+#
+#print("k-grid_lda  :", numOf_lda_K_point)
+#print("num_of_Bands:", numOf_bands)
+#
+#
+#ax=fig.add_subplot(111)
+#lda_band_disper = np.zeros((numOf_lda_K_point, numOf_bands))
+#lda_k_grid = np.zeros(numOf_lda_K_point)
+#for k in range(numOf_lda_K_point):
+#    lda_k_grid[k] = lda_band_raw[k][1]
+#    for w in range(numOf_bands):
+#        lda_band_disper[k][w] = lda_band_raw[w*numOf_lda_K_point+k][2]
+#
+#ax.plot(lda_k_grid,lda_band_disper,c='k',ls='-',linewidth="0.5")
+##################################################################
+#
 
 
 
@@ -87,9 +96,10 @@ ax.plot(lda_k_grid,lda_band_disper,c='k',ls='-',linewidth="0.5")
 plt.ylabel("Energy (eV)")
 if(len(sys.argv)>1):
   num_of_seg = int(sys.argv[1])
-  grid_per_seg = int(numOf_lda_K_point/num_of_seg)
+  grid_per_seg = int(numOf_K_point/num_of_seg)
   xtic_points =[k_grid[k] for k in np.arange(0,numOf_K_point,grid_per_seg)]
-  if(len(sys.argv)-2 == int(int(numOf_K_point)/int(sys.argv[1]))+1   ):
+#  if(len(sys.argv)-2 == int(int(numOf_K_point)/int(sys.argv[1]))+1   ):
+  if(len(sys.argv)-2 == int(sys.argv[1])+1   ):
     xtic_label = sys.argv[2:]
   else:
     xtic_label = np.arange(0,numOf_K_point, grid_per_seg)

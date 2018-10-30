@@ -329,7 +329,6 @@ void SecondOrderPerturbation  ( int solverDim,Eigen::MatrixXcd projimpurity_site
                    Fock,  Swimp_secondOrder ) ;
     }
     /*write result to NumMatrix and Sw*/
-//    getoccMat(Gwimp, occMatHF,solverDim);
     writeResults(projNumMatrix,  Swimp_secondOrder, Fock, Gwimp,   occMat0, SE_out, Gwimp_out, solverDim);
     MPI_Barrier(MPI_COMM_WORLD);
     delete []  Swimp_secondOrder ;

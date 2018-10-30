@@ -35,12 +35,6 @@ extern double *kdist_band;
 extern Eigen::MatrixXi H_Rindex;
 
 
-//void  ConstructModelHamiltonian
-//(
-//    int knum, int knum_mpiGlobal,   Eigen::MatrixXi  H_Rindex, Eigen::VectorXcd H_RMatrix, double ** kmesh, int * accumulated_Num_SpinOrbital, Eigen::MatrixXcd & Sw_Hartree,
-//    std::vector<int> &NBAND,   std::vector<Eigen::MatrixXcd> & H_k_inModelSpace,  std::vector<Eigen::MatrixXcd> & S_overlap,
-// std::vector<Eigen::MatrixXcd> & KS_eigenVectors_orthoBasis, std::vector<Eigen::MatrixXcd> & transformMatrix_k, Eigen::VectorXd  * KS_eigenEnergy, double muTB
-//);
 
 
 void Construct_hyb_delta(int impurityDim, std::vector<int> impurityOrbit,
@@ -62,6 +56,13 @@ void GreenFtn_w( int NumCorrAtom, int NSpinOrbit_per_atom,   std::vector<Eigen::
                ) ;
 //void retarded_GreenFtn( cmplx *retGkw , std::vector<Eigen::MatrixXcd> &   H_k_inModelSpace,  ImgFreqFtn & SE, double mu, int k, int n, int NumSubSpace) ;
 void retarded_GreenFtn2( Eigen::MatrixXcd &retGkw_full , Eigen::MatrixXcd & retGkw,  std::vector<Eigen::MatrixXcd> & H_k_inModelSpace, ImgFreqFtn & SE, double mu, int k, int n) ;
+
+
+void low_energy_subspace_in_KS_basis(
+    int knum,  int knum_mpiGlobal,    
+    std::vector<int> & NBAND,  std::vector<std::vector<int> >  & FromValToKS,  double muDFT,
+    std::vector<Eigen::MatrixXcd> & KS_eigenVectors_orthoBasis, Eigen::VectorXd  * KS_eigenEnergy
+) ;
  
 
 #endif

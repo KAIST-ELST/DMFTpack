@@ -33,7 +33,8 @@ void rewrite_retardedSw() {
             if(dataIN!=NULL) {
                 double freq_left =  0;
                 double freq_right ;
-                fscanf(dataIN,"%lf  %lf %lf\n",&freq_right ,&S_right_realPart, &S_right_imagPart);
+                fscanf(dataIN,"%lf  %lf %lf\n",
+                       &freq_right ,&S_right_realPart, &S_right_imagPart);
                 int k=0;
                 assert(ImS[orbital1][orbital2][Spectral_EnergyGrid] == magicNumber);
                 assert(ReS[orbital1][orbital2][Spectral_EnergyGrid] == magicNumber);
@@ -48,8 +49,6 @@ void rewrite_retardedSw() {
                 freq_left = freq_right;
                 S_left_realPart = S_right_realPart;
                 S_left_imagPart = S_right_imagPart;
-//                S_left_realPart = 0.0;
-//                S_left_imagPart = 0.01;
                 fscanf(dataIN,"%lf  %lf %lf\n",&freq_right ,&S_right_realPart, &S_right_imagPart);
 
                 while (!feof(dataIN) ) {
