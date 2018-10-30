@@ -238,13 +238,14 @@ double ImgFreqFtn::getValue( int w) {
     return imgFreq[w-startIndx_];
 }
 Eigen::MatrixXcd ImgFreqFtn::getMatrix(int w) {
-    Eigen::MatrixXcd result (Norbit, Norbit);
-    for (int n =0; n<Norbit; n++) {
-        for (int m =0; m<Norbit; m++) {
-            result(n,m) = Ftn_.at(w)(n, m);
-        }
-    }
-    return result;
+//    Eigen::MatrixXcd result (Norbit, Norbit);
+//    for (int n =0; n<Norbit; n++) {
+//        for (int m =0; m<Norbit; m++) {
+//            result(n,m) = Ftn_.at(w)(n, m);
+//        }
+//    }
+//    return result;
+    return Ftn_.at(w);
 }
 std::vector<Eigen::MatrixXcd>  ImgFreqFtn::getFtn_data() {
     return Ftn_;
@@ -282,11 +283,12 @@ void ImgFreqFtn::setMatrix(int w, Eigen::MatrixXcd value ) {
     if(Norbit != value.rows())
         exit(1);
 
-    for (int n =0; n<Norbit; n++) {
-        for (int m =0; m<Norbit; m++) {
-            Ftn_.at(w)( n ,  m) = value(n,m);
-        }
-    }
+    //for (int n =0; n<Norbit; n++) {
+    //    for (int m =0; m<Norbit; m++) {
+    //        Ftn_.at(w)( n ,  m) = value(n,m);
+    //    }
+    //}
+    Ftn_.at(w) = value;
 }
 
 
@@ -537,6 +539,27 @@ void ImgFreqFtn::read_diag(const std::string &filename) {
     DATA.close();
     ImgFreqFtn::update(FtnOutM,1,0);
     delete [] FtnOutM;
+}
+
+
+void ImgFreqFtn::update(ImgFreqFtn & rhs, double mixing) {
+    if(Nfreq_ == rhs.Nfreq_ and  Norbit == rhs.Norbit) {
+        for(int w=0; w<rhs.Nfreq_; w++) {
+            imgFreq[w] = rhs.imgFreq[w];
+            Ftn_.at(w)= (1-mixing)* Ftn_.at(w) + mixing* rhs.Ftn_.at(w);
+
+            for (int i=0; i<rhs.Norbit; i++) {
+                for (int j=0; j<rhs.Norbit; j++) {
+                    Ftn_.at(w)(i,j) = (1-mixing)* Ftn_.at(w)(i,j) + mixing* rhs.Ftn_.at(w)(i,j);
+                }
+            }
+        }
+    }
+    else
+    {
+        std::cout << "Error in update ImgFreq Ftns...\n";
+        exit(1);
+    }
 }
 
 

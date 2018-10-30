@@ -354,7 +354,7 @@ int main(int argc, char *argv[]) {
     ***************************************************/
     int currentIt =1;
 
-    pulayMixing mixing_self_energy(2, 10, N_freq, N_peratom_HartrOrbit*NumCorrAtom, N_peratom_HartrOrbit*NumCorrAtom, true );
+    pulayMixing mixing_self_energy(2, 5, N_freq, N_peratom_HartrOrbit*NumCorrAtom, N_peratom_HartrOrbit*NumCorrAtom, true );
     while(true) {
         Eigen::MatrixXcd NumMatrixImp;
         Eigen::MatrixXcd NumMatrixLatt;
@@ -387,6 +387,8 @@ int main(int argc, char *argv[]) {
         note : Self-energy = \Sigma_Hartree + \Simga_imp -\Simga_dc
         *************************************************************/
 
+        ImgFreqFtn SelfEnergy_w_out(0);
+        SelfEnergy_w_out.Initialize(         beta, N_freq,  N_peratom_HartrOrbit, NumCorrAtom, mixingType);
         for(int at=0; at < NumCorrAtom;  at++) {
             ifroot std::cout << "High-level solver for atom " << at <<"\n";
 
@@ -423,7 +425,7 @@ int main(int argc, char *argv[]) {
             ifroot std::cout <<"Run low level solver\n";
             /*Weakly correlated subspace in the impurity site*/
             SE_lowlevel.Initialize(beta     , N_freq, N_peratom_HartrOrbit,1,0);
-            if(N_peratom_HartrOrbit>NSpinOrbit_per_atom)
+            if(N_peratom_HartrOrbit>NSpinOrbit_per_atom) {
                 SOLVER(Lowlevel_SOLVERtype,            N_peratom_HartrOrbit, strongCorr, false,
                        SE_lowlevel,Gw_weak,
                        weiss_field_weakCorr ,at,
@@ -433,22 +435,19 @@ int main(int argc, char *argv[]) {
                        Uindex_stronglyCorr,Utensor_stronglyCorr,
                        dc_weakCorr, SE_strong  );
 
-
-
-
-
-//set dc_weakCorr
-            for (int n=0; n<N_freq+1; n++) {
-                for (int i=0; i<NSpinOrbit_per_atom; i++) {
-                    for (int j=0; j<NSpinOrbit_per_atom; j++) {
-                        int iF = CorrToHartr[at*NSpinOrbit_per_atom + i];
-                        int jF = CorrToHartr[at*NSpinOrbit_per_atom + j];
-                        dc_weakCorr[n](i,j) = SE_lowlevel.getValue(n,iF,jF)   ;
+                /*set dc_weakCorr*/
+                for (int n=0; n<N_freq+1; n++) {
+                    for (int i=0; i<NSpinOrbit_per_atom; i++) {
+                        for (int j=0; j<NSpinOrbit_per_atom; j++) {
+                            int iF = CorrToHartr[at*NSpinOrbit_per_atom + i];
+                            int jF = CorrToHartr[at*NSpinOrbit_per_atom + j];
+                            dc_weakCorr[n](i,j) = SE_lowlevel.getValue(n,iF,jF)   ;
+                        }
                     }
                 }
-            }
-            for (int n=0; n<N_freq; n++) {
-                dc_weakCorr[n] -= dc_weakCorr[N_freq];
+                for (int n=0; n<N_freq; n++) {
+                    dc_weakCorr[n] -= dc_weakCorr[N_freq];
+                }
             }
 
 
@@ -485,12 +484,9 @@ int main(int argc, char *argv[]) {
 
             /*combine all result (Sw_weak, Sw_strong, Sw_DFTdc)  to SE_out*/
             ImgFreqFtn SE_out(0);
-//            ImgFreqFtn SE_weak_out(0);
             SE_out.Initialize(         beta, N_freq,  N_peratom_HartrOrbit, 1, mixingType);
-//            SE_weak_out.Initialize(    beta, N_freq,  N_peratom_HartrOrbit, 1, mixingType);
 
             for (int n=0; n<N_freq+2; n++) {
-//                SE_weak_out.setMatrix(n, SE_lowlevel.getMatrix(n));
                 SE_out.setMatrix(n,SE_lowlevel.getMatrix(n));
                 for (int i=0; i<NSpinOrbit_per_atom; i++) {
                     for (int j=0; j<NSpinOrbit_per_atom; j++) {
@@ -505,7 +501,6 @@ int main(int argc, char *argv[]) {
 
             Gw_weak.dataOut_full((std::string("Gw_imp.full.dat")+ ss.str()) );
             Gw_weak.dataOut(std::string("Gw_imp.dat"+ss.str()));
-//            SE_weak_out.dataOut(std::string("Bare_Sw_low.dat") +intToString(at));
 
             SE_out.dataOut(std::string("Bare_Sw_SOLVER.dat") + intToString(at));
             ifroot std::cout << "FILEOUT:Bare_Sw_SOLVER.dat for atom" << at <<"\n" ;
@@ -516,21 +511,16 @@ int main(int argc, char *argv[]) {
                     SE_out.setMatrix(w,  SE_out.getMatrix(w) - Sw_doublecounting[at]  );
                 }
             }
-
-
-            if(mixingFtn==1)   {
-                mixing_self_energy.mixing ( &(SelfEnergy_w.getFtn_data()[0]), &(SE_out.getFtn_data()[0]), mixing, currentIt, 1);
-            }
-            SelfEnergy_w.update(     SE_out,   1,    at, 0 );
-
-
-
-//            if(mixingFtn==1)    SelfEnergy_w.update(     SE_out, mixing, at, 0 ); //self-energy_mixing
-//            else                SelfEnergy_w.update(     SE_out,   1,    at, 0 );
-//            if(mixingFtn==1)    SelfEnergy_w_weak.update(SE_weak_out, mixing, at, 0 ); //self-energy_mixing
-//            else                SelfEnergy_w_weak.update(SE_weak_out,   1,    at, 0 );
-
+            SelfEnergy_w_out.update(     SE_out,   1,    at, 0 );
         }//at, solver
+
+        if(mixingFtn==1)   {
+            mixing_self_energy.mixing ( SelfEnergy_w, SelfEnergy_w_out, mixing, currentIt, 1);
+            MPI_Barrier(MPI_COMM_WORLD);
+            SelfEnergy_w.update(SelfEnergy_w_out,1.0);
+        }
+
+
         SelfEnergy_w.dataOut_full(std::string("Sw_SOLVER.full.dat"));
         SelfEnergy_w.dataOut(std::string("Sw_SOLVER.dat"));
 
@@ -571,7 +561,7 @@ int main(int argc, char *argv[]) {
         }
         MPI_Barrier(MPI_COMM_WORLD);
         currentIt++;
-    }//dmft iterations
+    }// while, dmft iterations
 
 
 //    }/*charge density iterations*/

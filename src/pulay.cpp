@@ -164,6 +164,24 @@ void pulayMixing::mixing(Eigen::MatrixXcd  * inputDensity_n, Eigen::MatrixXcd * 
         }
     }
 }
+//void pulayMixing::mixing( std::vector<Eigen::MatrixXcd> & inputDensity_n, std::vector<Eigen::MatrixXcd>  & outputDensity_n, double  mixingPulay, int SCGFloop, int mixingStep) {
+void pulayMixing::mixing( ImgFreqFtn & inputDensity_n, ImgFreqFtn  & outputDensity_n, double  mixingPulay, int SCGFloop, int mixingStep) {
+    Eigen::MatrixXcd *  input = new Eigen::MatrixXcd [dim_i];
+    Eigen::MatrixXcd * output = new Eigen::MatrixXcd [dim_i];
+    for(int i=0; i<dim_i; i++) {
+        input[i] =   inputDensity_n.getMatrix(i);
+        output[i] = outputDensity_n.getMatrix(i);
+    }
+    mixing( input, output, mixingPulay, SCGFloop, mixingStep);
+    for(int i=0; i<dim_i; i++) {
+        inputDensity_n.setMatrix(i, input[i] );
+        outputDensity_n.setMatrix(i, output[i]);
+    }
+    delete [] input;
+    delete [] output;
+
+
+}
 
 
 void pulayMixing::mixing(Eigen::VectorXd  * inputDensity_n, Eigen::VectorXd * outputDensity_n, double  mixingPulay, int SCGFloop, int mixingStep) {

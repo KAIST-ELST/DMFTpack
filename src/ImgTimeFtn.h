@@ -60,6 +60,7 @@ std::vector<Eigen::MatrixXcd> getFtn_data();
 
     void    read_diag  (const std::string &filename );
     void    read_uppertrian  (const std::string &filename );
+    void    update  (ImgFreqFtn & rhs, double mixing) ;
     void    update  (ImgFreqFtn & FtnOut_c,           double mixing, int updateSite,  int mixingType  ) ;
     void    update  (Eigen::MatrixXcd * FtnOutM,      double mixing,                  int mixingType  ) ;
     void    update_full  (const std::string &filename, double mixing);

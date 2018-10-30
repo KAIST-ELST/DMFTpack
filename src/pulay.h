@@ -22,8 +22,10 @@ public:
     pulayMixing (int mixing_history_, int start_mixing_,int dim_i, int dim_j, int dim_k, bool parallel_pulay_ = false );
     ~pulayMixing ();
     void mixing(Eigen::MatrixXcd  * inputDensity_n, Eigen::MatrixXcd * outputDensity_n, double  mixingSCGF, int SCGFloop, int mixingStep) ;
-//    void my_mixing(Eigen::MatrixXcd  * inputDensity_n, Eigen::MatrixXcd * outputDensity_n, double  mixingSCGF, int SCGFloop, int mixingStep) ;
     void mixing(Eigen::VectorXd   * inputDensity_n, Eigen::VectorXd * outputDensity_n, double  mixingPulay, int SCGFloop, int mixingStep) ;
+void mixing( ImgFreqFtn & inputDensity_n, ImgFreqFtn  & outputDensity_n, double  mixingPulay, int SCGFloop, int mixingStep) ;
+//    void my_mixing(Eigen::MatrixXcd  * inputDensity_n, Eigen::MatrixXcd * outputDensity_n, double  mixingSCGF, int SCGFloop, int mixingStep) ;
+//void mixing( std::vector<Eigen::MatrixXcd>   inputDensity_n, std::vector<Eigen::MatrixXcd>  outputDensity_n, double  mixingPulay, int SCGFloop, int mixingStep) ;
 private:
     int mixing_history;
     int start_mixing;
