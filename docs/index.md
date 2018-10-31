@@ -7,7 +7,7 @@ DMFTpack is the software for DFT+DMFT calculation. Various projection methods an
 ## Requirements
 ### Impurity solver 
 
-* Hybridization expansion quantum Monte Carlo impurity solver:
+* (Optional) Hybridization expansion quantum Monte Carlo impurity solver:
   [To perform the CT-QMC solver, one of the following solvers should be installed: Otherwise, one can use the (SC) 2PT solver, which is implemented in the DMFTpack itself.]
   * Implemented in ALPS library
     [http://alps.comp-phys.org](http://alps.comp-phys.org)
