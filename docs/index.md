@@ -1,18 +1,18 @@
 ##### The software will be released soon. (Updated: 2018-10-19)
 # DMFTpack
 DMFTpack is the software for DFT+DMFT calculation. Various projection methods and the impurity solvers are available, e.g., iterative perturbation theory (IPT), self-consistent second-order perturbation theory (SC2PT), and CT-QMC. The interface connecting DFT package, e.g., OpenMX and impurity solvers is also provided.
-##### Developer: [Jae-Hoon Sim](https://sites.google.com/site/jhsim4279/)
+##### Developer: [Jae-Hoon Sim](https://sites.google.com/site/jhsim4279/) (email: jh_sim@kaist.ac.kr , jhsim4279@gmail.com)
 
 
 ## Requirements
 ### Impurity solver 
 
 * Hybridization expansion quantum Monte Carlo impurity solver:
-  (It is strongly recommended to install at least one of the following solvers.)
+  [To perform the CT-QMC solver, one of the following solvers should be installed: Otherwise, one can use the (SC) 2PT solver, which is implemented in the DMFTpack itself.]
   * Implemented in ALPS library
     [http://alps.comp-phys.org](http://alps.comp-phys.org)
   * Implemented by K. Haule at Rutgers University
-    [http://www.physics.rutgers.edu/~haule/](http://www.physics.rutgers.edu/~haule/)
+    [http://www.physics.rutgers.edu/~haule/](http://www.physics.rutgers.edu/~haule/) (See also to install impurity solver: [link](http://hauleweb.rutgers.edu/tutorials/Tutorial0.html)) 
 
 ### Eigen (>=3.3)
 * C++ template library for linear algebra: matrices, vectors, numerical solvers, and related algorithms. http://eigen.tuxfamily.org
