@@ -57,7 +57,8 @@ Eigen::VectorXi rot_sym;
 
 
 
-int  k_pointx, k_pointy, k_pointz,  k_grid=0, mu_adjust, NumHartrOrbit, NumCorrAtom,NumCluster, BraLatt_x,BraLatt_y,BraLatt_z, Measure_nn , NumAtom, NumOrbit;
+int  k_pointx, k_pointy, k_pointz,  k_grid=0, mu_adjust, NumHartrOrbit, NumCorrAtom, BraLatt_x,BraLatt_y,BraLatt_z, Measure_nn , NumAtom, NumOrbit;
+int NumAtom_per_cluster, NumCluster;
 int H0_from_OpenMX;
 //int  SOCCal,  interOrbitHop, currentIt=0, DFTIt=0;
 int  DFTIt=0;
@@ -177,7 +178,10 @@ void read_inputFile(const std::string &hamiltonian) {
         sleep(5);
 //        hamiltonian = std::string("Hk.HWR");
     }
+    NumAtom_per_cluster    =   read_int(std::string("input.parm"), std::string("N_ATOMS_IN_CLUSTER"),1)   ;   //total Num of atoms
     NumAtom          =   read_int(std::string("input.parm"), std::string("N_ATOMS"),-1)   ;   //total Num of atoms
+    NumCluster = NumAtom/ NumAtom_per_cluster;
+    NumHartrOrbit_per_cluster = N_peratom_HartrOrbit * NumAtom_per_cluster;
     NumCorrAtom      =   read_int(std::string("input.parm"), std::string("N_CORRELATED_ATOMS"),-1) ; //Num of atoms, which inlude correlated and/or HF orbitals
     NumCluster       =   read_int(std::string("input.parm"), std::string("N_Cluster"),NumCorrAtom) ; //Num of atoms, which inlude correlated and/or HF orbitals
     NumberOfElectron = read_double(std::string("input.parm"), std::string("N_ELECTRONS"), false , -1) ;   // Number of electron per unit cell = NumOrbit * FillingFactor
@@ -326,7 +330,7 @@ void read_inputFile(const std::string &hamiltonian) {
         FromOrbitalToAtom[ob]=i;
         FromOrbitalToLocalOrbital_DFT[ob]=ob-accumulated_Num_SpinOrbital_local[i];
     }
-    KS2Hartr       = new int    [NumOrbit];                         // LongRangeOrder[NumOrbit] < N_peratom_HartrOrbit
+    KS2Hartr       = new int    [NumOrbit];
     impurity_site_Hamiltonian.resize(NumCorrAtom);
 
     NumMatrix.setZero(N_peratom_HartrOrbit*NumCorrAtom, N_peratom_HartrOrbit*NumCorrAtom);
@@ -401,7 +405,6 @@ void read_inputFile(const std::string &hamiltonian) {
     HartrIndex_inDFT = new int [N_peratom_HartrOrbit    * NumCorrAtom];
     for(int i=0; i<NumOrbit; i++) {
         isOrbitalHartrDFT[i] = isOrbitalHartr[i];
-//        LongRangeOrder_DFT[i] = LongRangeOrder[i];
     }
     for(int at=0; at<NumCorrAtom; at++) {
         for (int i=0; i<N_peratom_HartrOrbit; i++) {
@@ -413,32 +416,49 @@ void read_inputFile(const std::string &hamiltonian) {
         HartrRange_DFT[i][1] = HartrRange[i][1];
     }
 
+    /*Construct Utensor */
+    std::vector<Eigen::VectorXi> Uindex_atom;
+    std::vector<cmplx > Utensor_atom;
     if (UHubb == -2 and Uprime ==-2 and JHund ==-2) {
-        read_Uijkl(   Utensor,  Uindex) ;
+        read_Uijkl(   Utensor_atom,  Uindex_atom) ;
     }
     else {
         if ( SOLVERtype.find(std::string("SEG")) != std::string::npos ) {
             ifroot std::cout << "gen_Uijkl_dd\n";
-            gen_Uijkl_density_density(N_peratom_HartrOrbit, UHubb, Uprime, JHund, Utensor, Uindex);
+            gen_Uijkl_density_density(N_peratom_HartrOrbit, UHubb, Uprime, JHund, Utensor_atom, Uindex_atom);
         }
-        else gen_Uijkl(N_peratom_HartrOrbit, UHubb, Uprime, JHund, Utensor, Uindex);
+        else gen_Uijkl(N_peratom_HartrOrbit, UHubb, Uprime, JHund, Utensor_atom, Uindex_atom);
     }
 
-    for(int idx1=0;  idx1 <  Utensor.size(); idx1++) {
-        if (    isOrbitalCorrinHart[Uindex[idx1](0)] and
-                isOrbitalCorrinHart[Uindex[idx1](1)] and
-                isOrbitalCorrinHart[Uindex[idx1](2)] and
-                isOrbitalCorrinHart[Uindex[idx1](3)] ) {
+
+    for(int  cl =0; cl < NumAtom_per_cluster; cl++) {
+        for(int idx1=0;  idx1 <  Utensor_atom.size(); idx1++) {
+            Eigen::VectorXi temp(4);
+            temp(0) = Uindex_atom[idx1](0)  + cl *N_peratom_HartrOrbit;
+            temp(1) = Uindex_atom[idx1](1)  + cl *N_peratom_HartrOrbit;
+            temp(2) = Uindex_atom[idx1](2)  + cl *N_peratom_HartrOrbit;
+            temp(3) = Uindex_atom[idx1](3)  + cl *N_peratom_HartrOrbit;
+            Uindex.push_back(temp);
+            Utensor.push_back(Utensor_atom[idx1]);
+        }
+    }
+
+    for(int idx1=0;  idx1 <  Utensor_atom.size(); idx1++) {
+        if (    isOrbitalCorrinHart[Uindex_atom[idx1](0)] and
+                isOrbitalCorrinHart[Uindex_atom[idx1](1)] and
+                isOrbitalCorrinHart[Uindex_atom[idx1](2)] and
+                isOrbitalCorrinHart[Uindex_atom[idx1](3)] ) {
 
             Eigen::VectorXi temp(4);
-            temp(0) = Hart2Corr[Uindex[idx1](0)];
-            temp(1) = Hart2Corr[Uindex[idx1](1)];
-            temp(2) = Hart2Corr[Uindex[idx1](2)];
-            temp(3) = Hart2Corr[Uindex[idx1](3)];
+            temp(0) = Hart2Corr[Uindex_atom[idx1](0)];
+            temp(1) = Hart2Corr[Uindex_atom[idx1](1)];
+            temp(2) = Hart2Corr[Uindex_atom[idx1](2)];
+            temp(3) = Hart2Corr[Uindex_atom[idx1](3)];
             Uindex_stronglyCorr.push_back(temp);
-            Utensor_stronglyCorr.push_back(Utensor[idx1]);
+            Utensor_stronglyCorr.push_back(Utensor_atom[idx1]);
         }
     }
+
     /*input dependency parameters*/
     if (SOLVERtype==std::string("TB")) {
         mode =      read_string(std::string("input.parm"), std::string("MODE"),false)  ; //dos, qsdos, band, qsband
@@ -475,11 +495,6 @@ void read_inputFile(const std::string &hamiltonian) {
         mu_adjust = 0;                                                                      //chemical pot. is given by previous DMFT cal
         mixingType=0;
     }
-
-
-
-
-
 }/*read input*/
 
 
@@ -514,9 +529,6 @@ void setCorrelatedSpaceIndex( std::vector<int> HartreeOrbital_idx , int NumCorrA
 //        LongRangeOrder_Hart[i]=i;
 //    }
 
-
-
-
 //    read_int_array(std::string("input.parm"), std::string("LongRangeOrder"),  LongRangeOrder_Hart,       N_peratom_HartrOrbit*NumCorrAtom,-2) ;
 //    for(int i=0; i<NumOrbit; i++) {
 //        LongRangeOrder[i] = 99999999;
@@ -531,7 +543,7 @@ void setCorrelatedSpaceIndex( std::vector<int> HartreeOrbital_idx , int NumCorrA
     }
 
 
-//Dynamical correlation space
+    //Dynamical correlation space
     std::vector<int> isOrbitalCorrinHart_vec(N_peratom_HartrOrbit*NumCorrAtom);
     for (int i=0; i<N_peratom_HartrOrbit*NumCorrAtom; i++) isOrbitalCorrinHart_vec[i] = 1;
     read_int_array(std::string("input.parm"), std::string("DYNAMIC_ORBITALS"),  isOrbitalCorrinHart_vec, N_peratom_HartrOrbit * NumCorrAtom, true, 1);
@@ -636,22 +648,27 @@ bool operator==( cmplx  a, int b)
 
 
 
+// basis:
+// default = truncated (low-energy) space = valence
 // DFT = (R,\alpha) index from DFT
-// KS  = band index from DFT
-//valence = dp space
+// KS  = band index from DFT = valence
+// valence = dp space ( = truncated space)
 
+
+//NSpinOrbit_per_atom   = # of Corr orbitals per atom
+//N_peratom_HartrOrbit  = # of Hartree orbitals per atom
 
 //isOrbitalHartr[NumOrbit]  = 1 for hartree, 0 else...
 //isOrbitalHartrDFT[NumOrbit]  = 1 for hartree, 0 else...
 //isOrbitalCorr[NumOrbit]
 //isOrbitalCorrinHart = new int [N_peratom_HartrOrbit *NumCorrAtom];
-//NSpinOrbit_per_atom   = # of Corr orbitals per atom
-//N_peratom_HartrOrbit  = # of Hartree orbitals per atom
+
+//KS2Hartr     = from KS to  Hartr
 //CorrIndex    = from corr     index to whole KS orbital index
 //HartrIndex   = from hartreee index to whole KS orbital index
+
 //CorrToHartr  = from corr to hartree
 //Hart2Corr
-//LongRangeOrder = From KS to Hartree
 //HartrRange
 //HartrRange_DFT
 

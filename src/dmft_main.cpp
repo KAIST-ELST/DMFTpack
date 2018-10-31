@@ -220,12 +220,7 @@ int main(int argc, char *argv[]) {
     Initial Self energy, double counting,  and Sw_inf and muTB
     *******************************************/
 
-    if( restart==0) {
-        /*Matsubara self-energy, S_w*/
-//        set_Hartree_self_energy(  NumMatrix,  Uindex,  Utensor,  SelfEnergy_w_weak   ) ;
-
-    }
-    else if(restart!=0) {
+    if(restart!=0) {
         /*occupation matrix*/
         std::ifstream  input(std::string("./Restart/Numele.dat").c_str());
         double reN, imN;
@@ -246,9 +241,6 @@ int main(int argc, char *argv[]) {
         std::ifstream inputbeta("./beta.dat");
         inputbeta >> beta_prev;
         if( N_peratom_HartrOrbit> 0) SelfEnergy_w.read_full(std::string("Sw_SOLVER.full.dat"),beta, beta_prev);
-//        if( N_peratom_HartrOrbit> 0) SelfEnergy_w_weak.read_full(std::string("Sw_SOLVER_weak.full.dat"),beta, beta_prev);
-//        ifroot std::cout <<"Reading double counting...\n";
-
 
         FILE * Chem = fopen("./Restart/mu_history.out","r");
         while(!feof(Chem)) {
@@ -454,10 +446,6 @@ int main(int argc, char *argv[]) {
                 }
             }
 
-
-
-
-
             //strong correlated subspace
             SE_strong.Initialize(beta     , N_freq, NSpinOrbit_per_atom,1,0);
             SOLVER(SOLVERtype,            NSpinOrbit_per_atom, strongCorr, true,
@@ -559,10 +547,6 @@ int main(int argc, char *argv[]) {
             std::cout << "DMFT: The DMFT calculation has reached convergence." << mpi_rank <<"\n" ;
             break;
         }
-//        else if(  (currentIt >=maxDmftIt/2 and DFTIt != 1) or (currentIt >=(maxDmftIt) and DFTIt == 1)   ) {
-//            ifroot std::cout <<"DMFT: The maximum number of iterations has been reached." << mpi_rank <<"\n";
-//            break;
-//        }
         MPI_Barrier(MPI_COMM_WORLD);
         currentIt++;
     }// while, dmft iterations
