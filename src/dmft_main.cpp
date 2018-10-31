@@ -365,6 +365,10 @@ int main(int argc, char *argv[]) {
         ifroot     std::cout <<"#########################################\n";
 
         on_the_fly_control();
+        if(  (currentIt >=maxDmftIt/2 and DFTIt != 1) or (currentIt >=(maxDmftIt) and DFTIt == 1)   ) {
+            ifroot std::cout <<"DMFT: The maximum number of iterations has been reached." << mpi_rank <<"\n";
+            break;
+        }
 
         if(mixingFtn==0 and currentIt != 1) {
             weiss_field_weakCorr.update(weiss_fieldTB_weakCorr,      mixing , 0, mixingType);  //alps, diag selfenergy update
@@ -555,10 +559,10 @@ int main(int argc, char *argv[]) {
             std::cout << "DMFT: The DMFT calculation has reached convergence." << mpi_rank <<"\n" ;
             break;
         }
-        else if(  (currentIt >=maxDmftIt/2 and DFTIt != 1) or (currentIt >=(maxDmftIt) and DFTIt == 1)   ) {
-            ifroot std::cout <<"DMFT: The maximum number of iterations has been reached." << mpi_rank <<"\n";
-            break;
-        }
+//        else if(  (currentIt >=maxDmftIt/2 and DFTIt != 1) or (currentIt >=(maxDmftIt) and DFTIt == 1)   ) {
+//            ifroot std::cout <<"DMFT: The maximum number of iterations has been reached." << mpi_rank <<"\n";
+//            break;
+//        }
         MPI_Barrier(MPI_COMM_WORLD);
         currentIt++;
     }// while, dmft iterations
@@ -987,5 +991,5 @@ bool dmft_scf_check( Eigen::MatrixXcd NumMatrixLatt, Eigen::MatrixXcd NumMatrixI
 //            and muRDFluct   < 0.05
         return true;
     }
-    else false;
+    else return false;
 }
