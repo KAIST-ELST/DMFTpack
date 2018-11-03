@@ -150,9 +150,9 @@ void getAsymto_moments (std::vector<Eigen::MatrixXcd> & moments, Eigen::MatrixXc
         for (int jj =0; jj < ASlen; jj++) {
             int wn= w_Asymto+w_Asymto_start+jj   ;// = w_Asymto + w_Asymto_start , ..., N_freq-1 = w_Asymto_start+jj,..., w_Asymto_end+jj ;
             double z = (2*wn+1)*pi/beta;
-            KM(2*jj  , 0) =  1.0;                   //Re
+            KM(2*jj, 0) =  1.0;                     //Re
             KM(2*jj+1, 1) = -1./std::pow(z,1);      //Im
-            KM(2*jj  , 2) = -1./std::pow(z,2);      //Re
+            KM(2*jj, 2) = -1./std::pow(z,2);        //Re
             KM(2*jj+1, 3) =  1./std::pow(z,3);      //Im
             for(int alp=0; alp<Dim; alp++) {
                 for(int bet=0; bet<Dim; bet++) {
@@ -226,6 +226,7 @@ void getAsymto_moments (std::vector<Eigen::MatrixXcd> & moments, Eigen::MatrixXc
 
             Eigen::SelfAdjointEigenSolver<Eigen::MatrixXcd> ces2(moments1_avg[i]);
             ces2.compute( moments3_avg[i] - moments1_avg[i]*moments1_avg[i]);
+
             double  a = ces.eigenvalues().minCoeff();
             double  b = ces2.eigenvalues().minCoeff();
             if (var_j[i] < var_j[minPos] and a>0 and b>0)         // Found a smaller min

@@ -14,8 +14,8 @@ void SpreadFtn( int knum,
 
 
 
-    Eigen::MatrixXi  x_overlap_Rindex ,y_overlap_Rindex  , z_overlap_Rindex   ;
-    Eigen::VectorXcd x_overlap_RMatrix,y_overlap_RMatrix , z_overlap_RMatrix    ;
+    Eigen::MatrixXi  x_overlap_Rindex,y_overlap_Rindex, z_overlap_Rindex   ;
+    Eigen::VectorXcd x_overlap_RMatrix,y_overlap_RMatrix, z_overlap_RMatrix    ;
     int temp;
     temp =          read_OverlapMat(x_overlap_Rindex, x_overlap_RMatrix, std::string("OverlapMatrix_x.HWR"), accumulated_Num_SpinOrbital);
     temp =          read_OverlapMat(y_overlap_Rindex, y_overlap_RMatrix, std::string("OverlapMatrix_y.HWR"), accumulated_Num_SpinOrbital);
@@ -176,14 +176,14 @@ void SpreadFtn( int knum,
 
 void SpreadFtn_PWF( int knum,
                     std::vector<Eigen::MatrixXcd> S_overlap,
-                    std::vector<Eigen::MatrixXcd> &  transformMatrix_k ,
+                    std::vector<Eigen::MatrixXcd> &  transformMatrix_k,
                     std::vector<Eigen::MatrixXcd>  KS_eigenVectors_orthoBasis
                     ,  std::vector<int> & accumulated_Num_SpinOrbital) {
 
 
 
-    Eigen::MatrixXi  x_overlap_Rindex ,y_overlap_Rindex  , z_overlap_Rindex   ;
-    Eigen::VectorXcd x_overlap_RMatrix,y_overlap_RMatrix , z_overlap_RMatrix    ;
+    Eigen::MatrixXi  x_overlap_Rindex,y_overlap_Rindex, z_overlap_Rindex   ;
+    Eigen::VectorXcd x_overlap_RMatrix,y_overlap_RMatrix, z_overlap_RMatrix    ;
     int temp;
     temp =          read_OverlapMat(x_overlap_Rindex, x_overlap_RMatrix, std::string("OverlapMatrix_x.HWR"), accumulated_Num_SpinOrbital);
     temp =          read_OverlapMat(y_overlap_Rindex, y_overlap_RMatrix, std::string("OverlapMatrix_y.HWR"), accumulated_Num_SpinOrbital);

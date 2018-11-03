@@ -18,7 +18,7 @@ int stdoutLevel=  2 ;
 void getoccMat(Eigen::MatrixXcd * Gwimp, Eigen::MatrixXcd & occMat, int solverDim ) ;
 void getGwimp(Eigen::MatrixXcd * Gwimp, Eigen::MatrixXcd projimpurity_site_Hamiltonian, Eigen::MatrixXcd Fock,  Eigen::MatrixXcd * Swimp_secondOrder,
               Eigen::MatrixXcd * delta_w,double muTB, int solverDim) ;
-void getFockOperator( Eigen::MatrixXcd & Fock, Eigen::MatrixXcd & occMat, int solverDim , std::vector<Eigen::VectorXi> projUindex, std::vector<cmplx > projUtensor        ) ;
+void getFockOperator( Eigen::MatrixXcd & Fock, Eigen::MatrixXcd & occMat, int solverDim, std::vector<Eigen::VectorXi> projUindex, std::vector<cmplx > projUtensor        ) ;
 void getStimp(Eigen::MatrixXcd * Stimp, Eigen::MatrixXcd * Gtimp, bool skeleton, int solverDim,std::vector<Eigen::VectorXi> projUindex, std::vector<cmplx > projUtensor       ) ;
 
 
@@ -35,7 +35,7 @@ double MatsubaraFtnnorm(Eigen::MatrixXcd * Swimp_secondOrder, int N_freq);
 double MatsubaraFtnnorm(Eigen::MatrixXcd * Ftn1, Eigen::MatrixXcd * Ftn2, int N_freq);
 
 
-void  HFDC(   Eigen::MatrixXcd *  Gwimp, std::vector<Eigen::VectorXi> Uindex_stronglyCorr, std::vector<cmplx > Utensor_stronglyCorr ,
+void  HFDC(   Eigen::MatrixXcd *  Gwimp, std::vector<Eigen::VectorXi> Uindex_stronglyCorr, std::vector<cmplx > Utensor_stronglyCorr,
               std::vector<int> strongCorr,
               Eigen::MatrixXcd & weakFock ) {
 
@@ -71,7 +71,7 @@ void  HFDC(   Eigen::MatrixXcd *  Gwimp, std::vector<Eigen::VectorXi> Uindex_str
 
 
     getoccMat(Gw0, occMat,strongDim);
-    getFockOperator( Fock , occMat, strongDim, Uindex_stronglyCorr, Utensor_stronglyCorr) ;
+    getFockOperator( Fock, occMat, strongDim, Uindex_stronglyCorr, Utensor_stronglyCorr) ;
 
 
     for (int i=0; i<strongDim; i++) {
@@ -83,7 +83,7 @@ void  HFDC(   Eigen::MatrixXcd *  Gwimp, std::vector<Eigen::VectorXi> Uindex_str
 }
 
 
-void  SecOrdDC(   Eigen::MatrixXcd *  Gwimp, std::vector<Eigen::VectorXi> Uindex_stronglyCorr, std::vector<cmplx > Utensor_stronglyCorr ,
+void  SecOrdDC(   Eigen::MatrixXcd *  Gwimp, std::vector<Eigen::VectorXi> Uindex_stronglyCorr, std::vector<cmplx > Utensor_stronglyCorr,
                   std::vector<int> strongCorr,
                   Eigen::MatrixXcd & weakFock, Eigen::MatrixXcd  * weakSwimp_secondOrder ) {
 
@@ -130,7 +130,7 @@ void  SecOrdDC(   Eigen::MatrixXcd *  Gwimp, std::vector<Eigen::VectorXi> Uindex
 
 
     getoccMat(Gw0, occMat,strongDim);
-    getFockOperator( Fock , occMat, strongDim, Uindex_stronglyCorr, Utensor_stronglyCorr) ;
+    getFockOperator( Fock, occMat, strongDim, Uindex_stronglyCorr, Utensor_stronglyCorr) ;
 
 
     FourierTransform( Gw0, Gt0, Gw0[N_freq] );
@@ -269,7 +269,7 @@ void non_ingeracting_Gw ( Eigen::MatrixXcd * Gw0, int solverDim,  Eigen::MatrixX
 
 void SecondOrderPerturbation  ( int solverDim,Eigen::MatrixXcd projimpurity_site_Hamiltonian,  Eigen::MatrixXcd & projNumMatrix,
                                 ImgFreqFtn & SE_out,      ImgFreqFtn & Gwimp_out,
-                                std::vector<Eigen::VectorXi> projUindex, std::vector<cmplx > projUtensor,  bool high_level_solver ,
+                                std::vector<Eigen::VectorXi> projUindex, std::vector<cmplx > projUtensor,  bool high_level_solver,
                                 std::vector<Eigen::VectorXi> Uindex_stronglyCorr, std::vector<cmplx > Utensor_stronglyCorr, std::vector<int> strongCorr       ) {
     Eigen::SelfAdjointEigenSolver<Eigen::MatrixXcd> ces(solverDim);
     ifroot std::cout <<"Himp (diag):";
@@ -315,7 +315,7 @@ void SecondOrderPerturbation  ( int solverDim,Eigen::MatrixXcd projimpurity_site
 
 
     getoccMat(Gwimp, occMat0,solverDim);
-    getFockOperator( Fock , occMat0, solverDim, projUindex, projUtensor) ;
+    getFockOperator( Fock, occMat0, solverDim, projUindex, projUtensor) ;
 
 
 
@@ -324,7 +324,7 @@ void SecondOrderPerturbation  ( int solverDim,Eigen::MatrixXcd projimpurity_site
     FT_t_to_w(Swimp_secondOrder, Stimp, N_freq);
 
     if(high_level_solver==false) {
-        SecOrdDC(  Gwimp, Uindex_stronglyCorr,  Utensor_stronglyCorr ,
+        SecOrdDC(  Gwimp, Uindex_stronglyCorr,  Utensor_stronglyCorr,
                    strongCorr,
                    Fock,  Swimp_secondOrder ) ;
     }
@@ -419,7 +419,7 @@ void SCHF (int solverDim, Eigen::MatrixXcd projimpurity_site_Hamiltonian, Eigen:
     int  RDSwinc  =0;
     double normUnit =  MatsubaraFtnnorm(Gwimp,N_freq);
     double normOccMat=0;
-    pulayMixing Mixing_SCGF(3, 100, N_freq , solverDim, solverDim );
+    pulayMixing Mixing_SCGF(3, 100, N_freq, solverDim, solverDim );
     while( (SCGFloop<10 or(normGwimpDiffOuter > 1e-6) or normOccMat>1e-6) and SCGFloop <2000 ) {
 
         //transfer previous results
@@ -433,7 +433,7 @@ void SCHF (int solverDim, Eigen::MatrixXcd projimpurity_site_Hamiltonian, Eigen:
 
 
         /*and HF*/
-        getFockOperator( Fock , occMat, solverDim, projUindex, projUtensor) ;
+        getFockOperator( Fock, occMat, solverDim, projUindex, projUtensor) ;
 
 
 
@@ -445,7 +445,7 @@ void SCHF (int solverDim, Eigen::MatrixXcd projimpurity_site_Hamiltonian, Eigen:
 
         /*cal. RD*/
         normOccMat = (occMat-occMat_in).norm();
-        normGwimpDiffOuter= MatsubaraFtnnorm(Gwimp_in , Gwimp, N_freq)  /  normUnit;
+        normGwimpDiffOuter= MatsubaraFtnnorm(Gwimp_in, Gwimp, N_freq)  /  normUnit;
 
         /*mixing, Gwimp is used in the next iteration*/
         if(SCGFloop%500==0) mixingSCGF /= 1.5;
@@ -481,8 +481,8 @@ void SCHF (int solverDim, Eigen::MatrixXcd projimpurity_site_Hamiltonian, Eigen:
 
     /*Write resutls*/
     ifroot std::cout << "SCGF loop:" << SCGFloop;
-    ifroot printf      ("  GwRD:%e" , normGwimpDiffOuter);
-    ifroot printf      ("  mixing:%e\n:" , mixingSCGF);
+    ifroot printf      ("  GwRD:%e", normGwimpDiffOuter);
+    ifroot printf      ("  mixing:%e\n:", mixingSCGF);
 
 
 
@@ -583,7 +583,7 @@ void SCGF2 (int solverDim, Eigen::MatrixXcd projimpurity_site_Hamiltonian, Eigen
     int  RDSwinc  =0;
     double normUnit =  MatsubaraFtnnorm(Gwimp,N_freq);
     double normOccMat=0;
-    pulayMixing Mixing_SCGF(3, 100, N_freq , solverDim, solverDim );
+    pulayMixing Mixing_SCGF(3, 100, N_freq, solverDim, solverDim );
     while( (SCGFloop<10 or(normGwimpDiffOuter > 1e-6) or normOccMat>1e-6) and SCGFloop <2000 ) {
 
         //transfer previous results
@@ -600,7 +600,7 @@ void SCGF2 (int solverDim, Eigen::MatrixXcd projimpurity_site_Hamiltonian, Eigen
 
 
         /*and HF*/
-        getFockOperator( Fock , occMat, solverDim, projUindex, projUtensor) ;
+        getFockOperator( Fock, occMat, solverDim, projUindex, projUtensor) ;
         /*get  Sigma_w,  */
         getStimp ( Stimp, Gtimp, true, solverDim, projUindex, projUtensor);
         FT_t_to_w(Swimp_secondOrder, Stimp, N_freq);
@@ -608,7 +608,7 @@ void SCGF2 (int solverDim, Eigen::MatrixXcd projimpurity_site_Hamiltonian, Eigen
 
 //embedding strong Sw
         if(high_level_solver==false) {
-            SecOrdDC(  Gwimp, Uindex_stronglyCorr,  Utensor_stronglyCorr ,
+            SecOrdDC(  Gwimp, Uindex_stronglyCorr,  Utensor_stronglyCorr,
                        strongCorr,
                        Fock,  Swimp_secondOrder ) ;
             int strongDim = strongCorr.size();
@@ -631,7 +631,7 @@ void SCGF2 (int solverDim, Eigen::MatrixXcd projimpurity_site_Hamiltonian, Eigen
 
         /*cal. RD*/
         normOccMat = (occMat-occMat_in).norm();
-        normGwimpDiffOuter= MatsubaraFtnnorm(Gwimp_in , Gwimp, N_freq)  /  normUnit;
+        normGwimpDiffOuter= MatsubaraFtnnorm(Gwimp_in, Gwimp, N_freq)  /  normUnit;
 
         /*mixing, Gwimp is used in the next iteration*/
         if(SCGFloop%500==0) mixingSCGF /= 1.5;
@@ -674,8 +674,8 @@ void SCGF2 (int solverDim, Eigen::MatrixXcd projimpurity_site_Hamiltonian, Eigen
 
     /*Write resutls*/
     ifroot std::cout << "SCGF loop:" << SCGFloop;
-    ifroot printf      ("  SwRD:%e" , normGwimpDiffOuter);
-    ifroot printf      ("  mixing:%e\n:" , mixingSCGF);
+    ifroot printf      ("  SwRD:%e", normGwimpDiffOuter);
+    ifroot printf      ("  mixing:%e\n:", mixingSCGF);
 
 
 
@@ -683,7 +683,7 @@ void SCGF2 (int solverDim, Eigen::MatrixXcd projimpurity_site_Hamiltonian, Eigen
     /*write result to NumMatrix and Sw*/
 
     if(high_level_solver==false) {
-        SecOrdDC(  Gwimp, Uindex_stronglyCorr,  Utensor_stronglyCorr ,
+        SecOrdDC(  Gwimp, Uindex_stronglyCorr,  Utensor_stronglyCorr,
                    strongCorr,
                    Fock,  Swimp_secondOrder ) ;
     }
@@ -753,7 +753,7 @@ void getGwimp(Eigen::MatrixXcd * Gwimp, Eigen::MatrixXcd projimpurity_site_Hamil
 
 
 
-void getFockOperator( Eigen::MatrixXcd & Fock, Eigen::MatrixXcd & occMat , int solverDim,
+void getFockOperator( Eigen::MatrixXcd & Fock, Eigen::MatrixXcd & occMat, int solverDim,
                       std::vector<Eigen::VectorXi> projUindex, std::vector<cmplx > projUtensor
                     ) {
     Eigen::MatrixXcd newFock( solverDim, solverDim);
@@ -864,8 +864,8 @@ void writeResults( Eigen::MatrixXcd & projNumMatrix, Eigen::MatrixXcd * Swimp_se
                    ImgFreqFtn & SE_out, ImgFreqFtn & Gwimp_out, int solverDim) {
 
 
-    estimate_asymto(Swimp_secondOrder  ,1);
-    estimate_asymto(Swimp_secondOrder  ,2);
+    estimate_asymto(Swimp_secondOrder,1);
+    estimate_asymto(Swimp_secondOrder,2);
 
     for(int i=0; i<solverDim; i++) {
         for(int j=0; j<solverDim; j++) {
@@ -899,14 +899,14 @@ void writeResults( Eigen::MatrixXcd & projNumMatrix, Eigen::MatrixXcd * Swimp_se
 
 void mixing_check_outer( double normGwimpDiffOuter, double & mixingSCGF) {
     static double normGwimpDiffOuter_prev = 0;
-    if       ( normGwimpDiffOuter_prev > normGwimpDiffOuter ) mixingSCGF = std::min (1.07 *mixingSCGF ,   0.5);
-    else if  ( normGwimpDiffOuter_prev < normGwimpDiffOuter ) mixingSCGF = std::max (1./1.09 *mixingSCGF , 1e-3);
+    if       ( normGwimpDiffOuter_prev > normGwimpDiffOuter ) mixingSCGF = std::min (1.07 *mixingSCGF,   0.5);
+    else if  ( normGwimpDiffOuter_prev < normGwimpDiffOuter ) mixingSCGF = std::max (1./1.09 *mixingSCGF, 1e-3);
     normGwimpDiffOuter_prev = normGwimpDiffOuter;
 }
 
 void mixing_check_inner(double  normOccDiffInner, double & mixingHF) {
     static double normOccDiffInner_prev  = 0;
-    if      (normOccDiffInner < normOccDiffInner_prev)  mixingHF = std::min(1.075*mixingHF , 0.5);
+    if      (normOccDiffInner < normOccDiffInner_prev)  mixingHF = std::min(1.075*mixingHF, 0.5);
     else if (normOccDiffInner > normOccDiffInner_prev)  mixingHF = std::max(mixingHF /1.09, 1e-4);
     normOccDiffInner_prev = normOccDiffInner;
 }
@@ -1085,7 +1085,7 @@ void IPT( int solverDim,Eigen::MatrixXcd projimpurity_site_Hamiltonian,  ImgFreq
 //    non_ingeracting_Gw(Gw0, solverDim,projimpurity_site_Hamiltonian, muHF, NumTotInitial, delta_w);
 
     double muHF = muTB;
-    getFockOperator( Fock , occMatHF, solverDim, projUindex, projUtensor) ;
+    getFockOperator( Fock, occMatHF, solverDim, projUindex, projUtensor) ;
     getGwimp( Gw0, projimpurity_site_Hamiltonian, Fock, Swimp_secondOrder, delta_w, muHF, solverDim) ;
 
 // HF
@@ -1163,12 +1163,12 @@ void IPT( int solverDim,Eigen::MatrixXcd projimpurity_site_Hamiltonian,  ImgFreq
                 }//while
         ////////////////////////////////////////////////////////////////////////////////////////////////////////
         //// */
-        getFockOperator( Fock , occMatHF, solverDim, projUindex, projUtensor) ;
+        getFockOperator( Fock, occMatHF, solverDim, projUindex, projUtensor) ;
         ifroot std::cout << "HF_iter: "<<HFloop<<"\n occMatHF:\n " << occMatHF << "\n Fock_RD:\n" << (Fock_in-Fock).norm() << "\n\n";
     } while ( (Fock_in-Fock).norm() > 1e-4   ) ;
 
 
-    getFockOperator( Fock , occMatHF, solverDim, projUindex, projUtensor) ;
+    getFockOperator( Fock, occMatHF, solverDim, projUindex, projUtensor) ;
     FourierTransform( Gw0, Gt0, Gw0[N_freq]);
     getStimp ( Stimp, Gt0, false, solverDim, projUindex, projUtensor);
     FT_t_to_w(Swimp_secondOrder, Stimp, N_freq);
@@ -1189,7 +1189,7 @@ void IPT( int solverDim,Eigen::MatrixXcd projimpurity_site_Hamiltonian,  ImgFreq
         Swimp_secondOrder[n](1,1) = a[1]*Swimp_secondOrder[n](1,1) / (c[1]- b[1]*Swimp_secondOrder[n](1,1) );
     }
 
-    getGwimp( Gwimp, projimpurity_site_Hamiltonian , Fock, Swimp_secondOrder, delta_w, muTB, solverDim) ;
+    getGwimp( Gwimp, projimpurity_site_Hamiltonian, Fock, Swimp_secondOrder, delta_w, muTB, solverDim) ;
     estimate_asymto(Gwimp,2);
     estimate_asymto(Gwimp,3);
 

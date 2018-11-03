@@ -7,12 +7,12 @@ void Construct_H0_local(Eigen::MatrixXcd * Heff_loc, double mu, ImgFreqFtn & Sel
 
 void Construct_hyb_delta(int impurityDim, std::vector<int> impurityOrbit,
                          ImgFreqFtn & SelfE_w, std::vector<Eigen::MatrixXcd>   Gw, double mu,
-                         ImgFreqFtn &  weiss_fieldTB, int atom ,     std::vector<Eigen::MatrixXcd> & SolverBasis  ) {
+                         ImgFreqFtn &  weiss_fieldTB, int atom,     std::vector<Eigen::MatrixXcd> & SolverBasis  ) {
     int   h2, h1F, h2F, h1H,h2H;
     cmplx iw;
     Eigen::MatrixXcd   projimpurity_site_Hamiltonian, projSolverBasis ;
 
-    std::vector<Eigen::MatrixXcd>      projSw(N_freq);
+    std::vector<Eigen::MatrixXcd>     projSw(N_freq);
     std::vector<Eigen::MatrixXcd>     projGw(N_freq);
     for(int n=0; n<N_freq; n++) {
         projSw[n].setZero(impurityDim,impurityDim);

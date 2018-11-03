@@ -7,13 +7,13 @@
 #endif
 
 
-void Wait_Run( char fileName[100], int checkTime, int mpi_rank ,int maxTime  ) {
+void Wait_Run( char fileName[100], int checkTime, int mpi_rank,int maxTime  ) {
     ifroot system( (std::string("rm ") + fileName).c_str() );
     int solvercheck=0;
     int STOP_message =0;
     while (1) {
         if(mpi_rank==0) {
-            if( 0!= access(fileName , F_OK) ) {
+            if( 0!= access(fileName, F_OK) ) {
                 solvercheck++;
             }
             else {

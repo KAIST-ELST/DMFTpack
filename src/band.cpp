@@ -27,12 +27,12 @@ void band(Eigen::VectorXd  *KS_eigenEnergy, double muDFT, int knum) {
     MPI_Gatherv (temp, knum*NumOrbit, MPI_DOUBLE, band, ircnt, idisp, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 
     FILE *datap1;
-    ifroot datap1 = fopen("band.dat"       , "w");
+    ifroot datap1 = fopen("band.dat", "w");
     /*band*/
     if(mpi_rank==0) {
         for(int j=0; j<NumOrbit; j++) {
             for (int k=0; k< knum_mpiGlobal; k++) {
-                fprintf(datap1, "%d  %0.8f    %0.8f\n" ,k, kdist_band[k],  band[k*NumOrbit+j] );
+                fprintf(datap1, "%d  %0.8f    %0.8f\n",k, kdist_band[k],  band[k*NumOrbit+j] );
 //                fprintf(datap1, "%0.8f    %0.8f\n" , k*0.1,  band[k][j] );
             }
             fprintf(datap1, "\n");
@@ -86,12 +86,12 @@ void band(    std::vector<Eigen::MatrixXcd> & H_k_inModelSpace, double muTB, int
     MPI_Gatherv (temp, knum*minNBAND, MPI_DOUBLE, band, ircnt, idisp, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 
     FILE *datap1;
-    ifroot datap1 = fopen("band.dat"       , "w");
+    ifroot datap1 = fopen("band.dat", "w");
     /*band*/
     for(int j=0; j<minNBAND; j++) {
         if(mpi_rank==0) {
             for (int k=0; k< knum_mpiGlobal; k++) {
-                fprintf(datap1, "%d  %0.8f    %0.8f\n" , k, kdist_band[k],  band[k*minNBAND+j] );
+                fprintf(datap1, "%d  %0.8f    %0.8f\n", k, kdist_band[k],  band[k*minNBAND+j] );
             }
             fprintf(datap1, "\n");
             fflush(datap1);

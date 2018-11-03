@@ -36,7 +36,7 @@ void ctqmc_rutgers_seg(  Eigen::MatrixXcd Local_Hamiltonian_ED, double muTB,  Im
 
 void SecondOrderPerturbation  ( int solverDim,Eigen::MatrixXcd projimpurity_site_Hamiltonian,  Eigen::MatrixXcd & projNumMatrix,
                                 ImgFreqFtn & SE_out,      ImgFreqFtn & Gwimp_out,
-                                std::vector<Eigen::VectorXi> projUindex, std::vector<cmplx > projUtensor,  bool high_level_solver ,
+                                std::vector<Eigen::VectorXi> projUindex, std::vector<cmplx > projUtensor,  bool high_level_solver,
                                 std::vector<Eigen::VectorXi> Uindex_stronglyCorr, std::vector<cmplx > Utensor_stronglyCorr, std::vector<int> strongCorr       ) ;
 
 
@@ -49,15 +49,15 @@ void SOLVER(std::string SOLVERtype, int solverDim, std::vector<int> strongCorr, 
             ImgFreqFtn & weiss_field, int atom,
             std::vector<Eigen::MatrixXcd>  impurity_site_Hamiltonian,std::vector<Eigen::MatrixXcd>  Sw_doublecounting,
             double muTB, std::vector<Eigen::MatrixXcd> & SolverBasis,
-            std::vector<Eigen::VectorXi> projUindex, std::vector<cmplx > projUtensor  ,
-            std::vector<Eigen::VectorXi> Uindex_stronglyCorr, std::vector<cmplx > Utensor_stronglyCorr  ,
+            std::vector<Eigen::VectorXi> projUindex, std::vector<cmplx > projUtensor,
+            std::vector<Eigen::VectorXi> Uindex_stronglyCorr, std::vector<cmplx > Utensor_stronglyCorr,
             std::vector<Eigen::MatrixXcd >  dc_weakCorr, ImgFreqFtn & SE_strong       ) {
 
 
 
 
     ImgFreqFtn projweiss_field(0);
-    projweiss_field.Initialize(beta     , N_freq, solverDim,1,0);
+    projweiss_field.Initialize(beta, N_freq, solverDim,1,0);
 
 
 
@@ -146,13 +146,13 @@ void SOLVER(std::string SOLVERtype, int solverDim, std::vector<int> strongCorr, 
 
             if (mpi_rank==0) {
                 FILE *tempFile2;   //mu.dat
-                tempFile2 = fopen("mu_vector.alps.dat"       , "w");
+                tempFile2 = fopen("mu_vector.alps.dat", "w");
                 for(int h1=0; h1<solverDim; h1++) {
                     fprintf(tempFile2, " %0.8f ", mu_alps[h1]);
                 }
                 fclose(tempFile2);
 
-                FILE *datap4 = fopen("delta_t.dat"       , "w");
+                FILE *datap4 = fopen("delta_t.dat", "w");
                 Eigen::MatrixXcd    temp;
                 for(int tau=0; tau<=N_tau; tau++) {
                     fprintf(datap4, "%0.5f",tau*beta/N_tau);
@@ -178,7 +178,7 @@ void SOLVER(std::string SOLVERtype, int solverDim, std::vector<int> strongCorr, 
             std::strcpy(command_hyb,impSolver_hyb_comm.str().c_str());
 
             /*neglect possitive data*/
-            int t, CHECK , t1;
+            int t, CHECK, t1;
             ImgTimeFtn DeltDiag(beta,N_tau, solverDim);
             DeltDiag.update(std::string ("delta_t.dat"), 1);
 
@@ -248,7 +248,7 @@ void SOLVER(std::string SOLVERtype, int solverDim, std::vector<int> strongCorr, 
             write_hyb_t (projweiss_field, delta_t, 0);
             ifroot std::cout <<"FILE OUT: delta_t.dat\n";
             ifroot{
-                FILE *datap4 = fopen("delta_t.dat"       , "w");
+                FILE *datap4 = fopen("delta_t.dat", "w");
                 for(int tau=0; tau<=N_tau; tau++) {
                     fprintf(datap4, "%0.5f",tau*beta/N_tau);
                     for(int h1=0; h1<solverDim; h1++) {
@@ -496,7 +496,7 @@ void SOLVER(std::string SOLVERtype, int solverDim, std::vector<int> strongCorr, 
             write_hyb_t (projweiss_field, delta_t, 0);
             ifroot std::cout <<"FILE OUT: delta_t.dat\n";
             ifroot{
-                FILE *datap4 = fopen("delta_t.dat"       , "w");
+                FILE *datap4 = fopen("delta_t.dat", "w");
                 for(int tau=0; tau<=N_tau; tau++) {
                     fprintf(datap4, "%0.5f",tau*beta/N_tau);
                     for(int h1=0; h1<solverDim; h1++) {
@@ -524,7 +524,7 @@ void SOLVER(std::string SOLVERtype, int solverDim, std::vector<int> strongCorr, 
             write_hyb_t (projweiss_field, delta_t, 0);
             ifroot std::cout <<"FILE OUT: delta_t.dat\n";
             ifroot{
-                FILE *datap4 = fopen("delta_t.dat"       , "w");
+                FILE *datap4 = fopen("delta_t.dat", "w");
                 for(int tau=0; tau<=N_tau; tau++) {
                     fprintf(datap4, "%0.5f",tau*beta/N_tau);
                     for(int h1=0; h1<solverDim; h1++) {
@@ -551,7 +551,7 @@ void SOLVER(std::string SOLVERtype, int solverDim, std::vector<int> strongCorr, 
             write_hyb_t (projweiss_field, delta_t, 0);
             ifroot std::cout <<"FILE OUT: delta_t.dat\n";
             ifroot{
-                FILE *datap4 = fopen("delta_t.dat"       , "w");
+                FILE *datap4 = fopen("delta_t.dat", "w");
                 for(int tau=0; tau<=N_tau; tau++) {
                     fprintf(datap4, "%0.5f",tau*beta/N_tau);
                     for(int h1=0; h1<solverDim; h1++) {
@@ -568,7 +568,7 @@ void SOLVER(std::string SOLVERtype, int solverDim, std::vector<int> strongCorr, 
     }//2PT
     else if(SOLVERtype == std::string("IPT")) {
         ifroot std::cout << "\nIPT solver\n";
-        IPT( solverDim, projimpurity_site_Hamiltonian, projweiss_field, projNumMatrix ,SE_out, Gwimp_temp, muTB, projUindex, projUtensor);
+        IPT( solverDim, projimpurity_site_Hamiltonian, projweiss_field, projNumMatrix,SE_out, Gwimp_temp, muTB, projUindex, projUtensor);
 
         if(high_level_solver == true) {
 //            Eigen::MatrixXcd delta_t [N_tau+1];
@@ -576,7 +576,7 @@ void SOLVER(std::string SOLVERtype, int solverDim, std::vector<int> strongCorr, 
             write_hyb_t (projweiss_field, delta_t, 0);
             ifroot std::cout <<"FILE OUT: delta_t.dat\n";
             ifroot{
-                FILE *datap4 = fopen("delta_t.dat"       , "w");
+                FILE *datap4 = fopen("delta_t.dat", "w");
                 for(int tau=0; tau<=N_tau; tau++) {
                     fprintf(datap4, "%0.5f",tau*beta/N_tau);
                     for(int h1=0; h1<solverDim; h1++) {
@@ -605,10 +605,10 @@ void SOLVER(std::string SOLVERtype, int solverDim, std::vector<int> strongCorr, 
             projNumMatrix(dnH,upH) = 0;
             for ( int w=0; w<N_freq+5; w++) {
                 cmplx avgS = ( SE_out.getValue(w,n,n) + SE_out.getValue(w,n+1,n+1) ) /2.; //alps CT-SEG,
-                SE_out.setValue(w,n,n    ,avgS);
+                SE_out.setValue(w,n,n,avgS);
                 SE_out.setValue(w,n+1,n+1,avgS);
-                SE_out.setValue(w,n  ,n+1,0);
-                SE_out.setValue(w,n+1,n  ,0);
+                SE_out.setValue(w,n,n+1,0);
+                SE_out.setValue(w,n+1,n,0);
             }//w
         }//n
     }//magnetism
@@ -624,7 +624,7 @@ void SOLVER(std::string SOLVERtype, int solverDim, std::vector<int> strongCorr, 
         double sum=0;
         for(int n=0; n<N_peratom_HartrOrbit; n+=1) {
             std::cout <<std::fixed << std::setprecision(4)<< std::fixed
-            <<  real(NumMatrix(atom*N_peratom_HartrOrbit+n,atom*N_peratom_HartrOrbit+n)) <<" " ;
+                      <<  real(NumMatrix(atom*N_peratom_HartrOrbit+n,atom*N_peratom_HartrOrbit+n)) <<" " ;
             sum+= real(NumMatrix( atom*N_peratom_HartrOrbit+n, atom*N_peratom_HartrOrbit+n));
         }
         std::cout << std::fixed << std::setprecision(4)<< std::fixed   << ";  (total)  = "<<  sum <<"\n" ;

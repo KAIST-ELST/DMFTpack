@@ -23,10 +23,12 @@ void  downfolding_ftn
             /*project out rest space ;*/
             /*d-orbital space extraction*/
             Eigen::MatrixXcd  S_overlap_dSpace;
-            DF_CorrBase[k].setZero( N_peratom_HartrOrbit*NumCorrAtom , NBAND[k]);
+            DF_CorrBase[k].setZero( N_peratom_HartrOrbit*NumCorrAtom, NBAND[k]);
             int p00=0;
-            for(int at1=0; at1<NumCorrAtom; at1++) {
-                for(int p0=HartrRange_DFT[at1][0] ; p0<HartrRange_DFT[at1][1] ; p0++) {
+            for(int cl1=0; cl1<NumCluster; cl1++) {
+//                for(int p0=HartrRange_DFT[at1][0] ; p0<HartrRange_DFT[at1][1] ; p0++) {}
+                for(int p0_=0; p0_<NumHartrOrbit_per_cluster ; p0_++) {
+                    int p0 = HartrIndex_inDFT[cl1*NumHartrOrbit_per_cluster+p0_];
                     for(int i1=0; i1<NBAND[k]; i1++) {
                         /*DF_CorrBase = <\phi_\alpha in model | nk > ( size = dim(CorrSpace) * NBAND ) */
                         DF_CorrBase[k](p00,i1) =  KS_eigenVectors_orthoBasis[k](p0,FromValToKS.at(k).at(i1));
@@ -96,42 +98,43 @@ void  downfolding_ftn
 
     //(Re-)construct local energy level
     ifroot        std::cout <<"Himp, on-site:";
-    std::vector<Eigen::MatrixXcd>  HRtemp(NumCorrAtom);
-    std::vector<Eigen::MatrixXcd>      HR(NumCorrAtom);
-    for(int at=0; at<NumCorrAtom; at++) {
-        HRtemp[at].setZero(N_peratom_HartrOrbit, N_peratom_HartrOrbit);
-        HR[at].setZero(N_peratom_HartrOrbit, N_peratom_HartrOrbit);
-        for(int h1=0; h1<N_peratom_HartrOrbit; h1++) {
+    std::vector<Eigen::MatrixXcd>  HRtemp(NumCluster);
+    std::vector<Eigen::MatrixXcd>      HR(NumCluster);
+    for(int cl=0; cl<NumCluster; cl++) {
+        HRtemp[cl].setZero(NumHartrOrbit_per_cluster, NumHartrOrbit_per_cluster);
+        HR[cl].setZero(NumHartrOrbit_per_cluster, NumHartrOrbit_per_cluster);
+        for(int h1=0; h1<NumHartrOrbit_per_cluster; h1++) {
 //            std::cout <<  mpi_rank << " " << HartrIndex[at*N_peratom_HartrOrbit+h1] <<"\n";
-            for(int h2=0; h2<N_peratom_HartrOrbit; h2++) {
-                int h1F = HartrIndex[at*N_peratom_HartrOrbit+h1];
-                int h2F = HartrIndex[at*N_peratom_HartrOrbit+h2];
-                HRtemp[at](h1,h2)=0;
-                HR[at](h1,h2)=0;
+            for(int h2=0; h2<NumHartrOrbit_per_cluster; h2++) {
+                int h1F = HartrIndex[cl*NumHartrOrbit_per_cluster+h1];
+                int h2F = HartrIndex[cl*NumHartrOrbit_per_cluster+h2];
+                HRtemp[cl](h1,h2)=0;
+                HR[cl](h1,h2)=0;
                 for(int k=0 ; k < knum; k++) {
-                    HRtemp[at](h1,h2) +=  (H_k_inModelSpace[k](h1F,h2F)  ) ;
+                    HRtemp[cl](h1,h2) +=  (H_k_inModelSpace[k](h1F,h2F)  ) ;
                 }
-                HRtemp[at](h1,h2) /= knum_mpiGlobal;
+                HRtemp[cl](h1,h2) /= knum_mpiGlobal;
             }
         }
-        MPI_Allreduce(HRtemp[at].data(), HR[at].data(), HRtemp[at].size(), MPI_DOUBLE_COMPLEX, MPI_SUM,  MPI_COMM_WORLD);
+        MPI_Allreduce(HRtemp[cl].data(), HR[cl].data(), HRtemp[cl].size(), MPI_DOUBLE_COMPLEX, MPI_SUM,  MPI_COMM_WORLD);
     }
 
 
     ifroot        std::cout <<" (decomp) \n";
-    for(int at=0; at<NumCorrAtom; at++) {
-        impurity_site_Hamiltonian[at].setZero(N_peratom_HartrOrbit,N_peratom_HartrOrbit);
-        for(int i=0; i<N_peratom_HartrOrbit; i++) {
-            for(int j=0; j<N_peratom_HartrOrbit; j++) {
-                impurity_site_Hamiltonian[at](i,j)= HR[at](i,j);
+    impurity_site_Hamiltonian.resize(NumCluster);
+    for(int cl=0; cl<NumCluster; cl++) {
+        impurity_site_Hamiltonian[cl].setZero(NumHartrOrbit_per_cluster,NumHartrOrbit_per_cluster);
+        for(int i=0; i<NumHartrOrbit_per_cluster; i++) {
+            for(int j=0; j<NumHartrOrbit_per_cluster; j++) {
+                impurity_site_Hamiltonian[cl](i,j)= HR[cl](i,j);
             }
-            ifroot std::cout << std::fixed << std::setprecision(4)<< real(impurity_site_Hamiltonian[at](i,i))  <<" ";
+            ifroot std::cout << std::fixed << std::setprecision(4)<< real(impurity_site_Hamiltonian[cl](i,i))  <<" ";
         }
         ifroot        std::cout <<"\n";
     }
     ifroot        std::cout <<"Himp, Matrix:\n";
-    for(int at=0; at<NumCorrAtom; at++) {
-        ifroot std::cout << std::fixed << std::setprecision(4)<< (impurity_site_Hamiltonian[at])  <<"\n";
+    for(int cl=0; cl<NumCluster; cl++) {
+        ifroot std::cout << std::fixed << std::setprecision(4)<< (impurity_site_Hamiltonian[cl])  <<"\n";
     }
 }
 

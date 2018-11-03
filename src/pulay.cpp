@@ -2,8 +2,8 @@
 #include <Eigen/QR>
 #include <Eigen/Eigenvalues>
 void mixing_checker(double resid, double resid_prev, double & mixing,  double mixing_max,  double mixing_min) {
-    if       ( resid_prev > resid ) mixing = std::min (1.07    *mixing ,  mixing_max);
-    else if  ( resid_prev < resid ) mixing = std::max (1./1.09 *mixing ,  mixing_min);
+    if       ( resid_prev > resid ) mixing = std::min (1.07    *mixing,  mixing_max);
+    else if  ( resid_prev < resid ) mixing = std::max (1./1.09 *mixing,  mixing_min);
 }
 
 

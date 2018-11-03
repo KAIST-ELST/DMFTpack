@@ -80,7 +80,7 @@ extern cmplx w0, dw;
 extern int  SOCCal,  interOrbitHop;
 
 extern int **HartrRange;
-extern int **HartrRange_DFT;
+//extern int **HartrRange_DFT;
 
 extern int NsBath;
 

@@ -192,7 +192,7 @@ void  ConstructModelHamiltonian
             Eigen::MatrixXcd temp = 0.5*(dual_DM_direct[k]);
             occ_temp +=  ((temp + temp.adjoint()))/knum_mpiGlobal;
         }//k
-        MPI_Allreduce(occ_temp.data() , occ.data(), occ.size(), MPI_DOUBLE_COMPLEX, MPI_SUM,  MPI_COMM_WORLD);
+        MPI_Allreduce(occ_temp.data(), occ.data(), occ.size(), MPI_DOUBLE_COMPLEX, MPI_SUM,  MPI_COMM_WORLD);
         if(mpi_rank==0 )   std::cout << "<TB> Mulliken populations:\n";
         ifroot{
             double sum =0;
@@ -214,7 +214,7 @@ void  ConstructModelHamiltonian
                 for (int i=0; i<NumOrbit; i+=2) {
                     for (int j=0; j<NumOrbit; j+=2) {
                         cmplx temp = ( dual_DM_direct[k](i,j) + dual_DM_direct[k](i+1,j+1) )/2.0;
-                        dual_DM_direct[k](i ,j   ) = temp;
+                        dual_DM_direct[k](i,j   ) = temp;
                         dual_DM_direct[k](i+1,j+1) = temp;
                         dual_DM_direct[k](i+1,j   ) = 0.0;
                         dual_DM_direct[k](i,j+1   ) = 0.0;
@@ -332,7 +332,7 @@ void  ConstructModelHamiltonian
     MPI_Barrier(MPI_COMM_WORLD);
     MPI_Allreduce(&tempd2, &tempd2GL, 1, MPI_DOUBLE, MPI_SUM,  MPI_COMM_WORLD);
     ifroot std::cout << "d-orbital normalization       : "  << tempd2GL/(knum_mpiGlobal*N_peratom_HartrOrbit)<<"\n";
-    MPI_Allreduce(HartreWeightInWindows_local.data() , HartreWeightInWindows_global.data(), HartreWeightInWindows_global.size(), MPI_DOUBLE, MPI_SUM,  MPI_COMM_WORLD);
+    MPI_Allreduce(HartreWeightInWindows_local.data(), HartreWeightInWindows_global.data(), HartreWeightInWindows_global.size(), MPI_DOUBLE, MPI_SUM,  MPI_COMM_WORLD);
     for (int m=0; m<N_peratom_HartrOrbit; m++) {
         ifroot std::cout << "d-orbital in rest energy space: "  << HartreWeightInWindows_global[m] /(knum_mpiGlobal) <<"\n";
     }

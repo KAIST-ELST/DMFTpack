@@ -3,7 +3,6 @@
 #include <unistd.h>
 #include <assert.h>
 #include "dmft_common.h"
-//#include <vector>
 #include <array>
 
 
@@ -175,7 +174,6 @@ void ImgFreqFtn::Initialize(double beta, int N_freq,  int NSpinOrbitPerAtom,int 
     startIndx_ = startIndx;
 
     imgFreq = new double [Nfreq_];
-//    Ftn_.setZero(Nfreq_+5, (Norbit)* (Norbit));
     Ftn_.resize(Nfreq_+5);
     for(int w=0; w<Nfreq_+5; w++) {
         Ftn_[w].setZero(Norbit,Norbit);
@@ -183,8 +181,6 @@ void ImgFreqFtn::Initialize(double beta, int N_freq,  int NSpinOrbitPerAtom,int 
     for(int w=0; w<Nfreq_; w++) {
         imgFreq[w] = pi*(2.*(w+startIndx_)+1)/beta;
     }
-
-
     MEMCHECK =  new int;
     *MEMCHECK = magicNumber;
 }
@@ -323,7 +319,7 @@ void  ImgFreqFtn::dataOut(const std::string &filename) {
 
 void  ImgFreqFtn::dataOut_full(const std::string &filename) {
     if(mpi_rank==0) {
-        FILE *datap4 = fopen((filename).c_str()  , "w");
+        FILE *datap4 = fopen((filename).c_str(), "w");
         int w,n,m;
         for(w=0; w<Nfreq_; w++) {
             for(m=0; m< Norbit; m++) {
@@ -350,12 +346,12 @@ void  ImgFreqFtn::dataOut_full(const std::string &filename) {
 }
 void  ImgFreqFtn::dataOut_full_pararell(const std::string &filename) {
     FILE *datap1;
-    ifroot    datap1 = fopen( (filename).c_str()    , "w");
+    ifroot    datap1 = fopen( (filename).c_str(), "w");
     ifroot    fclose(datap1);
 
     for(int itsRank=0 ; itsRank<mpi_numprocs; itsRank++) {
         if(mpi_rank==itsRank) {
-            datap1 = fopen( (filename).c_str()   , "a");
+            datap1 = fopen( (filename).c_str(), "a");
             for (int w=0; w< Nfreq_; w++) {
                 for(int m=0; m< Norbit; m++) {
                     for(int n=0; n< Norbit; n++) {
@@ -759,7 +755,7 @@ void ImgFreqFtn::mpiBcast(int root, MPI_Comm comm) {
     }
 
 
-    MPI_Bcast(imgFreq , Nfreq_, MPI_DOUBLE, root, comm);
+    MPI_Bcast(imgFreq, Nfreq_, MPI_DOUBLE, root, comm);
     MPI_Bcast(&startIndx_,1, MPI_INT, root, comm);
 
     MPI_Bcast(Ftn_for_mpi.data(), Ftn_for_mpi.size(), MPI_DOUBLE_COMPLEX, root, comm);
@@ -798,9 +794,9 @@ void ImgFreqFtn::estimate_asymto(int order) {
     }
     else if(order==2) {
         //Asymto S2/(iw^2) + ...
-        w0 = 1./std::pow( (*this).getValue(Nfreq_-3)  ,4);
-        w1 = 1./std::pow( (*this).getValue(Nfreq_-2)  ,4);
-        w2 = 1./std::pow( (*this).getValue(Nfreq_-1)  ,4);
+        w0 = 1./std::pow( (*this).getValue(Nfreq_-3),4);
+        w1 = 1./std::pow( (*this).getValue(Nfreq_-2),4);
+        w2 = 1./std::pow( (*this).getValue(Nfreq_-1),4);
 
         tail[0] = (*this).getMatrix(Nfreq_-3) ;
         tail[1] = (*this).getMatrix(Nfreq_-2) ;

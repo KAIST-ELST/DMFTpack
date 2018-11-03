@@ -910,27 +910,27 @@ void analysis_example(std::string  scfout_file)
                                 /*Hamiltonian, colinear part*/
                                 if( (std::pow(H_spin_r,2) + std::pow(H_spin_i,2)) > tol_local)
                                     fprintf(fp_jh, "%+d %+d %+d %d %d %d %d        %e   %e \n",
-                                            l,   m,   n   ,
+                                            l,   m,   n,
                                             Gh_AN, ct_AN,
                                             ((2)*j+spin)+1,   ((2)*i+spin)+1,
                                             (H_spin_r*27.2113845), -(H_spin_i*27.2113845)          ); /*Hartree To eV*/
                                 /*DM*/
                                 if( (std::pow(DM_spin_r,2) + std::pow(DM_spin_i,2)) > tol_local)
                                     fprintf(fp_dmjh, "%+d %+d %+d %d %d %d %d        %e   %e \n",
-                                            l,   m,   n   ,
+                                            l,   m,   n,
                                             Gh_AN, ct_AN,
                                             ((2)*j+spin)+1,   ((2)*i+spin)+1,
                                             (DM_spin_r),(DM_spin_i)          );
                                 if(SpinP_switch==0) {
                                     if( (std::pow(H_spin_r,2) + std::pow(H_spin_i,2)) > tol_local)
                                         fprintf(fp_jh, "%+d %+d %+d %d %d %d %d        %e   %e \n",
-                                                l,   m,   n   ,
+                                                l,   m,   n,
                                                 Gh_AN, ct_AN,
                                                 ((2)*j+spin)+2,   ((2)*i+spin)+2,
                                                 (H_spin_r*27.2113845), -(H_spin_i*27.2113845)          ); /*Hartree To eV*/
                                     if( (std::pow(DM_spin_r,2) + std::pow(DM_spin_i,2)) > tol_local)
                                         fprintf(fp_dmjh, "%+d %+d %+d %d %d %d %d        %e   %e \n",
-                                                l,   m,   n   ,
+                                                l,   m,   n,
                                                 Gh_AN, ct_AN,
                                                 ((2)*j+spin)+2,   ((2)*i+spin)+2,
                                                 (DM_spin_r),(DM_spin_i)          );
@@ -962,13 +962,13 @@ void analysis_example(std::string  scfout_file)
                             */
                             if( (std::pow(H_up_down_r,2) + std::pow(H_up_down_i,2)) > tol_local)
                                 fprintf(fp_jh, "%+d %+d %+d %d %d %d %d        %e   %e \n",
-                                        l,   m,   n   ,
+                                        l,   m,   n,
                                         Gh_AN, ct_AN,
                                         ((2)*j+1)+1,   ((2)*i+0)+1,
                                         ( H_up_down_r*27.2113845), -(H_up_down_i*27.2113845)          ); /*Hartree To eV*/
                             if( (std::pow(H_up_down_r,2) + std::pow(H_up_down_i,2)) > tol_local)
                                 fprintf(fp_jh, "%+d %+d %+d %d %d %d %d        %e   %e \n",
-                                        -l,   -m,   -n   ,
+                                        -l,   -m,   -n,
                                         ct_AN,Gh_AN,
                                         ((2)*i+0)+1,   ((2)*j+1)+1,
                                         ( H_up_down_r*27.2113845),   (H_up_down_i*27.2113845)          ); /*Hartree To eV*/
@@ -993,7 +993,7 @@ void analysis_example(std::string  scfout_file)
                     for (j=0; j<TNO2; j++) {
                         if( (std::pow(OLP[ct_AN][h_AN][i][j],2) ) > tol_local)
                             fprintf(fp_jh2, " %+d %+d %+d %d %d %d %d      %e    %e  \n",
-                                    l,m,n   ,         Gh_AN, ct_AN,            j+1, i+1,            OLP[ct_AN][h_AN][i][j], 0.       );
+                                    l,m,n,         Gh_AN, ct_AN,            j+1, i+1,            OLP[ct_AN][h_AN][i][j], 0.       );
                     }
                 }
             }
@@ -1026,13 +1026,13 @@ void analysis_example(std::string  scfout_file)
                         //x_expec_inANG = <i|x|jR> = <jR|x|i>*
                         if( (std::pow(x_expec_inANG,2) ) > tol_local)
                             fprintf(fp_jh3, " %+d %+d %+d %d %d %d %d      %e    %e  \n",
-                                    l,m,n   ,         Gh_AN,ct_AN,            j+1, i+1,            x_expec_inANG , 0.       );
+                                    l,m,n,         Gh_AN,ct_AN,            j+1, i+1,            x_expec_inANG, 0.       );
                         if( (std::pow(y_expec_inANG,2) ) > tol_local)
                             fprintf(fp_jh4, " %+d %+d %+d %d %d %d %d      %e    %e  \n",
-                                    l,m,n   ,         Gh_AN,ct_AN,            j+1, i+1,            y_expec_inANG, 0.       );
+                                    l,m,n,         Gh_AN,ct_AN,            j+1, i+1,            y_expec_inANG, 0.       );
                         if( (std::pow(z_expec_inANG,2) ) > tol_local)
                             fprintf(fp_jh5, " %+d %+d %+d %d %d %d %d      %e    %e  \n",
-                                    l,m,n   ,         Gh_AN,ct_AN,            j+1, i+1,            z_expec_inANG, 0.       );
+                                    l,m,n,         Gh_AN,ct_AN,            j+1, i+1,            z_expec_inANG, 0.       );
                     }
                 }
             }

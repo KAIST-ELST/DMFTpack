@@ -7,6 +7,23 @@
 TARGET_dmft=dmft
 DEPFILE = dependency
 
+##################
+##osx
+################################
+
+CC=mpic++
+#CCFLAGS=   -stdlib=libc++
+
+
+#CC=/Users/jae-hoonsim/local/bin/mpic++
+#CCFLAGS=   -std=c++11  
+
+
+#OFLAGS = -O3      
+OFLAGS = -O0      # -g  -ggdb  
+
+DEFINES= -DMPI_ENABLED   \
+         -DEIGEN_INITIALIZE_MATRICES_BY_ZERO  
 
 
 
@@ -18,31 +35,32 @@ DEPFILE = dependency
 ##CCFLAGS=   -std=c++11     -fstack-protector-all
 ##OFLAGS = -O0      -g  -ggdb    
 #CC=mpigxx
+##CC=mpicxx
 #
 #CCFLAGS=   -std=c++11  
-#OFLAGS = -O3      
+##OFLAGS = -O3      
+#OFLAGS = -O0       -g  -ggdb  
 #
 #DEFINES= -DMPI_ENABLED   \
 #         -DEIGEN_INITIALIZE_MATRICES_BY_ZERO  
+#
+
+############################
+#####Intel MKL
+############################
 ##
-
-
-##########################
-###Intel MKL
-##########################
-
-CC = mpic++
-INTEL = /opt/intel/intel_2017_beta
-MKL = ${INTEL}/mkl
-
-CCFLAGS=   -std=c++11   -I${MKL}/include -ip  -inline-level=2   -inline-forceinline   -w2  #-check-pointers=rw
-#OFLAGS = -O0       -g  -ggdb  
-OFLAGS = -O3
-
-DEFINES= -DMPI_ENABLED   \
-         -L${MKL}/lib/intel64 -lmkl_intel_lp64  -lmkl_core -lifcore   -lmkl_sequential\
-         -DEIGEN_USE_MKL_ALL -DEIGEN_INITIALIZE_MATRICES_BY_ZERO 
-
+##CC = mpic++
+##INTEL = /opt/intel/intel_2017_beta
+##MKL = ${INTEL}/mkl
+##
+##CCFLAGS=   -std=c++11   -I${MKL}/include -ip  -inline-level=2   -inline-forceinline   -w2  #-check-pointers=rw
+###OFLAGS = -O0       -g  -ggdb  
+##OFLAGS = -O3
+##
+##DEFINES= -DMPI_ENABLED   \
+##         -L${MKL}/lib/intel64 -lmkl_intel_lp64  -lmkl_core -lifcore   -lmkl_sequential\
+##         -DEIGEN_USE_MKL_ALL -DEIGEN_INITIALIZE_MATRICES_BY_ZERO 
+##
 
 
 #EIGEN

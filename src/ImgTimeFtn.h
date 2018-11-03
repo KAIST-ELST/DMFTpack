@@ -5,6 +5,7 @@
 #include <iostream>
 #include "mpi.h"
 #include <Eigen/Core>
+#include <vector>
 
 extern int mixingType, mixingStart;
 

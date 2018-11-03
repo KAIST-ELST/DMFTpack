@@ -30,10 +30,10 @@ int countSetBits(unsigned  long long  n);
 double getTotEng( Eigen::MatrixXcd Local_Hamiltonian_ED, double muTB,  unsigned long long   alp);
 
 unsigned long choose(int n, int k) ;   //nCk
-void SectorToGlobalIndxConstruction(unsigned long long ** SectorToGlobalIndx , int Nstate) ;
+void SectorToGlobalIndxConstruction(unsigned long long ** SectorToGlobalIndx, int Nstate) ;
 int occupation(int alpha, unsigned long long state) ;
 int F_element(int alpha, unsigned long long state1, unsigned long long state2) ;
-void HamiltonianConstruc(  Eigen::MatrixXcd & Himp,  Eigen::MatrixXi **f_ann, int Nstate , unsigned long long ** SectorToGlobalIndx, int Sector, Eigen::MatrixXcd * f_annMat, Eigen::MatrixXcd Local_Hamiltonian_ED, double muTB, unsigned long long dim, unsigned long long dim_prev   ) ;
+void HamiltonianConstruc(  Eigen::MatrixXcd & Himp,  Eigen::MatrixXi **f_ann, int Nstate, unsigned long long ** SectorToGlobalIndx, int Sector, Eigen::MatrixXcd * f_annMat, Eigen::MatrixXcd Local_Hamiltonian_ED, double muTB, unsigned long long dim, unsigned long long dim_prev   ) ;
 
 
 void write_PARMS() ;
@@ -141,7 +141,7 @@ void ctqmc_rutgers(  Eigen::MatrixXcd Local_Hamiltonian_ED, double muTB,  ImgFre
         timeStartHam = clock();
         /*Construct Hamiltonian*/
         ifroot std::cout << "HamiltonianConstruc\n";
-        HamiltonianConstruc( Himp, f_ann,   Nstate, SectorToGlobalIndx, Sector, f_annMat[Sector] , Local_Hamiltonian_ED, muTB , dim_for_sector[Sector], dim_for_sector[Sector-1]);
+        HamiltonianConstruc( Himp, f_ann,   Nstate, SectorToGlobalIndx, Sector, f_annMat[Sector], Local_Hamiltonian_ED, muTB, dim_for_sector[Sector], dim_for_sector[Sector-1]);
         timeEndHam =clock();
         ifroot std::cout << "construct:" << (timeEndHam - timeStartHam)/(CLOCKS_PER_SEC) <<"\n";
 
@@ -195,7 +195,7 @@ void ctqmc_rutgers_seg(  Eigen::MatrixXcd Local_Hamiltonian_ED, double muTB,  Im
         fprintf(cix, "\n#   N   K   Sz size F^{+,0}, F^{+,1}, F^{+,2}, F^{+,3}, F^{+,4}, F^{+,5}, {Ea,Eb..} ;  {Sa, Sb..}\n");
         for(int alp=0; alp<std::pow(2,NSpinOrbit_per_atom); alp++) {
             fprintf(cix,      "%d  %d   0  0  1  ",
-            alp+1, countSetBits(alp));
+                    alp+1, countSetBits(alp));
             for(int i=0; i<NSpinOrbit_per_atom; i++) {   //alp = \sum_i  n_i * 2^i; i=0,1,... NSpinOrbit_per_atom-1 <=> |n_{NSpinOrbit_per_atom-1}, .., n_1, n_0>
                 int operationState = std::pow(2,i);   // (0,0,...,0,1,0,...0)
                 fprintf(cix,      "%d ", (1-occupation_Bits(i,alp))*(alp+1+operationState));
@@ -441,7 +441,7 @@ void write_cix_file(int NSector, int maxDim, int Nstate, unsigned long long * di
 
 
 
-void HamiltonianConstruc(  Eigen::MatrixXcd & Himp,  Eigen::MatrixXi **f_ann, int Nstate , unsigned long long ** SectorToGlobalIndx, int Sector, Eigen::MatrixXcd * f_annMat, Eigen::MatrixXcd Local_Hamiltonian_ED, double muTB, unsigned long long dim, unsigned long long dim_prev   ) {
+void HamiltonianConstruc(  Eigen::MatrixXcd & Himp,  Eigen::MatrixXi **f_ann, int Nstate, unsigned long long ** SectorToGlobalIndx, int Sector, Eigen::MatrixXcd * f_annMat, Eigen::MatrixXcd Local_Hamiltonian_ED, double muTB, unsigned long long dim, unsigned long long dim_prev   ) {
     unsigned long long  rankf =       choose(Nstate-1,Sector-1);            //# of number state with occupied alp
 
     Eigen::MatrixXcd numOperat [NSpinOrbit_per_atom];
@@ -572,9 +572,9 @@ double getTotEng( Eigen::MatrixXcd Local_Hamiltonian_ED, double muTB,  unsigned 
     for(int i=0; i<NSpinOrbit_per_atom; i+=2) { //0,2,4...NSpinOrbit_per_atom-2
         TotEng += UHubb   * occupation_Bits(i,alp) *occupation_Bits(i+1,alp) ;
         for(int j=0; j<i; j+=2) {
-            TotEng +=  Uprime         *  occupation_Bits(i  ,alp)  * occupation_Bits(j+1,alp); //H_interaction
-            TotEng +=  Uprime         *  occupation_Bits(i+1,alp)  * occupation_Bits(j  ,alp);   //H_interaction
-            TotEng += (Uprime-JHund)  *  occupation_Bits(i  ,alp)  * occupation_Bits(j  ,alp); //H_interaction
+            TotEng +=  Uprime         *  occupation_Bits(i,alp)  * occupation_Bits(j+1,alp);   //H_interaction
+            TotEng +=  Uprime         *  occupation_Bits(i+1,alp)  * occupation_Bits(j,alp);     //H_interaction
+            TotEng += (Uprime-JHund)  *  occupation_Bits(i,alp)  * occupation_Bits(j,alp);     //H_interaction
             TotEng += (Uprime-JHund)  *  occupation_Bits(i+1,alp)  * occupation_Bits(j+1,alp); //H_interaction
         }
     }//alp
