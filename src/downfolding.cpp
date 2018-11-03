@@ -14,6 +14,7 @@ void  downfolding_ftn
     std::vector<Eigen::MatrixXcd> & KS_eigenVectors_orthoBasis, Eigen::VectorXd  * KS_eigenEnergy,
     double muDFT
 ) {
+    ifroot std::cout <<"<down-folding>\n";
 
 
 
@@ -122,6 +123,7 @@ void  downfolding_ftn
 
     ifroot        std::cout <<" (decomp) \n";
     impurity_site_Hamiltonian.resize(NumCluster);
+    ifroot std::cout << "We have " << NumCluster <<" clusters with "<< NumHartrOrbit_per_cluster <<" orbitals for each cluster\n";
     for(int cl=0; cl<NumCluster; cl++) {
         impurity_site_Hamiltonian[cl].setZero(NumHartrOrbit_per_cluster,NumHartrOrbit_per_cluster);
         for(int i=0; i<NumHartrOrbit_per_cluster; i++) {

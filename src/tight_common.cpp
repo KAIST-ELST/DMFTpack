@@ -180,8 +180,6 @@ void read_inputFile(const std::string &hamiltonian) {
     }
     NumAtom_per_cluster    =   read_int(std::string("input.parm"), std::string("N_ATOMS_CLUSTER"),1)   ;   //total Num of atoms
     NumAtom          =   read_int(std::string("input.parm"), std::string("N_ATOMS"),-1)   ;   //total Num of atoms
-    NumCluster = NumAtom/ NumAtom_per_cluster;
-    NumHartrOrbit_per_cluster = N_peratom_HartrOrbit * NumAtom_per_cluster;
     NumCorrAtom      =   read_int(std::string("input.parm"), std::string("N_CORRELATED_ATOMS"),-1) ; //Num of atoms, which inlude correlated and/or HF orbitals
     NumberOfElectron = read_double(std::string("input.parm"), std::string("N_ELECTRONS"), false, -1) ;    // Number of electron per unit cell = NumOrbit * FillingFactor
     EnergyUnit =    read_double(std::string("input.parm"), std::string("EnergyUnit"), true, 1)    ;    //Input (Hopping Hamiltonian) -> eV
@@ -239,6 +237,12 @@ void read_inputFile(const std::string &hamiltonian) {
     assert(N_peratom_HartrOrbit>=NSpinOrbit_per_atom);
     assert( NumAtom>=NumCorrAtom );
 
+
+
+//other variables...
+    NumCluster = NumAtom/ NumAtom_per_cluster;
+    NumHartrOrbit_per_cluster = N_peratom_HartrOrbit * NumAtom_per_cluster;
+    ifroot std::cout << "We have " << NumCluster <<" clusters with "<< NumHartrOrbit_per_cluster <<" orbitals for each cluster\n";
 
 
 
