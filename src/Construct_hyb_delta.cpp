@@ -7,12 +7,13 @@ void Construct_H0_local(Eigen::MatrixXcd * Heff_loc, double mu, ImgFreqFtn & Sel
 
 void Construct_hyb_delta(int impurityDim, std::vector<int> impurityOrbit,
                          ImgFreqFtn & SelfE_w, std::vector<Eigen::MatrixXcd>   Gw, double mu,
-                         ImgFreqFtn &  weiss_fieldTB, int atom ,     std::vector<Eigen::MatrixXcd> & SolverBasis  ) {
+                         ImgFreqFtn &  weiss_fieldTB, int atom,     Eigen::MatrixXcd & SolverBasis  ) {
     int   h2, h1F, h2F, h1H,h2H;
     cmplx iw;
     Eigen::MatrixXcd   projimpurity_site_Hamiltonian, projSolverBasis ;
+//    int start_hyb_index = atom*impurityDim;
 
-    std::vector<Eigen::MatrixXcd>      projSw(N_freq);
+    std::vector<Eigen::MatrixXcd>     projSw(N_freq);
     std::vector<Eigen::MatrixXcd>     projGw(N_freq);
     for(int n=0; n<N_freq; n++) {
         projSw[n].setZero(impurityDim,impurityDim);
@@ -29,10 +30,8 @@ void Construct_hyb_delta(int impurityDim, std::vector<int> impurityOrbit,
                 projSw[n](h1,h2) =  SelfE_w.getValue(n,h1F,h2F);
                 projGw[n](h1,h2) =  Gw[n](h1F,h2F);
             }
-            int h1g = h1F- atom*N_peratom_HartrOrbit;
-            int h2g = h2F- atom*N_peratom_HartrOrbit;
-            projimpurity_site_Hamiltonian(h1,h2) = impurity_site_Hamiltonian[atom](h1g,h2g);
-            projSolverBasis(h1,h2) = SolverBasis[atom](h1g,h2g);
+            projimpurity_site_Hamiltonian(h1,h2) = impurity_site_Hamiltonian(h1F,h2F);
+            projSolverBasis(h1,h2) = SolverBasis(h1F,h2F);
         }
     }
 
@@ -45,12 +44,12 @@ void Construct_hyb_delta(int impurityDim, std::vector<int> impurityOrbit,
             projGw[n] =     (projSolverBasis).adjoint() * projGw[n]  *   projSolverBasis;
             projSw[n] =     (projSolverBasis).adjoint() * projSw[n]  *   projSolverBasis;
             for(int h1=0; h1<impurityDim; h1++) {
-                int h1at = atom* impurityDim  +h1;
+//            int h1F = impurityOrbit.at(h1);
                 iw=I*pi*(2.*n+1.)/beta;
-                weiss_fieldTB.setValue( n, h1at, h1at,
-                                        iw+mu
-                                        - impurity_site_Hamiltonian_bestBasis(h1,h1)-   projSw[n](h1,h1)
-                                        - 1.0/projGw[n](h1,h1));
+                weiss_fieldTB.setValueSubMat( n, atom,  h1, h1,
+                                              iw+mu
+                                              - impurity_site_Hamiltonian_bestBasis(h1,h1)-   projSw[n](h1,h1)
+                                              - 1.0/projGw[n](h1,h1));
                 //NOTE : (1/G_{ii}) \neq G^{-1}_{ii}
             }//n
         }//h1
@@ -60,13 +59,16 @@ void Construct_hyb_delta(int impurityDim, std::vector<int> impurityOrbit,
             iw=I*pi*(2.*n+1.)/beta;
             if(impurityDim!=0)     projGw[n] = (projGw[n].inverse());
             for(int h1=0; h1< impurityDim ; h1++) {
-                int h1at = atom* impurityDim  +h1;
+//                int h1at = start_hyb_index  +h1;
+//            int h1F = impurityOrbit.at(h1);
                 for(int h2=0; h2< impurityDim ; h2++) {
-                    int h2at = atom* impurityDim  +h2;
-                    weiss_fieldTB.setValue(n, h1at, h2at,
-                                           -projimpurity_site_Hamiltonian(h1,h2) -    projSw[n](h1,h2) -projGw[n](h1,h2) )  ;
+//                    int h2at = start_hyb_index +h2;
+//            int h2F = impurityOrbit.at(h1);
+                    weiss_fieldTB.setValueSubMat(n, atom,  h1, h2,
+                                                 -projimpurity_site_Hamiltonian(h1,h2) -    projSw[n](h1,h2) -projGw[n](h1,h2) )  ;
                 }//h2
-                weiss_fieldTB.setValue(n,h1at,h1at,weiss_fieldTB.getValue(n,h1at,h1at)+iw +mu )  ;
+                weiss_fieldTB.setValueSubMat(n,atom, h1,h1,
+                                             weiss_fieldTB.getValueSubMat(n,atom,h1,h1)+iw +mu )  ;
             }//h1
         }//n
     }//approxLevel==1

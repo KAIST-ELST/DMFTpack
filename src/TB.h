@@ -37,9 +37,14 @@ extern Eigen::MatrixXi H_Rindex;
 
 
 
+//void Construct_hyb_delta(int impurityDim, std::vector<int> impurityOrbit,
+//                         ImgFreqFtn & SelfE_w, std::vector<Eigen::MatrixXcd>   Gw, double mu,
+//                         ImgFreqFtn &  weiss_fieldTB, int atom ,     std::vector<Eigen::MatrixXcd> & SolverBasis  ) ;
+
+
 void Construct_hyb_delta(int impurityDim, std::vector<int> impurityOrbit,
                          ImgFreqFtn & SelfE_w, std::vector<Eigen::MatrixXcd>   Gw, double mu,
-                         ImgFreqFtn &  weiss_fieldTB, int atom ,     std::vector<Eigen::MatrixXcd> & SolverBasis  ) ;
+                         ImgFreqFtn &  weiss_fieldTB, int atom,     Eigen::MatrixXcd & SolverBasis  ) ;
 
 
 //void upfolding_k(Eigen::MatrixXcd & Matrix_k, Eigen::MatrixXcd & KS_eigenVectors_k, int k, double mu , std::vector<Eigen::MatrixXcd> & S_overlap);

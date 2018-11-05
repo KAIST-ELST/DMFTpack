@@ -5,7 +5,7 @@
 #include "model.h"
 #include "TB.h"
 //void qs_spectra(ImgFreqFtn & SelfE_w ){
-void qs_spectra(ImgFreqFtn & SelfE_w ,std::vector<Eigen::MatrixXcd>  KS_eigenVectors_orthoBasis ,Eigen::VectorXd *KS_eigenEnergy, double  mu,
+void qs_spectra(ImgFreqFtn & SelfE_w,std::vector<Eigen::MatrixXcd>  KS_eigenVectors_orthoBasis,Eigen::VectorXd *KS_eigenEnergy, double  mu,
                 std::vector<Eigen::MatrixXcd> H_k_inModelSpace ) {
     ///*set Swinf used in dos and band*/
     //Eigen::MatrixXcd  Swinf[NumCorrAtom];
@@ -54,7 +54,7 @@ void qs_spectra(ImgFreqFtn & SelfE_w ,std::vector<Eigen::MatrixXcd>  KS_eigenVec
             dosnorm[i0]  = 0;
         }
         FILE *datap1;
-        ifroot datap1 = fopen("qsdos.dat"       , "w");
+        ifroot datap1 = fopen("qsdos.dat", "w");
         ifroot std::cout << "FILEOUT : qsdos.dat\n";
 
 
@@ -92,7 +92,7 @@ void qs_spectra(ImgFreqFtn & SelfE_w ,std::vector<Eigen::MatrixXcd>  KS_eigenVec
             para_range(0,Spectral_EnergyGrid-1,mpi_numprocs,itsRank, &itssta, &itsend);
             ImgFreqFtn itsSE(0);
             itsSE.realFreq( lower_spectrum_window,  real(dE), (itsend-itssta+1), N_peratom_HartrOrbit, NumCorrAtom,0, itssta );
-            if(mpi_rank == itsRank) itsSE.update( SelfE_w , 1, 0, 0);
+            if(mpi_rank == itsRank) itsSE.update( SelfE_w, 1, 0, 0);
             itsSE.mpiBcast(itsRank, MPI_COMM_WORLD);
             for(int n=itssta; n<=itsend; n++) {
                 for(int i0=0; i0<N_peratom_HartrOrbit+2; i0++) {
@@ -114,13 +114,13 @@ void qs_spectra(ImgFreqFtn & SelfE_w ,std::vector<Eigen::MatrixXcd>  KS_eigenVec
                 for(int i0=0; i0<N_peratom_HartrOrbit+2; i0++)  spectralWeight_mpiGlobal(i0)/=(pi*knum_mpiGlobal);
 
                 ifroot {
-                    fprintf(datap1, "%+0.3f" , real(lower_spectrum_window+n*dE)   );//Pdos1, 2, 3,...Tdos,
+                    fprintf(datap1, "%+0.3f", real(lower_spectrum_window+n*dE)   ); //Pdos1, 2, 3,...Tdos,
                     for(int i0=HartrRange[0][0]; i0<HartrRange[0][1]; i0++) {
-                        fprintf(datap1, "    %0.8f" , spectralWeight_mpiGlobal(i0)    );
+                        fprintf(datap1, "    %0.8f", spectralWeight_mpiGlobal(i0)    );
                         dosnorm[i0] += spectralWeight_mpiGlobal(i0);
                     }
-                    fprintf(datap1, "      %0.8f" , spectralWeight_mpiGlobal(N_peratom_HartrOrbit  ) );
-                    fprintf(datap1, "      %0.8f" , spectralWeight_mpiGlobal(N_peratom_HartrOrbit+1)+TdosData_RDC[n] );
+                    fprintf(datap1, "      %0.8f", spectralWeight_mpiGlobal(N_peratom_HartrOrbit  ) );
+                    fprintf(datap1, "      %0.8f", spectralWeight_mpiGlobal(N_peratom_HartrOrbit+1)+TdosData_RDC[n] );
                     fprintf(datap1, "\n" );
                 }//ifroot
             } //n
@@ -133,18 +133,18 @@ void qs_spectra(ImgFreqFtn & SelfE_w ,std::vector<Eigen::MatrixXcd>  KS_eigenVec
         ifroot{
             FILE * GNU = fopen("qsdos.gnuplot", "w");
             fprintf(GNU,"set term x11 dashed\n p \\");
-            fprintf(GNU,"\n\"./qsdos.dat\" u 1:($%d) w l  lw 2 lc rgb  \"black\"   lt 1     title \"%d\"   ,\\", N_peratom_HartrOrbit+2 , 0);
-            fprintf(GNU,"\n\"./qsdos.dat\" u 1:($%d) w l  lw 2 lc rgb  \"gray\"   lt 1      title \"%d\"   ,\\", N_peratom_HartrOrbit+3 , 0);
+            fprintf(GNU,"\n\"./qsdos.dat\" u 1:($%d) w l  lw 2 lc rgb  \"black\"   lt 1     title \"%d\"   ,\\", N_peratom_HartrOrbit+2, 0);
+            fprintf(GNU,"\n\"./qsdos.dat\" u 1:($%d) w l  lw 2 lc rgb  \"gray\"   lt 1      title \"%d\"   ,\\", N_peratom_HartrOrbit+3, 0);
             fprintf(GNU,"\n\"dos.dat\" u 1:2     w l title \"total\" lc rgb \"black\"");
 
             fprintf(GNU,"\n\npause -1 ");
             fclose(GNU);
         }
     }//mode 100
-    if (mode == std::string("band")  )      band(KS_eigenEnergy,muDFT    , knum );
+    if (mode == std::string("band")  )      band(KS_eigenEnergy,muDFT, knum );
     if (mode == std::string("hartreeband")  )     band(H_k_inModelSpace, muTB,   knum);
     if (mode == std::string("qsband") ) {
-        band(KS_eigenEnergy, muDFT , knum);
+        band(KS_eigenEnergy, muDFT, knum);
 //        band(H_k_inModelSpace, muTB,knum);
         Eigen::MatrixXcd  retGkw_full;
         Eigen::MatrixXcd  retGkw;
@@ -169,7 +169,7 @@ void qs_spectra(ImgFreqFtn & SelfE_w ,std::vector<Eigen::MatrixXcd>  KS_eigenVec
             para_range(0,Spectral_EnergyGrid-1,mpi_numprocs,itsRank, &itssta, &itsend);
             ImgFreqFtn itsSE(0);
             itsSE.realFreq( E0,  real(dE), (itsend-itssta+1), N_peratom_HartrOrbit, NumCorrAtom, 0, itssta );
-            if(mpi_rank == itsRank) itsSE.update( SelfE_w , 1, 0, 0);
+            if(mpi_rank == itsRank) itsSE.update( SelfE_w, 1, 0, 0);
             itsSE.mpiBcast(itsRank, MPI_COMM_WORLD);
             for (int k=0; k< knum; k++) {
                 for(int n=itssta; n<=itsend; n++) {
@@ -191,14 +191,14 @@ void qs_spectra(ImgFreqFtn & SelfE_w ,std::vector<Eigen::MatrixXcd>  KS_eigenVec
             }//k
         }//its
 
-        ifroot    datap1 = fopen("qsband.dat"       , "w");
+        ifroot    datap1 = fopen("qsband.dat", "w");
         ifroot    fclose(datap1);
         for(int itsRank=0 ; itsRank<mpi_numprocs; itsRank++) {
             if(mpi_rank==itsRank) {
-                datap1 = fopen("qsband.dat"       , "a");
+                datap1 = fopen("qsband.dat", "a");
                 for (int k=0; k< knum; k++) {
                     for(int n=0; n<Spectral_EnergyGrid; n++) {
-                        fprintf(datap1, " %d   %0.8f   %+0.3f    %0.8f" , k+myksta, kdist_band[k+myksta], real(E0+n*dE) ,  spectralWeight[k][n]  );  //for k, n
+                        fprintf(datap1, " %d   %0.8f   %+0.3f    %0.8f", k+myksta, kdist_band[k+myksta], real(E0+n*dE),  spectralWeight[k][n]  );    //for k, n
                         for(int orb=0; orb<N_peratom_HartrOrbit*NumCorrAtom; orb++)  fprintf(datap1, "    %+0.8f", partial_spectralWeight[k][n][orb]);
                         fprintf(datap1, "\n" );
                     }//n

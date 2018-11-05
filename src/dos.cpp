@@ -2,7 +2,7 @@
 #include "tight_common.h"
 #include "model.h"
 #include "TB.h"
-void dos(Eigen::VectorXd * KS_eigenEnergy,std::vector<Eigen::MatrixXcd> & KS_eigenVectors_orthoBasis , double E_window, double & muDFT  ) {
+void dos(Eigen::VectorXd * KS_eigenEnergy,std::vector<Eigen::MatrixXcd> & KS_eigenVectors_orthoBasis, double E_window, double & muDFT  ) {
     int  index ;
     double de = real(dE);
     ifroot printf("********************************\n");
@@ -36,7 +36,8 @@ void dos(Eigen::VectorXd * KS_eigenEnergy,std::vector<Eigen::MatrixXcd> & KS_eig
                     assert(Aw>=0);
                     for(int at1=0; at1<NumCorrAtom; at1++) {
                         for(int m=0; m< N_peratom_HartrOrbit ; m++) {
-                            int mDFT = m+HartrRange_DFT[at1][0];
+//                            int mDFT = m+HartrRange_DFT[at1][0];
+                            int mDFT = HartrIndex_inDFT[at1*N_peratom_HartrOrbit+m];
                             PdosData(index,at1*N_peratom_HartrOrbit+m) +=  Aw * pow(std::abs(KS_eigenVectors_orthoBasis[k](mDFT,band)),2)    ;
                         }
                     }
@@ -103,20 +104,20 @@ void dos(Eigen::VectorXd * KS_eigenEnergy,std::vector<Eigen::MatrixXcd> & KS_eig
             for(int at2=0; at2<NumCorrAtom; at2++) {
                 for(int m1=0; m1<N_peratom_HartrOrbit; m1++) {
                     for(int m2=0; m2<N_peratom_HartrOrbit; m2++) {
-                        int m1DFT = m1+HartrRange_DFT[at1][0];
-                        int m2DFT = m2+HartrRange_DFT[at2][0];
+//                        int m1DFT = m1+HartrRange_DFT[at1][0];
+//                        int m2DFT = m2+HartrRange_DFT[at2][0];
+                        int m1DFT = HartrIndex_inDFT[at1*N_peratom_HartrOrbit+m1];
+                        int m2DFT = HartrIndex_inDFT[at2*N_peratom_HartrOrbit+m2];
                         for(int band=0; band<NumOrbit; band++) {
-//                            if( KS_eigenEnergy[k][band] < muDFT) {
                             occupation_matLoc[at1][at2][m1][m2]
                             += conj(KS_eigenVectors_orthoBasis[k](m1DFT,band)) * KS_eigenVectors_orthoBasis[k](m2DFT,band) * 1./(1.+std::exp(beta*(KS_eigenEnergy[k][band]-muDFT)));   //   |<band|orbital>|^2
-//                            }
                         }
                     }//m2
                 }//m1
             }//at2
         }//at1
     }
-    MPI_Allreduce(occupation_matLoc, occupation_mat, NumCorrAtom*NumCorrAtom*N_peratom_HartrOrbit*N_peratom_HartrOrbit , MPI_DOUBLE_COMPLEX, MPI_SUM,  MPI_COMM_WORLD);
+    MPI_Allreduce(occupation_matLoc, occupation_mat, NumCorrAtom*NumCorrAtom*N_peratom_HartrOrbit*N_peratom_HartrOrbit, MPI_DOUBLE_COMPLEX, MPI_SUM,  MPI_COMM_WORLD);
     for(int at1=0; at1<NumCorrAtom; at1++) {
         ifroot std::cout <<  "Corr ATOM=" << at1<<"\n";
         for(int m1=0; m1<N_peratom_HartrOrbit; m1++) {
@@ -253,7 +254,7 @@ void dos(Eigen::VectorXd * KS_eigenEnergy,std::vector<Eigen::MatrixXcd> & KS_eig
 
             FILE *datap2;   //dos.dat
 //            datap2 = fopen( (std::string("dos.dat")+std::to_string(  (at1+1) )).c_str()       , "w");
-            datap2 = fopen( (std::string("dos.dat")+ intToString(  (at1+1) )).c_str()       , "w");
+            datap2 = fopen( (std::string("dos.dat")+ intToString(  (at1+1) )).c_str(), "w");
             fprintf(datap2, "E    Totaldos");
             for(int k=0; k<N_peratom_HartrOrbit; k++) {
                 fprintf(datap2, "  Pdos%d",k);
@@ -273,7 +274,7 @@ void dos(Eigen::VectorXd * KS_eigenEnergy,std::vector<Eigen::MatrixXcd> & KS_eig
 
 
             double IDOS[N_peratom_HartrOrbit+1];
-            datap2 = fopen( (std::string("Integdos.dat")+ intToString(at1+1)).c_str()       , "w");
+            datap2 = fopen( (std::string("Integdos.dat")+ intToString(at1+1)).c_str(), "w");
             fprintf(datap2, "E    Totaldos");
             IDOS[0] = 0.0;
             for(int k=0; k<N_peratom_HartrOrbit; k++) {
@@ -306,7 +307,7 @@ void dos(Eigen::VectorXd * KS_eigenEnergy,std::vector<Eigen::MatrixXcd> & KS_eig
             if (KS_eigenEnergy[k][band]-muDFT < -E_window  ) TNumEle_local +=1.0;
         }
     }
-    MPI_Allreduce(&(TNumEle_local), &(TNumEle) , 1, MPI_DOUBLE, MPI_SUM,  MPI_COMM_WORLD);
+    MPI_Allreduce(&(TNumEle_local), &(TNumEle), 1, MPI_DOUBLE, MPI_SUM,  MPI_COMM_WORLD);
     TNumEle/=knum_mpiGlobal;
 
     E=-E_window-(de);
@@ -361,7 +362,7 @@ double FromHkToNele (double muDFT, std::vector<Eigen::VectorXd>  & KS_eigenEnerg
             TNumEle_local +=  1./(1+std::exp( beta*(KS_eigenEnergy[k][band]-muDFT) ));
         }
     }
-    MPI_Allreduce(&(TNumEle_local), &(TNumEle) , 1, MPI_DOUBLE, MPI_SUM,  MPI_COMM_WORLD);
+    MPI_Allreduce(&(TNumEle_local), &(TNumEle), 1, MPI_DOUBLE, MPI_SUM,  MPI_COMM_WORLD);
     TNumEle/=knum_mpiGlobal;
     return TNumEle;
 }

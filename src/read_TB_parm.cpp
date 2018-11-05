@@ -69,7 +69,7 @@ int read_OverlapMat(Eigen::MatrixXi &S_overlap_Rindex, Eigen::VectorXcd  &S_over
     double S_max_ofdiagonal=0.;
     int overlap_exist;
 
-    if (  access(readfile.c_str() , F_OK)!= 0) {
+    if (  access(readfile.c_str(), F_OK)!= 0) {
         ifroot  std::cout << "Cannot found Overlap matrix\n"  ;
         overlap_exist =0;
     }
@@ -126,7 +126,7 @@ int  read_DensityMat(Eigen::MatrixXi &NumMat_Rindex, Eigen::VectorXcd  &NumMat_R
     FILE *dataIN = fopen(hamiltonian.c_str(), "r");
 
     int overlap_exist;
-    if (  access(hamiltonian.c_str() , F_OK)!= 0) {
+    if (  access(hamiltonian.c_str(), F_OK)!= 0) {
         overlap_exist =0;
         ifroot printf("Cannot open Occupation Mat file...\n");
     }

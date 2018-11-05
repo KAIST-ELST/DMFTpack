@@ -53,15 +53,7 @@ void gen_Uijkl(int n_spinorb, double U, double Uprime, double JH, std::vector<cm
             }
         }
     }
-//        if (estimate_dim==0)
-//        {
-//            Utensor.setZero(index);
-//            Uindex.setZero(index,4);
-//        }
-//        else {
     write_Uijkl(index, Utensor, Uindex, indexC);
-//        }
-//    }
 }
 
 void gen_Uijkl_density_density(int n_spinorb, double U, double Uprime, double JH, std::vector<cmplx > & Utensor, std::vector<Eigen::VectorXi>  & Uindex ) {
@@ -86,14 +78,7 @@ void gen_Uijkl_density_density(int n_spinorb, double U, double Uprime, double JH
             }
         }
     }
-//    if( estimate_dim==0 ){
-//    Utensor.setZero(index);
-//    Uindex.setZero(index,4);
-//    }
-//    else {
     write_Uijkl(n_spinorb*n_spinorb, Utensor, Uindex, indexC);
-//    }
-//    }
 }
 
 

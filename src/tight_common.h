@@ -40,7 +40,7 @@ extern int downfolding;
 
 //
 extern int   *Hart2Corr;
-extern  Eigen::VectorXi CorrToHartr;
+extern Eigen::MatrixXi CorrToHartr;
 extern int  *HartrIndex_inDFT;
 
 
@@ -59,6 +59,7 @@ extern int  *FromOrbitalToAtom; //0,1,...
 extern int  *FromOrbitalToLocalOrbital_DFT; //0,1,...
 extern int  *FromOrbitalToAtom_model; //0,1,...
 extern int  k_pointx, k_pointy, k_pointz,  k_grid, mu_adjust, SpinP_switch, NumAtom, BraLatt_x,BraLatt_y,BraLatt_z,Measure_nn, NumCorrAtom, NumCluster,NumHartrOrbit;
+extern int NumAtom_per_cluster, NumCluster, NumHartrOrbit_per_cluster;
 extern int H0_from_OpenMX;
 extern double beta, NumberOfElectron, EnergyUnit, doublecounting, Band_renorm,  TotalCorrEle_in_Imp;
 extern std::string dctype, localOrbitalType, SOLVERtype, Lowlevel_SOLVERtype;
@@ -79,16 +80,16 @@ extern cmplx w0, dw;
 extern int  SOCCal,  interOrbitHop;
 
 extern int **HartrRange;
-extern int **HartrRange_DFT;
+//extern int **HartrRange_DFT;
 
 extern int NsBath;
 
 //Local var
-extern std::vector<Eigen::MatrixXcd> impurity_site_Hamiltonian;
+extern Eigen::MatrixXcd impurity_site_Hamiltonian;
 
 extern Eigen::MatrixXcd Sw_doublecounting, NumMatrix;
 
-extern double  **UMatrix;
+//extern double  **UMatrix;
 
 
 extern std::vector<Eigen::VectorXi> Uindex;

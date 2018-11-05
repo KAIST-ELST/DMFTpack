@@ -3,7 +3,6 @@
 #include <unistd.h>
 #include <assert.h>
 #include "dmft_common.h"
-//#include <vector>
 #include <array>
 
 
@@ -175,7 +174,6 @@ void ImgFreqFtn::Initialize(double beta, int N_freq,  int NSpinOrbitPerAtom,int 
     startIndx_ = startIndx;
 
     imgFreq = new double [Nfreq_];
-//    Ftn_.setZero(Nfreq_+5, (Norbit)* (Norbit));
     Ftn_.resize(Nfreq_+5);
     for(int w=0; w<Nfreq_+5; w++) {
         Ftn_[w].setZero(Norbit,Norbit);
@@ -183,8 +181,6 @@ void ImgFreqFtn::Initialize(double beta, int N_freq,  int NSpinOrbitPerAtom,int 
     for(int w=0; w<Nfreq_; w++) {
         imgFreq[w] = pi*(2.*(w+startIndx_)+1)/beta;
     }
-
-
     MEMCHECK =  new int;
     *MEMCHECK = magicNumber;
 }
@@ -225,6 +221,9 @@ int  ImgFreqFtn::getNFreq() {
 int  ImgFreqFtn::getNOrbital() {
     return Norbit;
 }
+double ImgFreqFtn::getValue( int w) {
+    return imgFreq[w-startIndx_];
+}
 cmplx ImgFreqFtn::getValue(int w, int n, int m) {
     assert(0<= w-startIndx_ );
     assert(w-startIndx_ < Nfreq_+5);
@@ -234,66 +233,73 @@ cmplx ImgFreqFtn::getValue(int w, int n, int m) {
     assert(m < Norbit);
     return Ftn_.at(w-startIndx_)(n,m);
 }
-double ImgFreqFtn::getValue( int w) {
-    return imgFreq[w-startIndx_];
+cmplx ImgFreqFtn::getValueSubMat(int w, int site,  int n, int m) {
+//    assert(0<= w-startIndx_ );
+//    assert(w-startIndx_ < Nfreq_+5);
+//    assert(0<= n );
+//    assert(0<= m );
+//    assert(n < Norbit);
+//    assert(m < Norbit);
+
+    int n0= site *NSpinOrbitPerAtom_ +n ;
+    int m0= site *NSpinOrbitPerAtom_ +m ;
+    return Ftn_.at(w-startIndx_)(n0,m0);
 }
 Eigen::MatrixXcd ImgFreqFtn::getMatrix(int w) {
-//    Eigen::MatrixXcd result (Norbit, Norbit);
-//    for (int n =0; n<Norbit; n++) {
-//        for (int m =0; m<Norbit; m++) {
-//            result(n,m) = Ftn_.at(w)(n, m);
-//        }
-//    }
-//    return result;
     return Ftn_.at(w);
 }
+Eigen::MatrixXcd ImgFreqFtn::getMatrix(int w, int site, int dim) {
+//    Eigen::MatrixXcd result (NSpinOrbitPerAtom_, NSpinOrbitPerAtom_);
+    return Ftn_.at(w).block(site*dim, site*dim, dim,dim);
+}
+
+
 std::vector<Eigen::MatrixXcd>  ImgFreqFtn::getFtn_data() {
     return Ftn_;
 }
 
-Eigen::MatrixXcd ImgFreqFtn::getMatrix(int w, int site) {
-    Eigen::MatrixXcd result (NSpinOrbitPerAtom_, NSpinOrbitPerAtom_);
-    for (int n =0; n<NSpinOrbitPerAtom_; n++) {
-        for (int m =0; m<NSpinOrbitPerAtom_; m++) {
-            int n1 = site *  NSpinOrbitPerAtom_ + n;
-            int m1 = site *  NSpinOrbitPerAtom_ + m;
-            result(n,m) = Ftn_.at(w)( n1,  m1);
-        }
-    }
-    return result;
-}
-
-
-void ImgFreqFtn::setMatrix(int w, int site,  Eigen::MatrixXcd value ) {
-    if(NSpinOrbitPerAtom_ != value.rows())
-        exit(1);
-
-    for (int n =0; n<NSpinOrbitPerAtom_; n++) {
-        for (int m =0; m<NSpinOrbitPerAtom_; m++) {
-            int n1 = site *  NSpinOrbitPerAtom_ + n;
-            int m1 = site *  NSpinOrbitPerAtom_ + m;
-            Ftn_.at(w) (n1, m1) = value(n,m);
-        }
-    }
-}
 
 
 
 void ImgFreqFtn::setMatrix(int w, Eigen::MatrixXcd value ) {
     if(Norbit != value.rows())
         exit(1);
-
-    //for (int n =0; n<Norbit; n++) {
-    //    for (int m =0; m<Norbit; m++) {
-    //        Ftn_.at(w)( n ,  m) = value(n,m);
-    //    }
-    //}
     Ftn_.at(w) = value;
 }
+
+void ImgFreqFtn::setMatrix(int w, int site,  Eigen::MatrixXcd value ) {
+    if(NSpinOrbitPerAtom_ != value.rows())
+        exit(1);
+
+    Ftn_.at(w).block(site*NSpinOrbitPerAtom_, site*NSpinOrbitPerAtom_, NSpinOrbitPerAtom_, NSpinOrbitPerAtom_) = value;
+
+
+    //for (int n =0; n<NSpinOrbitPerAtom_; n++) {
+    //    for (int m =0; m<NSpinOrbitPerAtom_; m++) {
+    //        int n1 = site *  NSpinOrbitPerAtom_ + n;
+    //        int m1 = site *  NSpinOrbitPerAtom_ + m;
+    //        Ftn_.at(w) (n1, m1) = value(n,m);
+    //    }
+    //}
+}
+
+
+
 
 
 void ImgFreqFtn::setValue(int w, int n, int m, cmplx value) {
     Ftn_.at(w-startIndx_)(n, m)= value;
+}
+
+void ImgFreqFtn::setValueSubMat(int w, int site,  int n, int m, cmplx value) {
+    int n0= site *NSpinOrbitPerAtom_ +n ;
+    int m0= site *NSpinOrbitPerAtom_ +m ;
+    Ftn_.at(w-startIndx_)(n0, m0)= value;
+}
+void ImgFreqFtn::setValueSubMat(int w, int site, int dim,  int n, int m, cmplx value) {
+    int n0= site * dim +n ;
+    int m0= site * dim +m ;
+    Ftn_.at(w-startIndx_)(n0, m0)= value;
 }
 
 void  ImgFreqFtn::dataOut(const std::string &filename) {
@@ -323,7 +329,7 @@ void  ImgFreqFtn::dataOut(const std::string &filename) {
 
 void  ImgFreqFtn::dataOut_full(const std::string &filename) {
     if(mpi_rank==0) {
-        FILE *datap4 = fopen((filename).c_str()  , "w");
+        FILE *datap4 = fopen((filename).c_str(), "w");
         int w,n,m;
         for(w=0; w<Nfreq_; w++) {
             for(m=0; m< Norbit; m++) {
@@ -350,12 +356,12 @@ void  ImgFreqFtn::dataOut_full(const std::string &filename) {
 }
 void  ImgFreqFtn::dataOut_full_pararell(const std::string &filename) {
     FILE *datap1;
-    ifroot    datap1 = fopen( (filename).c_str()    , "w");
+    ifroot    datap1 = fopen( (filename).c_str(), "w");
     ifroot    fclose(datap1);
 
     for(int itsRank=0 ; itsRank<mpi_numprocs; itsRank++) {
         if(mpi_rank==itsRank) {
-            datap1 = fopen( (filename).c_str()   , "a");
+            datap1 = fopen( (filename).c_str(), "a");
             for (int w=0; w< Nfreq_; w++) {
                 for(int m=0; m< Norbit; m++) {
                     for(int n=0; n< Norbit; n++) {
@@ -759,7 +765,7 @@ void ImgFreqFtn::mpiBcast(int root, MPI_Comm comm) {
     }
 
 
-    MPI_Bcast(imgFreq , Nfreq_, MPI_DOUBLE, root, comm);
+    MPI_Bcast(imgFreq, Nfreq_, MPI_DOUBLE, root, comm);
     MPI_Bcast(&startIndx_,1, MPI_INT, root, comm);
 
     MPI_Bcast(Ftn_for_mpi.data(), Ftn_for_mpi.size(), MPI_DOUBLE_COMPLEX, root, comm);
@@ -798,9 +804,9 @@ void ImgFreqFtn::estimate_asymto(int order) {
     }
     else if(order==2) {
         //Asymto S2/(iw^2) + ...
-        w0 = 1./std::pow( (*this).getValue(Nfreq_-3)  ,4);
-        w1 = 1./std::pow( (*this).getValue(Nfreq_-2)  ,4);
-        w2 = 1./std::pow( (*this).getValue(Nfreq_-1)  ,4);
+        w0 = 1./std::pow( (*this).getValue(Nfreq_-3),4);
+        w1 = 1./std::pow( (*this).getValue(Nfreq_-2),4);
+        w2 = 1./std::pow( (*this).getValue(Nfreq_-1),4);
 
         tail[0] = (*this).getMatrix(Nfreq_-3) ;
         tail[1] = (*this).getMatrix(Nfreq_-2) ;
