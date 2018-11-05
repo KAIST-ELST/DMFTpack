@@ -176,11 +176,11 @@ After running OpenMX with option " HS.fileout   on", two additional input files 
 
 ### Useful output files
 
-- Gw_loc.full.dat[N]
+- Gw_loc.full.dat[N]:
   Local Green's function G<sub>αβ</sub>(iω<sub>n</sub>) for N-th correlated atom. For each line, five numbers represent the n, α, β, real and imaginary part of the Green's function, respectively.
-- Gw_imp.full.dat[N]
+- Gw_imp.full.dat[N]:
   Same for impurity Green's function.
-- Sw_SOLVER.full.dat
+- Sw_SOLVER.full.dat:
   Self-energy calculated from the impurity solver.
-- Numele.dat
+- Numele.dat:
   Number matrix n<sub>αβ</sub> calculated by -G<sub>αβ</sub>(τ=β<sup>-</sup>).
