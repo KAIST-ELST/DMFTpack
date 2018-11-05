@@ -122,21 +122,24 @@ void  downfolding_ftn
 
 
     ifroot        std::cout <<" (decomp) \n";
-    impurity_site_Hamiltonian.resize(NumCluster);
     ifroot std::cout << "We have " << NumCluster <<" clusters with "<< NumHartrOrbit_per_cluster <<" orbitals for each cluster\n";
+    impurity_site_Hamiltonian.setZero( NumCluster*NumHartrOrbit_per_cluster, NumCluster*NumHartrOrbit_per_cluster);
     for(int cl=0; cl<NumCluster; cl++) {
-        impurity_site_Hamiltonian[cl].setZero(NumHartrOrbit_per_cluster,NumHartrOrbit_per_cluster);
         for(int i=0; i<NumHartrOrbit_per_cluster; i++) {
+            int i0=cl*NumHartrOrbit_per_cluster+i;
             for(int j=0; j<NumHartrOrbit_per_cluster; j++) {
-                impurity_site_Hamiltonian[cl](i,j)= HR[cl](i,j);
+                int j0=cl*NumHartrOrbit_per_cluster+j;
+                impurity_site_Hamiltonian( i0,j0) = HR[cl](i,j);
             }
-            ifroot std::cout << std::fixed << std::setprecision(4)<< real(impurity_site_Hamiltonian[cl](i,i))  <<" ";
+            ifroot std::cout << std::fixed << std::setprecision(4)<< real(impurity_site_Hamiltonian(i0,i0))  <<" ";
         }
         ifroot        std::cout <<"\n";
     }
     ifroot        std::cout <<"Himp, Matrix:\n";
     for(int cl=0; cl<NumCluster; cl++) {
-        ifroot std::cout << std::fixed << std::setprecision(4)<< (impurity_site_Hamiltonian[cl])  <<"\n";
+        ifroot std::cout << std::fixed << std::setprecision(4)<<
+                         (impurity_site_Hamiltonian.block(cl*NumHartrOrbit_per_cluster,cl*NumHartrOrbit_per_cluster,
+                                 NumHartrOrbit_per_cluster, NumHartrOrbit_per_cluster) )  <<"\n";
     }
 }
 

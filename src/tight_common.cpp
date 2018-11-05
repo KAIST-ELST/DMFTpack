@@ -91,7 +91,7 @@ int Spectral_EnergyGrid;
 cmplx dw, w0;
 //cmplx ** delta_w ;
 //cmplx ** delta_t ;
-std::vector<Eigen::MatrixXcd> impurity_site_Hamiltonian;
+Eigen::MatrixXcd impurity_site_Hamiltonian;
 //cmplx **  Sw_inf;
 //cmplx  ** Sw_Hartree, ** Sw_doublecounting;
 //cmplx  **  NumMatrix;
@@ -100,7 +100,7 @@ Eigen::MatrixXcd  NumMatrix;
 //double   **  UMatrix;
 int * isOrbitalCorr, *isOrbitalCorrinHart,  * isOrbitalHartr, * isOrbitalHartrDFT, *CorrIndex,  *HartrIndex, *HartrIndex_inDFT, *Hart2Corr;
 //*CorrToHartr,
-Eigen::VectorXi CorrToHartr;
+Eigen::MatrixXi CorrToHartr;
 int impurityBasisSwitch;
 
 //Eigen::MatrixXi Uindex;
@@ -388,7 +388,7 @@ void read_inputFile(const std::string &hamiltonian) {
     isOrbitalCorrinHart = new int [N_peratom_HartrOrbit *NumCorrAtom];
     Hart2Corr =           new int [N_peratom_HartrOrbit * NumCorrAtom];
     HartrIndex =  new int [N_peratom_HartrOrbit * NumCorrAtom];
-    CorrToHartr.setZero(NSpinOrbit_per_atom*NumCorrAtom);
+    CorrToHartr.setZero(NumCorrAtom, NSpinOrbit_per_atom);
     CorrIndex = new int   [NSpinOrbit_per_atom * NumCorrAtom];
 
     isOrbitalCorr =       new int [NumOrbit];
@@ -552,16 +552,17 @@ void setCorrelatedSpaceIndex( std::vector<int> HartreeOrbital_idx, int NumCorrAt
         }
     }
 
-    test=0; //test=0,1,... NumCorrAtom* NSpinOrbit_per_atom;
+    int        test2=0;
     for(int at=0; at<NumCorrAtom; at++) {
+        test=0; //test=0,1,...  NSpinOrbit_per_atom;
         ifroot std::cout << "Hartree orbital range for atom "<<at<< ": from " << HartreeOrbital_idx[at*2+0]  <<"to" << HartreeOrbital_idx[at*2+1] <<"\n";
         for(int i=HartreeOrbital_idx[at*2+0]; i<HartreeOrbital_idx[at*2+1]; i++) {
             int j= i-(HartreeOrbital_idx[at*2+0]);
-            assert(j>=0 and j< N_peratom_HartrOrbit);
             if(isOrbitalCorr[i]) {
-                CorrToHartr[test] = at*N_peratom_HartrOrbit + j ;
-                Hart2Corr[at*N_peratom_HartrOrbit+j] = test;
+                CorrToHartr(at,test) = at*N_peratom_HartrOrbit + j ;
+                Hart2Corr[at*N_peratom_HartrOrbit+j] = test2;
                 test++;
+                test2++;
             }
             else {
                 Hart2Corr[j] = -999999;
@@ -573,12 +574,11 @@ void setCorrelatedSpaceIndex( std::vector<int> HartreeOrbital_idx, int NumCorrAt
         MPI_Barrier(MPI_COMM_WORLD);
         exit(1);
     }
-    test=0;
     for(int at=0; at<NumCorrAtom; at++) {
+        test=0;
         for(int i=HartreeOrbital_idx[at*2+0]; i<HartreeOrbital_idx[at*2+1]; i++) {
             if(isOrbitalCorr[i]) {
-                CorrIndex[test] = HartrIndex[CorrToHartr[test]] ;
-                assert(CorrIndex[test] == i );
+                CorrIndex[test] = HartrIndex[CorrToHartr(at,test)] ;
                 test++;
             }
         }

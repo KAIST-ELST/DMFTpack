@@ -40,7 +40,7 @@ extern int downfolding;
 
 //
 extern int   *Hart2Corr;
-extern  Eigen::VectorXi CorrToHartr;
+extern Eigen::MatrixXi CorrToHartr;
 extern int  *HartrIndex_inDFT;
 
 
@@ -85,7 +85,7 @@ extern int **HartrRange;
 extern int NsBath;
 
 //Local var
-extern std::vector<Eigen::MatrixXcd> impurity_site_Hamiltonian;
+extern Eigen::MatrixXcd impurity_site_Hamiltonian;
 
 extern Eigen::MatrixXcd Sw_doublecounting, NumMatrix;
 

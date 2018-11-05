@@ -50,14 +50,17 @@ public:
 
     int  getNFreq();
     int  getNOrbital();
-    std::complex<double>   getValue(int freq_indx, int orbit1, int orbit2);
     double                 getValue(int freq_indx);
+    std::complex<double>   getValue(int freq_indx, int orbit1, int orbit2);
+    std::complex<double>   getValueSubMat(int freq_indx, int site,  int orbit1, int orbit2);
     Eigen::MatrixXcd       getMatrix(int w) ;
-    Eigen::MatrixXcd       getMatrix(int w,int site) ;
+    Eigen::MatrixXcd       getMatrix(int w, int site, int dim) ;
 std::vector<Eigen::MatrixXcd> getFtn_data();
-    void    setMatrix(int w, Eigen::MatrixXcd value ) ;
+    void    setMatrix(int w,            Eigen::MatrixXcd value ) ;
     void    setMatrix(int w, int site,  Eigen::MatrixXcd value ) ;
-    void    setValue(int freq_indx, int orbit1, int orbit2,  std::complex<double> value);
+    void    setValue      (int w,                   int orbit1, int orbit2,  std::complex<double> value);
+    void    setValueSubMat(int w, int site, int orbit1, int orbit2,  std::complex<double> value);
+    void    setValueSubMat(int w, int site, int dim, int orbit1, int orbit2,  std::complex<double> value);
 
     void    read_diag  (const std::string &filename );
     void    read_uppertrian  (const std::string &filename );

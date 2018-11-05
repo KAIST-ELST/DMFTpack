@@ -221,6 +221,9 @@ int  ImgFreqFtn::getNFreq() {
 int  ImgFreqFtn::getNOrbital() {
     return Norbit;
 }
+double ImgFreqFtn::getValue( int w) {
+    return imgFreq[w-startIndx_];
+}
 cmplx ImgFreqFtn::getValue(int w, int n, int m) {
     assert(0<= w-startIndx_ );
     assert(w-startIndx_ < Nfreq_+5);
@@ -230,66 +233,73 @@ cmplx ImgFreqFtn::getValue(int w, int n, int m) {
     assert(m < Norbit);
     return Ftn_.at(w-startIndx_)(n,m);
 }
-double ImgFreqFtn::getValue( int w) {
-    return imgFreq[w-startIndx_];
+cmplx ImgFreqFtn::getValueSubMat(int w, int site,  int n, int m) {
+//    assert(0<= w-startIndx_ );
+//    assert(w-startIndx_ < Nfreq_+5);
+//    assert(0<= n );
+//    assert(0<= m );
+//    assert(n < Norbit);
+//    assert(m < Norbit);
+
+    int n0= site *NSpinOrbitPerAtom_ +n ;
+    int m0= site *NSpinOrbitPerAtom_ +m ;
+    return Ftn_.at(w-startIndx_)(n0,m0);
 }
 Eigen::MatrixXcd ImgFreqFtn::getMatrix(int w) {
-//    Eigen::MatrixXcd result (Norbit, Norbit);
-//    for (int n =0; n<Norbit; n++) {
-//        for (int m =0; m<Norbit; m++) {
-//            result(n,m) = Ftn_.at(w)(n, m);
-//        }
-//    }
-//    return result;
     return Ftn_.at(w);
 }
+Eigen::MatrixXcd ImgFreqFtn::getMatrix(int w, int site, int dim) {
+//    Eigen::MatrixXcd result (NSpinOrbitPerAtom_, NSpinOrbitPerAtom_);
+    return Ftn_.at(w).block(site*dim, site*dim, dim,dim);
+}
+
+
 std::vector<Eigen::MatrixXcd>  ImgFreqFtn::getFtn_data() {
     return Ftn_;
 }
 
-Eigen::MatrixXcd ImgFreqFtn::getMatrix(int w, int site) {
-    Eigen::MatrixXcd result (NSpinOrbitPerAtom_, NSpinOrbitPerAtom_);
-    for (int n =0; n<NSpinOrbitPerAtom_; n++) {
-        for (int m =0; m<NSpinOrbitPerAtom_; m++) {
-            int n1 = site *  NSpinOrbitPerAtom_ + n;
-            int m1 = site *  NSpinOrbitPerAtom_ + m;
-            result(n,m) = Ftn_.at(w)( n1,  m1);
-        }
-    }
-    return result;
-}
-
-
-void ImgFreqFtn::setMatrix(int w, int site,  Eigen::MatrixXcd value ) {
-    if(NSpinOrbitPerAtom_ != value.rows())
-        exit(1);
-
-    for (int n =0; n<NSpinOrbitPerAtom_; n++) {
-        for (int m =0; m<NSpinOrbitPerAtom_; m++) {
-            int n1 = site *  NSpinOrbitPerAtom_ + n;
-            int m1 = site *  NSpinOrbitPerAtom_ + m;
-            Ftn_.at(w) (n1, m1) = value(n,m);
-        }
-    }
-}
 
 
 
 void ImgFreqFtn::setMatrix(int w, Eigen::MatrixXcd value ) {
     if(Norbit != value.rows())
         exit(1);
-
-    //for (int n =0; n<Norbit; n++) {
-    //    for (int m =0; m<Norbit; m++) {
-    //        Ftn_.at(w)( n ,  m) = value(n,m);
-    //    }
-    //}
     Ftn_.at(w) = value;
 }
+
+void ImgFreqFtn::setMatrix(int w, int site,  Eigen::MatrixXcd value ) {
+    if(NSpinOrbitPerAtom_ != value.rows())
+        exit(1);
+
+    Ftn_.at(w).block(site*NSpinOrbitPerAtom_, site*NSpinOrbitPerAtom_, NSpinOrbitPerAtom_, NSpinOrbitPerAtom_) = value;
+
+
+    //for (int n =0; n<NSpinOrbitPerAtom_; n++) {
+    //    for (int m =0; m<NSpinOrbitPerAtom_; m++) {
+    //        int n1 = site *  NSpinOrbitPerAtom_ + n;
+    //        int m1 = site *  NSpinOrbitPerAtom_ + m;
+    //        Ftn_.at(w) (n1, m1) = value(n,m);
+    //    }
+    //}
+}
+
+
+
 
 
 void ImgFreqFtn::setValue(int w, int n, int m, cmplx value) {
     Ftn_.at(w-startIndx_)(n, m)= value;
+}
+
+void ImgFreqFtn::setValueSubMat(int w, int site,  int n, int m, cmplx value) {
+    int n0= site *NSpinOrbitPerAtom_ +n ;
+    int m0= site *NSpinOrbitPerAtom_ +m ;
+    Ftn_.at(w-startIndx_)(n0, m0)= value;
+}
+void ImgFreqFtn::setValueSubMat(int w, int site, int dim,  int n, int m, cmplx value) {
+    int n0= site * dim +n ;
+    int m0= site * dim +m ;
+    Ftn_.at(w-startIndx_)(n0, m0)= value;
 }
 
 void  ImgFreqFtn::dataOut(const std::string &filename) {
