@@ -45,7 +45,7 @@ void ctqmc_rutgers_seg(  Eigen::MatrixXcd Local_Hamiltonian_ED, double muTB,  Im
 
 
 void proj_to_site( int solverDim, int solver_block, std::vector<int> impurityOrbit,
-                   Eigen::MatrixXcd  impurity_site_Hamiltonian, Eigen::MatrixXcd  SolverBasis,  Eigen::MatrixXcd NumMatrix,  ImgFreqFtn weiss_field,
+                   Eigen::MatrixXcd  impurity_site_Hamiltonian, Eigen::MatrixXcd  SolverBasis,  Eigen::MatrixXcd NumMatrix,  ImgFreqFtn & weiss_field,
                    Eigen::MatrixXcd & projimpurity_site_Hamiltonian,Eigen::MatrixXcd & projSolverBasis,Eigen::MatrixXcd & projNumMatrix, ImgFreqFtn & projweiss_field,
                    Eigen::MatrixXcd  Sw_doublecounting, std::vector<Eigen::MatrixXcd >  dc_weakCorr
                  ) ;
@@ -72,6 +72,9 @@ void weak_solver(
                                  SE_out, Gwimp_in_out,
                                  projUindex, projUtensor);
     }//2PT
+    else {
+        ifroot std::cout << "Please set  Lowlevel_SOLVERTYPE = HF or 2PT\n";
+    }
 
 }
 
@@ -88,14 +91,16 @@ void SOLVER(
 {
 
 
+    ifroot std::cout << "<SOLVER>\n";
+
 
     Eigen::MatrixXcd   projimpurity_site_Hamiltonian, projSolverBasis, projNumMatrix ;
-    projimpurity_site_Hamiltonian.setZero(solverDim, solverDim);
-    projSolverBasis.setIdentity(solverDim, solverDim);
-    projNumMatrix.setZero(solverDim, solverDim);
     ImgFreqFtn projweiss_field(0);
     projweiss_field.Initialize(beta, N_freq, solverDim,1,0);
 
+    projimpurity_site_Hamiltonian.setZero(solverDim, solverDim);
+    projNumMatrix.setZero(solverDim, solverDim);
+    projSolverBasis.setIdentity(solverDim, solverDim);
 
     proj_to_site ( solverDim, solver_block, impurityOrbit,
                    impurity_site_Hamiltonian, SolverBasis, NumMatrix, weiss_field,
@@ -489,13 +494,14 @@ void SOLVER(
 
 
 void proj_to_site( int solverDim, int solver_block, std::vector<int> impurityOrbit,
-                   Eigen::MatrixXcd  impurity_site_Hamiltonian, Eigen::MatrixXcd  SolverBasis,  Eigen::MatrixXcd NumMatrix,  ImgFreqFtn weiss_field,
+                   Eigen::MatrixXcd  impurity_site_Hamiltonian, Eigen::MatrixXcd  SolverBasis,  Eigen::MatrixXcd NumMatrix,  ImgFreqFtn & weiss_field,
                    Eigen::MatrixXcd & projimpurity_site_Hamiltonian,Eigen::MatrixXcd & projSolverBasis,Eigen::MatrixXcd & projNumMatrix, ImgFreqFtn & projweiss_field,
                    Eigen::MatrixXcd  Sw_doublecounting, std::vector<Eigen::MatrixXcd >  dc_weakCorr
                  ) {
 
 
 
+    ifroot std::cout << "proj_to_site\n";
     for(int h1=0; h1< solverDim; h1++) {
         for(int h2=0; h2< solverDim; h2++) {
             int h1F = impurityOrbit.at(h1) ;

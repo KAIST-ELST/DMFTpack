@@ -157,7 +157,7 @@ void read_inputFile(const std::string &hamiltonian) {
     solverdir_default = std::string("~/bin/");
     SOLVERexe   =read_string(std::string("input.parm"), std::string("SOLVER_EXE"), true, solverexe_default);
     SOLVERdir   =read_string(std::string("input.parm"), std::string("SOLVER_DIR"), true, solverdir_default);
-    Lowlevel_SOLVERtype  = read_string(std::string("input.parm"), std::string("Lowlevel_SOLVERTYPE"),true, std::string("SCHF"));
+    Lowlevel_SOLVERtype  = read_string(std::string("input.parm"), std::string("Lowlevel_SOLVERTYPE"),true, std::string("HF"));  //HF, 2PT
 
 
     N_freq    =    read_int(std::string("input.solver"),std::string("input.solver1"), std::string("N_MATSUBARA"),-1);
@@ -554,7 +554,7 @@ void setCorrelatedSpaceIndex( std::vector<int> HartreeOrbital_idx, int NumCorrAt
 
     int        test2=0;
     for(int at=0; at<NumCorrAtom; at++) {
-        test=0; //test=0,1,...  NSpinOrbit_per_atom;
+        int test=0; //test=0,1,...  NSpinOrbit_per_atom;
         ifroot std::cout << "Hartree orbital range for atom "<<at<< ": from " << HartreeOrbital_idx[at*2+0]  <<"to" << HartreeOrbital_idx[at*2+1] <<"\n";
         for(int i=HartreeOrbital_idx[at*2+0]; i<HartreeOrbital_idx[at*2+1]; i++) {
             int j= i-(HartreeOrbital_idx[at*2+0]);
@@ -570,20 +570,22 @@ void setCorrelatedSpaceIndex( std::vector<int> HartreeOrbital_idx, int NumCorrAt
         }
     }
     if(not( test == NumCorrAtom*NSpinOrbit_per_atom)) {
-        ifroot       std::cout << "Please check input,  total number of Correlated orbital !=  NumCorrAtom*NSpinOrbit_per_atom\n" << test<<", " <<NumCorrAtom*NSpinOrbit_per_atom ;
+        ifroot       std::cout << "Please check input,  total number of Correlated orbital !=  NumCorrAtom*NSpinOrbit_per_atom\n" << test2<<", " <<NumCorrAtom*NSpinOrbit_per_atom ;
         MPI_Barrier(MPI_COMM_WORLD);
         exit(1);
     }
+    test2=0;
     for(int at=0; at<NumCorrAtom; at++) {
         test=0;
         for(int i=HartreeOrbital_idx[at*2+0]; i<HartreeOrbital_idx[at*2+1]; i++) {
             if(isOrbitalCorr[i]) {
-                CorrIndex[test] = HartrIndex[CorrToHartr(at,test)] ;
+                CorrIndex[test2] = HartrIndex[CorrToHartr(at,test)] ;
                 test++;
+                test2++;
             }
         }
     }
-    assert(test== NSpinOrbit_per_atom * NumCorrAtom);
+    assert(test2== NSpinOrbit_per_atom * NumCorrAtom);
     MPI_Barrier(MPI_COMM_WORLD);
     ifroot std::cout << "CorrelatedSpace index.\n";
 }//setCorrelatedSpaceIndex;
