@@ -45,7 +45,7 @@ DMFTpack is the software for DFT+DMFT calculation. Various projection methods an
   ```ShellSession
   $ git clone https://github.com/ElectronicStructureTheory-KAIST/DMFTinOpenMX_dev.git
   $ cd DMFTinOpenMX_dev/src
-  $ vi makefie  (Replace the variables with ${} to the proper values for your system.)
+  $ vi makefile  (Replace the variables with ${} to the proper values for your system.)
   $ make all
   ```
 
@@ -68,9 +68,9 @@ DMFTpack is the software for DFT+DMFT calculation. Various projection methods an
   ```
 
 * Now, one may want to do analytic continuation from the imaginary Green's function to the real-frequency spectral function.
-  * Any continuation method can be used to obtain the density of states from the Green's function.
+  * Any continuation method can be used to obtain the density of states from the Green's function, e.g., MQEM ([PRB 98, 205102 (2018)](https://journals.aps.org/prb/abstract/10.1103/PhysRevB.98.205102)) or [ΩMaxent](https://www.physique.usherbrooke.ca/MaxEnt/index.php/Main_Page) ([PRE 94, 023303 (2016)](https://journals.aps.org/pre/abstract/10.1103/PhysRevE.94.023303))
   * For the case of self-energy continuation, one may generate "realFreq_Sw.dat_i_j" file. Here i and j are orbital indices. Each file contains omega for the first column and real and imaginary part of the self-energy for the second and third column, respectively.
-  * (optional) For the system with large spin-orbit coupling, we recommend MQEM method developed by J.-H. Sim [PRB (in press); arXiv:1804.01683]. The source code will be available soon via GitHub (update: 2018-10-19).
+  * (optional) For the system with large spin-orbit coupling, we recommend MQEM method developed by J.-H. Sim. The source code will be available soon via GitHub (update: 2018-10-19).
 
     ```ShellSession
     $ mkdir realFreqSpectrum; cd realFreqSpectrum
@@ -102,20 +102,24 @@ DMFTpack is the software for DFT+DMFT calculation. Various projection methods an
 ### SrVO3
 * As same way, one can obtain band structure of the SrVO3 .
 * For DFT+DMFT calculation, non-interacting Hamiltonian is written in "SYSTEM_NAME.scfout" file, which is the output of the OpenMX code. (In this example one can simply uncompress "SVO113.tar.xz" file)
-* The figure below shows that the SrVO3 Band structure, calculated by two different impurity solvers, namely 2PT and ALPS_CTSEG.![qsband_SVO113_ctqmc](fig/qsband_SVO113_ctqmc.png)
+* The figure below shows that the SrVO3 Band structure, calculated by two different impurity solvers, namely 2PT and ALPS_CTSEG.![qsband_SVO113_ctqmc](docs/fig/qsband_SVO113_ctqmc.png)
 
 
 ## Document 
 
-### list of parameters
+### list of input parameters
 
-four input files required for DMFT calculation.
+After running OpenMX with option " HS.fileout   on", two additional input files required for DMFT calculation.
 
 * List of input files
+
   * "input.parm": the computational information is written here. See below for more details.
+
   * "input.solver": information for impurity solver, e.g., U, N_TAU, ...
-  * "Hk.HWR" and "OverlapMatrix.HWR"(optional): non-interacting Hamiltonian is written in the "Hk.HWR" file. When the non-orthogonal basis is used, the overlap matrix should be provided. 
-  * Alternatively, "Hk.HWR" and "OverlapMatrix.HWR" are replaced by "SYSTEM_NAME.scfout", which can be obtained from OpenMX code output.
+
+  * "SYSTEM_NAME.scfout", which can be obtained from OpenMX code output.
+
+    Alternatively, "SYSTEM_NAME.scfout" will be replaced by "Hk.HWR" and "OverlapMatrix.HWR"(optional): non-interacting Hamiltonian is written in the "Hk.HWR" file. When the non-orthogonal basis is used, the overlap matrix should be provided. 
 
 * input.parm
   * Computational information:
@@ -151,6 +155,7 @@ four input files required for DMFT calculation.
     * SPECTRAL_ENERGY_GRID = (default: 1000)
     * N_K_PATH = the number of paths for the band calculation
     * K_PATH = this keword specifies the paths of the band dispersion
+
 * input.solver
   * impurity_information
     * N_ORBITALS = the number of orbitals in impurity site
@@ -168,3 +173,14 @@ four input files required for DMFT calculation.
     * TEXT_OUTPUT = should be choose "1"
     * MU_VECTOR  = should be set as  "mu_vector.alps.dat"
     * DELTA = should be set as  "delta_t.dat"
+
+### Useful output files
+
+- Gw_loc.full.dat[N]
+  Local Green's function G<sub>αβ</sub>(iω<sub>n</sub>) for N-th correlated atom. For each line, five numbers represent the n, α, β, real and imaginary part of the Green's function, respectively.
+- Gw_imp.full.dat[N]
+  Same for impurity Green's function.
+- Sw_SOLVER.full.dat
+  Self-energy calculated from the impurity solver.
+- Numele.dat
+  Number matrix n<sub>αβ</sub> calculated by -G<sub>αβ</sub>(τ=β<sup>-</sup>).
