@@ -96,10 +96,10 @@ void upfolding_density(std::vector<Eigen::MatrixXcd> &densityMatDFT, std::vector
             int i0= H_Rindex(index,3) ;
             int m0= H_Rindex(index,4) ;
             fprintf(fp_jh3, " %+d %+d %+d %d %d %d %d      %e    %e  \n",
-                    n,l,m,
-                    FromOrbitalToAtom[i0]+1,             FromOrbitalToAtom[m0]+1,
-                    FromOrbitalToLocalOrbital_DFT[i0]+1, FromOrbitalToLocalOrbital_DFT[m0]+1,
-                    real(dual_DMR_dual(index)), imag(dual_DMR_dual(index)));  //Collinear.
+            n,l,m,
+            FromOrbitalToAtom[i0]+1,             FromOrbitalToAtom[m0]+1,
+            FromOrbitalToLocalOrbital_DFT[i0]+1, FromOrbitalToLocalOrbital_DFT[m0]+1,
+            real(dual_DMR_dual(index)), imag(dual_DMR_dual(index)));  //Collinear.
         }
         std::cout << "FILEOUT:DM_DFT_DMFT.HWR\n" ;
 //        std::cout << "DFT+DMFT: Collinear calculation in current version!!!\n";
@@ -113,10 +113,10 @@ void upfolding_density(std::vector<Eigen::MatrixXcd> &densityMatDFT, std::vector
             int i0= H_Rindex(index,3) ;
             int m0= H_Rindex(index,4) ;
             fprintf(fp_jh3, " %+d %+d %+d %d %d %d %d      %e    %e  \n",
-                    n,l,m,
-                    FromOrbitalToAtom[i0]+1,             FromOrbitalToAtom[m0]+1,
-                    FromOrbitalToLocalOrbital_DFT[i0]+1, FromOrbitalToLocalOrbital_DFT[m0]+1,
-                    real(dual_DM_direct_DFTR(index)), imag(dual_DM_direct_DFTR(index)));  //Collinear.
+            n,l,m,
+            FromOrbitalToAtom[i0]+1,             FromOrbitalToAtom[m0]+1,
+            FromOrbitalToLocalOrbital_DFT[i0]+1, FromOrbitalToLocalOrbital_DFT[m0]+1,
+            real(dual_DM_direct_DFTR(index)), imag(dual_DM_direct_DFTR(index)));  //Collinear.
         }
         fclose(fp_jh3);
 
@@ -128,10 +128,10 @@ void upfolding_density(std::vector<Eigen::MatrixXcd> &densityMatDFT, std::vector
             int i0= H_Rindex(index,3) ;
             int m0= H_Rindex(index,4) ;
             fprintf(fp_jh3, " %+d %+d %+d %d %d %d %d      %e    %e  \n",
-                    n,l,m,
-                    FromOrbitalToAtom[i0]+1,             FromOrbitalToAtom[m0]+1,
-                    FromOrbitalToLocalOrbital_DFT[i0]+1, FromOrbitalToLocalOrbital_DFT[m0]+1,
-                    real(direct_DMR_direct(index)), imag(direct_DMR_direct(index)));  //Collinear.
+            n,l,m,
+            FromOrbitalToAtom[i0]+1,             FromOrbitalToAtom[m0]+1,
+            FromOrbitalToLocalOrbital_DFT[i0]+1, FromOrbitalToLocalOrbital_DFT[m0]+1,
+            real(direct_DMR_direct(index)), imag(direct_DMR_direct(index)));  //Collinear.
         }
         std::cout << "FILEOUT:DM_DFTDMFT_dual_direct.HWR\n" ;
         fclose(fp_jh3);

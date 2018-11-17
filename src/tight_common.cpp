@@ -240,7 +240,7 @@ void read_inputFile(const std::string &hamiltonian) {
 
 
 //other variables...
-    NumCluster = NumAtom/ NumAtom_per_cluster;
+    NumCluster = NumCorrAtom / NumAtom_per_cluster;
     NumHartrOrbit_per_cluster = N_peratom_HartrOrbit * NumAtom_per_cluster;
     ifroot std::cout << "We have " << NumCluster <<" clusters with "<< NumHartrOrbit_per_cluster <<" orbitals for each cluster\n";
 

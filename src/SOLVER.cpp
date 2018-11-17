@@ -447,7 +447,7 @@ void SOLVER(
         std::cout << "\nNum ele (decomp,solver), at" <<solver_block<<":";
         for(int n=0; n<N_peratom_HartrOrbit; n+=1) {
             std::cout <<std::fixed << std::setprecision(4)<< std::fixed
-                      <<  real(NumMatrix(solver_block*solverDim+n,  solver_block*solverDim+n)) <<" " ;
+            <<  real(NumMatrix(solver_block*solverDim+n,  solver_block*solverDim+n)) <<" " ;
         }
         std::cout << std::fixed << std::setprecision(4)<< std::fixed   << ";  (total)  = "<< (NumMatrix.block(solver_block*solverDim, solver_block*solverDim, solverDim, solverDim)).trace()   <<"\n" ;
         std::cout << "\n\n";

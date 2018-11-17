@@ -201,8 +201,6 @@ int main(int argc, char *argv[]) {
 ////////////////////////////////////////////////////
 
     /*DFT results and double counting */
-    SelfEnergy_w.Initialize(         beta, N_freq,  NumHartrOrbit_per_cluster, NumCluster, mixingType);
-
     muDFT = 0.0;
     muDFT    =  TightBinding (muDFT, std::string("Hk.HWR"), SelfEnergy_w,   weiss_fieldTB_weakCorr, weiss_fieldTB_strongCorr,  -1, SolverBasis);
     ifroot std::cout << "First run, Initial Chemical potential, we have muDFT: " << muDFT <<"\n";
@@ -237,12 +235,12 @@ int main(int argc, char *argv[]) {
             }
         }
 
-        /*Matsubara self-energy, S_w*/
-        ifroot std::cout <<"Reading Self-energy...\n";
-        double beta_prev;
-        std::ifstream inputbeta("./beta.dat");
-        inputbeta >> beta_prev;
-        if( N_peratom_HartrOrbit> 0) SelfEnergy_w.read_full(std::string("Sw_SOLVER.full.dat"),beta, beta_prev);
+//        /*Matsubara self-energy, S_w*/
+//        ifroot std::cout <<"Reading Self-energy...\n";
+//        double beta_prev;
+//        std::ifstream inputbeta("./beta.dat");
+//        inputbeta >> beta_prev;
+//        if( N_peratom_HartrOrbit> 0) SelfEnergy_w.read_full(std::string("Sw_SOLVER.full.dat"),beta, beta_prev);
 
         FILE * Chem = fopen("./Restart/mu_history.out","r");
         while(!feof(Chem)) {
@@ -255,7 +253,22 @@ int main(int argc, char *argv[]) {
 
 
     /*retarded self-energy, S_E, for quasi-ptl calculation */
-    if(SOLVERtype== std::string("TB"))
+    if(SOLVERtype !=std::string("TB")) {
+        SelfEnergy_w.Initialize(         beta, N_freq,  NumHartrOrbit_per_cluster, NumCluster, mixingType);
+        if(restart!=0 and N_peratom_HartrOrbit >0) {
+            /*Matsubara self-energy, S_w*/
+            ifroot std::cout <<"Reading Self-energy...\n";
+            double beta_prev;
+            std::ifstream inputbeta("./beta.dat");
+            inputbeta >> beta_prev;
+            SelfEnergy_w.read_full(std::string("Sw_SOLVER.full.dat"),beta, beta_prev);
+        }
+        SelfEnergy_w.dataOut(std::string("InitialSw.dat"));
+    }
+
+
+
+    else if(SOLVERtype== std::string("TB"))
         SelfEnergy_E.realFreq(       E0,  real(dE), (myendE-mystaE+1),  NumHartrOrbit_per_cluster, NumCluster, 0, mystaE    );
     if (SOLVERtype == std::string("TB") and mode!=std::string("band") and mode!=std::string("dos")  ) {
         if (restart<=0 ) {
@@ -270,7 +283,6 @@ int main(int argc, char *argv[]) {
     }
 
     ifroot std::cout << "Initial Self-energy was constructed," << mpi_rank <<"\n";
-    SelfEnergy_w.dataOut(std::string("InitialSw.dat"));
 
 /////////////////////////////////////////////
 //single TB run  (band, dos...)

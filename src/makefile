@@ -16,11 +16,11 @@ CC=mpic++
 
 
 #CC=/Users/jae-hoonsim/local/bin/mpic++
-#CCFLAGS=   -std=c++11  
+CCFLAGS=   -std=c++11  
 
 
 #OFLAGS = -O3      
-OFLAGS = -O0      # -g  -ggdb  
+OFLAGS = -O3      # -g  -ggdb  
 
 DEFINES= -DMPI_ENABLED   \
          -DEIGEN_INITIALIZE_MATRICES_BY_ZERO  

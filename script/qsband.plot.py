@@ -1,10 +1,20 @@
 #J.-H. Sim
 
-#How to use: qsband.plot.py  [band_num::Int]  [xtic_label1]  [2] ...
+#How to use: qsband.plot.py [bandPlot: lda, qs, both]  [band_num::Int]  [xtic_label1]  [2] ...
 
 import matplotlib.pyplot as plt
 import numpy as np
 import sys
+import argparse
+
+parser = argparse.ArgumentParser()
+#parser.parse_args()
+
+
+parser.add_argument("-n", "--nband", type=int, help="number of bands")
+parser.add_argument("-g", "--kgrid", type=int, help="k-points grid for each k-lines")
+
+
 
 
 
@@ -13,6 +23,12 @@ fig=plt.figure(num=None, figsize=(3,3), dpi=100, facecolor='w', edgecolor='k') #
 data_raw = np.loadtxt("qsband.dat")
 numOf_K_point    = int( np.amax(data_raw[:,0]+1))
 numOf_w_point = int(data_raw.shape[0]/ numOf_K_point)
+
+
+args = parser.parse_args()
+num_of_seg = args.nband
+grid_per_seg = args.kgrid
+print(num_of_seg)
 
 
 
@@ -54,12 +70,6 @@ omega_last = w_grid[numOf_w_point-1]
 X,Y =  np.meshgrid(k_grid,w_grid)
 
 
-#plt.imshow(Akw, cmap='Purples',aspect='auto', vmin=0, vmax=max_intensity,
-#           extent=[k_origin,  k_last, omega_origin, omega_last],
-#           interpolation='lanczos', origin='lower')
-#
-#plt.pcolor(k_grid, w_grid, Akw, cmap='PuBu_r', vmin=0, vmax=max_intensity, shading='gouraud')
-
 plt.pcolormesh(X,Y, Akw, cmap='PuBu_r', vmin=0, vmax=max_intensity, shading='gouraud')
 
 plt.colorbar()
@@ -94,13 +104,14 @@ plt.colorbar()
 
 
 plt.ylabel("Energy (eV)")
-if(len(sys.argv)>1):
-  num_of_seg = int(sys.argv[1])
-  grid_per_seg = int(numOf_K_point/num_of_seg)
+
+
+if(len(sys.argv)>2):
+#  num_of_seg = int(sys.argv[2])
+#  grid_per_seg = int(numOf_K_point/num_of_seg)
   xtic_points =[k_grid[k] for k in np.arange(0,numOf_K_point,grid_per_seg)]
-#  if(len(sys.argv)-2 == int(int(numOf_K_point)/int(sys.argv[1]))+1   ):
-  if(len(sys.argv)-2 == int(sys.argv[1])+1   ):
-    xtic_label = sys.argv[2:]
+  if(len(sys.argv)-3 == int(sys.argv[2])+1   ):
+    xtic_label = sys.argv[3:]
   else:
     xtic_label = np.arange(0,numOf_K_point, grid_per_seg)
   plt.xticks(xtic_points, xtic_label)

@@ -14,7 +14,7 @@ void  downfolding_ftn
     std::vector<Eigen::MatrixXcd> & KS_eigenVectors_orthoBasis, Eigen::VectorXd  * KS_eigenEnergy,
     double muDFT
 ) {
-    ifroot std::cout <<"<down-folding>\n";
+    ifroot std::cout <<"<downfolding>\n";
 
 
 
@@ -191,7 +191,7 @@ void low_energy_subspace_in_KS_basis(
             }
             assert ( NBAND[k] != 0) ;
             assert ( i1 == NBAND[k]);
-            if(mpi_rank==0 and k==0) std::cout << "<down-folding> NBAND at k=0 is " <<  NBAND[0] <<"\n";
+            if(mpi_rank==0 and k==0) std::cout << "<downfolding> NBAND at k=0 is " <<  NBAND[0] <<"\n";
             if(NBAND[k] < N_peratom_HartrOrbit*NumCorrAtom) {
                 std::cout << "NBAND at rank " <<mpi_rank <<"k-point: " << k <<" = " << NBAND[k] <<"\n";
                 exit(1);

@@ -2,6 +2,9 @@
 #include "tight_common.h"
 #include "model.h"
 #include "TB.h"
+
+
+
 void dos(Eigen::VectorXd * KS_eigenEnergy,std::vector<Eigen::MatrixXcd> & KS_eigenVectors_orthoBasis, double E_window, double & muDFT  ) {
     int  index ;
     double de = real(dE);
@@ -372,6 +375,7 @@ double Nele_non_Inter(
     std::vector<Eigen::MatrixXcd> & H_k_inModelSpace,  std::vector<Eigen::MatrixXcd> & S_overlap
 )
 {
+//find chemical potentiol for non-interacting band
 
     std::vector<Eigen::VectorXd> KS_eigenEnergy(knum);
 

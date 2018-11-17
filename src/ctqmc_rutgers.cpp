@@ -195,7 +195,7 @@ void ctqmc_rutgers_seg(  Eigen::MatrixXcd Local_Hamiltonian_ED, double muTB,  Im
         fprintf(cix, "\n#   N   K   Sz size F^{+,0}, F^{+,1}, F^{+,2}, F^{+,3}, F^{+,4}, F^{+,5}, {Ea,Eb..} ;  {Sa, Sb..}\n");
         for(int alp=0; alp<std::pow(2,NSpinOrbit_per_atom); alp++) {
             fprintf(cix,      "%d  %d   0  0  1  ",
-                    alp+1, countSetBits(alp));
+            alp+1, countSetBits(alp));
             for(int i=0; i<NSpinOrbit_per_atom; i++) {   //alp = \sum_i  n_i * 2^i; i=0,1,... NSpinOrbit_per_atom-1 <=> |n_{NSpinOrbit_per_atom-1}, .., n_1, n_0>
                 int operationState = std::pow(2,i);   // (0,0,...,0,1,0,...0)
                 fprintf(cix,      "%d ", (1-occupation_Bits(i,alp))*(alp+1+operationState));

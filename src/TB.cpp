@@ -102,7 +102,6 @@ double  TightBinding(double mu, const std::string &hamiltonian, ImgFreqFtn & Sel
 
 //mu_adjustTB == {-2,-1,0,1}
 //== -1  Find initial chemical potential setting.
-//== -2, just adjusting chemical potential
 //==  0, no adjusting chem, Green ftn cal.
 //==  1, adjusting chem, Green ftn cal.
 
@@ -246,21 +245,21 @@ double  TightBinding(double mu, const std::string &hamiltonian, ImgFreqFtn & Sel
     if(mu_adjustTB == -1) {
         mu = Nele_non_Inter(knum, knum_mpiGlobal, H_k_inModelSpace, S_overlap);
 
-
-        low_energy_subspace_in_KS_basis(knum, knum_mpiGlobal, NBAND, FromValToKS, mu,
-                                        KS_eigenVectors_orthoBasis, KS_eigenEnergy);
-
-
-        ConstructModelHamiltonian (   knum,  knum_mpiGlobal,  kmesh, accumulated_Num_SpinOrbital,
-                                      H_k_inModelSpace, S_overlap, KS_eigenVectors_orthoBasis, transformMatrix_k,  KS_eigenEnergy, overlap_exist, mu);
-
-
-        downfolding_ftn(knum, knum_mpiGlobal, NBAND, H_k_inModelSpace, KS_eigenVectors_orthoBasis, KS_eigenEnergy,  mu);
-
-        Find_best_correlated_basis(H_k_inModelSpace, SolverBasis, mu);
-        SpreadFtn_PWF(knum, S_overlap, transformMatrix_k, KS_eigenVectors_orthoBasis, accumulated_Num_SpinOrbital);
-        NumMat_PWF(knum, knum_mpiGlobal, mu, NumMatrix, KS_eigenEnergy, DF_CorrBase);
-
+//
+//        low_energy_subspace_in_KS_basis(knum, knum_mpiGlobal, NBAND, FromValToKS, mu,
+//                                        KS_eigenVectors_orthoBasis, KS_eigenEnergy);
+//
+//
+//        ConstructModelHamiltonian (   knum,  knum_mpiGlobal,  kmesh, accumulated_Num_SpinOrbital,
+//                                      H_k_inModelSpace, S_overlap, KS_eigenVectors_orthoBasis, transformMatrix_k,  KS_eigenEnergy, overlap_exist, mu);
+//
+//
+//        downfolding_ftn(knum, knum_mpiGlobal, NBAND, H_k_inModelSpace, KS_eigenVectors_orthoBasis, KS_eigenEnergy,  mu);
+//
+//        Find_best_correlated_basis(H_k_inModelSpace, SolverBasis, mu);
+//        SpreadFtn_PWF(knum, S_overlap, transformMatrix_k, KS_eigenVectors_orthoBasis, accumulated_Num_SpinOrbital);
+//        NumMat_PWF(knum, knum_mpiGlobal, mu, NumMatrix, KS_eigenEnergy, DF_CorrBase);
+//
         return mu;
     }
 
