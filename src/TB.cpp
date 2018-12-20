@@ -272,6 +272,7 @@ double  TightBinding(double mu, const std::string &hamiltonian, ImgFreqFtn & Sel
 
 
     downfolding_ftn(knum, knum_mpiGlobal, NBAND, H_k_inModelSpace, KS_eigenVectors_orthoBasis, KS_eigenEnergy,  muDFT);
+    Find_best_correlated_basis(H_k_inModelSpace, SolverBasis, mu);
 
 
 

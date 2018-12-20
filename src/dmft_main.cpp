@@ -203,7 +203,7 @@ int main(int argc, char *argv[]) {
     /*DFT results and double counting */
     muDFT = 0.0;
     muDFT    =  TightBinding (muDFT, std::string("Hk.HWR"), SelfEnergy_w,   weiss_fieldTB_weakCorr, weiss_fieldTB_strongCorr,  -1, SolverBasis);
-muTB = muDFT;
+    muTB = muDFT;
     ifroot std::cout << "First run, Initial Chemical potential, we have muDFT: " << muDFT <<"\n";
     FILE *tempFile;   //mu.dat
     tempFile = fopen("muDFT.out", "w");
@@ -241,26 +241,26 @@ muTB = muDFT;
             std::cout << "Please, use restart option\n";
             exit(1);
         }
-    if(restart!=0) {
-        /*occupation matrix*/
-        std::ifstream  input(std::string("./Restart/Numele.dat").c_str());
-        double reN, imN;
-        for(int n=0; n< NumCluster*NumHartrOrbit_per_cluster; n++) {
-            int i;
-            input >> i;
-            assert(n==i);
-            for(int m=0; m< NumCluster*NumHartrOrbit_per_cluster; m++) {
-                input >>  reN;
-                input >>  imN;
-                NumMatrix(n,m) = reN + I*imN ;
+        if(restart!=0) {
+            /*occupation matrix*/
+            std::ifstream  input(std::string("./Restart/Numele.dat").c_str());
+            double reN, imN;
+            for(int n=0; n< NumCluster*NumHartrOrbit_per_cluster; n++) {
+                int i;
+                input >> i;
+                assert(n==i);
+                for(int m=0; m< NumCluster*NumHartrOrbit_per_cluster; m++) {
+                    input >>  reN;
+                    input >>  imN;
+                    NumMatrix(n,m) = reN + I*imN ;
+                }
             }
-        }
-        FILE * Chem = fopen("./Restart/mu_history.out","r");
-        while(!feof(Chem)) {
-            fscanf(Chem, "%lf\n",&muTB);
-        }
-        fclose(Chem);
-    }//restart
+            FILE * Chem = fopen("./Restart/mu_history.out","r");
+            while(!feof(Chem)) {
+                fscanf(Chem, "%lf\n",&muTB);
+            }
+            fclose(Chem);
+        }//restart
         rewrite_retardedSw();
 
         MPI_Barrier(MPI_COMM_WORLD);

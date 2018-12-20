@@ -20,7 +20,7 @@ void Construct_hyb_delta(int impurityDim, std::vector<int> impurityOrbit,
         projGw[n].setZero(impurityDim, impurityDim);
     }
     projimpurity_site_Hamiltonian.setZero(impurityDim, impurityDim);
-    projSolverBasis.setZero(impurityDim, impurityDim);
+//    projSolverBasis.setZero(impurityDim, impurityDim);
 
     for(int h1=0; h1< impurityDim; h1++) {
         for(int h2=0; h2< impurityDim; h2++) {
@@ -31,7 +31,7 @@ void Construct_hyb_delta(int impurityDim, std::vector<int> impurityOrbit,
                 projGw[n](h1,h2) =  Gw[n](h1F,h2F);
             }
             projimpurity_site_Hamiltonian(h1,h2) = impurity_site_Hamiltonian(h1F,h2F);
-            projSolverBasis(h1,h2) = SolverBasis(h1F,h2F);
+//            projSolverBasis(h1,h2) = SolverBasis(h1F,h2F);
         }
     }
 
@@ -39,16 +39,16 @@ void Construct_hyb_delta(int impurityDim, std::vector<int> impurityOrbit,
 
     if ( SOLVERtype.find(std::string("SEG")) != std::string::npos ) {//diagonal part dmft
 
-        Eigen::MatrixXcd  impurity_site_Hamiltonian_bestBasis = projSolverBasis.adjoint() * projimpurity_site_Hamiltonian * projSolverBasis;
+//        Eigen::MatrixXcd  impurity_site_Hamiltonian_bestBasis = projSolverBasis.adjoint() * projimpurity_site_Hamiltonian * projSolverBasis;
         for(int n=0; n<N_freq; n++) {
-            projGw[n] =     (projSolverBasis).adjoint() * projGw[n]  *   projSolverBasis;
-            projSw[n] =     (projSolverBasis).adjoint() * projSw[n]  *   projSolverBasis;
+//            projGw[n] =     (projSolverBasis).adjoint() * projGw[n]  *   projSolverBasis;
+//            projSw[n] =     (projSolverBasis).adjoint() * projSw[n]  *   projSolverBasis;
             for(int h1=0; h1<impurityDim; h1++) {
 //            int h1F = impurityOrbit.at(h1);
                 iw=I*pi*(2.*n+1.)/beta;
                 weiss_fieldTB.setValueSubMat( n, atom,  h1, h1,
                                               iw+mu
-                                              - impurity_site_Hamiltonian_bestBasis(h1,h1)-   projSw[n](h1,h1)
+                                              - impurity_site_Hamiltonian(h1,h1)-   projSw[n](h1,h1)
                                               - 1.0/projGw[n](h1,h1));
                 //NOTE : (1/G_{ii}) \neq G^{-1}_{ii}
             }//n

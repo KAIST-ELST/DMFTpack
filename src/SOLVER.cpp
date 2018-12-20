@@ -120,7 +120,7 @@ void SOLVER(
         if ( SOLVERtype.find(std::string("SEG")) != std::string::npos ) {
             projimpurity_site_Hamiltonian_diag.setZero(solverDim,solverDim);
             for(int h1=0; h1<solverDim; h1++) {
-                projimpurity_site_Hamiltonian_diag(h1,h1) = (projSolverBasis.adjoint() * projimpurity_site_Hamiltonian * projSolverBasis)(h1,h1);
+                projimpurity_site_Hamiltonian_diag(h1,h1) = ( projimpurity_site_Hamiltonian )(h1,h1);
             }
         }
 
@@ -209,26 +209,29 @@ void SOLVER(
 
             Gt_imp.update(std::string("Gt.dat"), 1);
             SE_out.read_diag(std::string("Swl.dat"));
-            for(int n =0; n<N_freq; n++) {
-                SE_out.setMatrix(n,  projSolverBasis* SE_out.getMatrix(n) *(projSolverBasis).adjoint());
-            }
             Gwimp_in_out.read_diag(std::string("Gw.dat"));
-            for(int n =0; n<N_freq; n++) {
-                Gwimp_in_out.setMatrix(n,   projSolverBasis* Gwimp_in_out.getMatrix(n) *(projSolverBasis).adjoint());
-            }
+//            for(int n =0; n<N_freq; n++) {
+//                SE_out.setMatrix(n,  projSolverBasis* SE_out.getMatrix(n) *(projSolverBasis).adjoint());
+//            }
+//            for(int n =0; n<N_freq; n++) {
+//                Gwimp_in_out.setMatrix(n,   projSolverBasis* Gwimp_in_out.getMatrix(n) *(projSolverBasis).adjoint());
+//            }
 
             MPI_Barrier(MPI_COMM_WORLD);
             ifroot  std::cout << "Reading output data..\n";
 
-            for (int n=0; n<solverDim; n++) {
-                for (int m=0; m<solverDim; m++) {
-                    projNumMatrix(n,m) = 0;  // alps CT-SEG num matrix.
-                    cmplx temp =0;
-                    for (int l=0; l<solverDim; l++) {
-                        temp += (projSolverBasis)(n,l) * Gt_imp.getValue(N_tau,l) *(projSolverBasis).adjoint()(l,m) ;
-                    }
-                    projNumMatrix(n,m) = -temp;  // alps CT-SEG num matrix.
-                }
+//           for (int n=0; n<solverDim; n++) {
+//               for (int m=0; m<solverDim; m++) {
+//                   projNumMatrix(n,m) = 0;  // alps CT-SEG num matrix.
+//                    cmplx temp =0;
+//                    for (int l=0; l<solverDim; l++) {
+//                        temp += (projSolverBasis)(n,l) * Gt_imp.getValue(N_tau,l) *(projSolverBasis).adjoint()(l,m) ;
+//                    }
+//                    projNumMatrix(n,m) = -temp;  // alps CT-SEG num matrix.
+//                }
+//            }
+            for (int l=0; l<solverDim; l++) {
+                projNumMatrix(l,l) = - Gt_imp.getValue(N_tau,l) ;
             }
 
             ifroot  std::cout << "Writing output data..\n";
@@ -278,14 +281,14 @@ void SOLVER(
 
             /*read output*/
             SE_out.read_diag(std::string("Sw.dat"));
-            for(int n =0; n<N_freq; n++) {
-                SE_out.setMatrix(n,  projSolverBasis* SE_out.getMatrix(n) *(projSolverBasis).adjoint());
-            }
             Gwimp_in_out.read_diag(std::string("Gw.dat"));
-            for(int n =0; n<N_freq; n++) {
-                Gwimp_in_out.setMatrix(n,  projSolverBasis* Gwimp_in_out.getMatrix(n) *(projSolverBasis).adjoint());
-            }
-
+//            for(int n =0; n<N_freq; n++) {
+//                SE_out.setMatrix(n,  projSolverBasis* SE_out.getMatrix(n) *(projSolverBasis).adjoint());
+//            }
+//            for(int n =0; n<N_freq; n++) {
+//                Gwimp_in_out.setMatrix(n,  projSolverBasis* Gwimp_in_out.getMatrix(n) *(projSolverBasis).adjoint());
+//            }
+//
             MPI_Barrier(MPI_COMM_WORLD);
             ifroot  std::cout << "Reading output data..\n";
 

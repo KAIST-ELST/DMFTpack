@@ -141,13 +141,16 @@ void ctqmc_rutgers(  Eigen::MatrixXcd Local_Hamiltonian_ED, double muTB,  ImgFre
         timeStartHam = clock();
         /*Construct Hamiltonian*/
         ifroot std::cout << "HamiltonianConstruc\n";
-        HamiltonianConstruc( Himp, f_ann,   Nstate, SectorToGlobalIndx, Sector, f_annMat[Sector], Local_Hamiltonian_ED, muTB, dim_for_sector[Sector], dim_for_sector[Sector-1]);
+        HamiltonianConstruc( Himp, f_ann,   Nstate, SectorToGlobalIndx, Sector, f_annMat[Sector],
+                             Local_Hamiltonian_ED, muTB, dim_for_sector[Sector], dim_for_sector[Sector-1]);
         timeEndHam =clock();
         ifroot std::cout << "construct:" << (timeEndHam - timeStartHam)/(CLOCKS_PER_SEC) <<"\n";
 
         /*diagonalization*/
-        Eigen::SelfAdjointEigenSolver<Eigen::MatrixXcd> ces(Himp);
-        ces.compute(Himp);
+//        Eigen::SelfAdjointEigenSolver<Eigen::MatrixXcd> ces(Himp);
+        Eigen::MatrixXd Himp_r = Himp.real();
+        Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd> ces(Himp_r);
+        ces.compute(Himp_r);
         for(int alp=0; alp<Nstate; alp++) {
             f_annMat[Sector][alp] =  evec_prev.adjoint()  *  f_annMat[Sector][alp] * ces.eigenvectors();  //f_annMat in the many-body eigen state basis
         }
@@ -158,7 +161,7 @@ void ctqmc_rutgers(  Eigen::MatrixXcd Local_Hamiltonian_ED, double muTB,  ImgFre
         evec_prev = ces.eigenvectors();
     }//section
 
-    ifroot std::cout << "write_cix_file\n";
+    ifroot std::cout << "\nwrite_cix_file\n";
     ifroot     write_cix_file(NSector,  maxDim, Nstate, dim_for_sector, ImpTotalEnergy, f_annMat);
     write_Delta(    weiss_field);
     ifroot write_PARMS();
@@ -243,11 +246,11 @@ void ctqmc_rutgers_seg(  Eigen::MatrixXcd Local_Hamiltonian_ED, double muTB,  Im
         fclose(cix);
 
 
-        ifroot std::cout << "write_cix_file\n";
+        ifroot std::cout << "\nwrite_cix_file\n";
         write_Delta_diag(    weiss_field );
         ifroot write_PARMS();
     }//ifroot
-}
+}//ctqmc_rutgers_seg
 
 void write_PARMS() {
     FILE *fp;
@@ -400,7 +403,12 @@ void write_cix_file(int NSector, int maxDim, int Nstate, unsigned long long * di
             for (int ketN=0; ketN < ketDim; ketN++) {
                 for (int braN=0; braN < braDim; braN++) {
                     fprintf(cix, " %e",real(f_dagger(braN,ketN)) );
-                    assert(imag(f_dagger(braN,ketN)) < 1e-5);
+                    if( std::abs(imag(f_dagger(braN,ketN))) >  1e-5) {
+                        std::cout.precision(10) ;
+                        std::cout << "braDim:"<< braDim << "ketDim:"<< ketDim << "Im(f_dagger):" <<  imag(f_dagger(braN,ketN)) <<"\n" ;
+                        std::cout.precision(4) ;
+                        exit(1);
+                    }
                 }
                 fprintf(cix, "   ");
             }
@@ -470,6 +478,10 @@ void HamiltonianConstruc(  Eigen::MatrixXcd & Himp,  Eigen::MatrixXi **f_ann, in
             Himp += (Uprime-JHund)  *  numOperat[alp+1]  * numOperat[bet+1]; //H_interaction
         }
     }//alp
+    if ( (Himp.imag()).norm() > 1e-5) {
+        std::cout << "imag part of Himp:" <<   (Himp.imag()).norm() <<"\n";
+        exit(1);
+    }
 }
 
 
