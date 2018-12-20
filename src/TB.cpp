@@ -416,7 +416,7 @@ void Find_best_correlated_basis(std::vector<Eigen::MatrixXcd> & H_k_inModelSpace
                 Gkw_w0(i0,i0) += muDFT;
             }
 
-            Gkw_w0 = Gkw_w0.inverse();
+//            Gkw_w0 = Gkw_w0.inverse();
             for(int ATOM=0 ; ATOM < NumCorrAtom; ATOM++) {
                 for(int i0=0; i0<NSpinOrbit_per_atom; i0+=1) {
                     for( int m0=0; m0<NSpinOrbit_per_atom; m0+=1) {

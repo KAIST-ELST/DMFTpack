@@ -203,6 +203,7 @@ int main(int argc, char *argv[]) {
     /*DFT results and double counting */
     muDFT = 0.0;
     muDFT    =  TightBinding (muDFT, std::string("Hk.HWR"), SelfEnergy_w,   weiss_fieldTB_weakCorr, weiss_fieldTB_strongCorr,  -1, SolverBasis);
+muTB = muDFT;
     ifroot std::cout << "First run, Initial Chemical potential, we have muDFT: " << muDFT <<"\n";
     FILE *tempFile;   //mu.dat
     tempFile = fopen("muDFT.out", "w");
@@ -219,7 +220,27 @@ int main(int argc, char *argv[]) {
     /*****************************************
     Initial Self energy, double counting,  and Sw_inf and muTB
     *******************************************/
+    /*retarded self-energy, S_E, for quasi-ptl calculation */
+    if(SOLVERtype !=std::string("TB")) {
+        SelfEnergy_w.Initialize(         beta, N_freq,  NumHartrOrbit_per_cluster, NumCluster, mixingType);
+        if(restart!=0 and N_peratom_HartrOrbit >0) {
+            /*Matsubara self-energy, S_w*/
+            ifroot std::cout <<"Reading Self-energy...\n";
+            double beta_prev;
+            std::ifstream inputbeta("./beta.dat");
+            inputbeta >> beta_prev;
+            SelfEnergy_w.read_full(std::string("./Restart/Sw_SOLVER.full.dat"),beta, beta_prev);
+        }
+        SelfEnergy_w.dataOut(std::string("InitialSw.dat"));
+    }
+    else if(SOLVERtype== std::string("TB"))
+        SelfEnergy_E.realFreq(       E0,  real(dE), (myendE-mystaE+1),  NumHartrOrbit_per_cluster, NumCluster, 0, mystaE    );
 
+    if (SOLVERtype == std::string("TB") and mode!=std::string("band") and mode!=std::string("dos")  ) {
+        if (restart<=0 ) {
+            std::cout << "Please, use restart option\n";
+            exit(1);
+        }
     if(restart!=0) {
         /*occupation matrix*/
         std::ifstream  input(std::string("./Restart/Numele.dat").c_str());
@@ -234,47 +255,12 @@ int main(int argc, char *argv[]) {
                 NumMatrix(n,m) = reN + I*imN ;
             }
         }
-
-//        /*Matsubara self-energy, S_w*/
-//        ifroot std::cout <<"Reading Self-energy...\n";
-//        double beta_prev;
-//        std::ifstream inputbeta("./beta.dat");
-//        inputbeta >> beta_prev;
-//        if( N_peratom_HartrOrbit> 0) SelfEnergy_w.read_full(std::string("Sw_SOLVER.full.dat"),beta, beta_prev);
-
         FILE * Chem = fopen("./Restart/mu_history.out","r");
         while(!feof(Chem)) {
             fscanf(Chem, "%lf\n",&muTB);
         }
         fclose(Chem);
     }//restart
-
-
-
-
-    /*retarded self-energy, S_E, for quasi-ptl calculation */
-    if(SOLVERtype !=std::string("TB")) {
-        SelfEnergy_w.Initialize(         beta, N_freq,  NumHartrOrbit_per_cluster, NumCluster, mixingType);
-        if(restart!=0 and N_peratom_HartrOrbit >0) {
-            /*Matsubara self-energy, S_w*/
-            ifroot std::cout <<"Reading Self-energy...\n";
-            double beta_prev;
-            std::ifstream inputbeta("./beta.dat");
-            inputbeta >> beta_prev;
-            SelfEnergy_w.read_full(std::string("Sw_SOLVER.full.dat"),beta, beta_prev);
-        }
-        SelfEnergy_w.dataOut(std::string("InitialSw.dat"));
-    }
-
-
-
-    else if(SOLVERtype== std::string("TB"))
-        SelfEnergy_E.realFreq(       E0,  real(dE), (myendE-mystaE+1),  NumHartrOrbit_per_cluster, NumCluster, 0, mystaE    );
-    if (SOLVERtype == std::string("TB") and mode!=std::string("band") and mode!=std::string("dos")  ) {
-        if (restart<=0 ) {
-            std::cout << "Please, use restart option\n";
-            exit(1);
-        }
         rewrite_retardedSw();
 
         MPI_Barrier(MPI_COMM_WORLD);
