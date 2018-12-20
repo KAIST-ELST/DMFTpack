@@ -27,13 +27,14 @@ int occupation(int alpha, unsigned long long state) ;
 int occupation_Bits(int i, unsigned long long alp) ;
 int F_dagger_sign(int i, unsigned long long alp) ;
 int countSetBits(unsigned  long long  n);
-double getTotEng( Eigen::MatrixXcd Local_Hamiltonian_ED, double muTB,  unsigned long long   alp);
+double getTotEng_seg( Eigen::MatrixXcd Local_Hamiltonian_ED, double muTB,  unsigned long long   alp);
 
 unsigned long choose(int n, int k) ;   //nCk
 void SectorToGlobalIndxConstruction(unsigned long long ** SectorToGlobalIndx, int Nstate) ;
 int occupation(int alpha, unsigned long long state) ;
 int F_element(int alpha, unsigned long long state1, unsigned long long state2) ;
-void HamiltonianConstruc(  Eigen::MatrixXcd & Himp,  Eigen::MatrixXi **f_ann, int Nstate, unsigned long long ** SectorToGlobalIndx, int Sector, Eigen::MatrixXcd * f_annMat, Eigen::MatrixXcd Local_Hamiltonian_ED, double muTB, unsigned long long dim, unsigned long long dim_prev   ) ;
+void HamiltonianConstruc(  Eigen::MatrixXcd & Himp,  Eigen::MatrixXi **f_ann, int Nstate, unsigned long long ** SectorToGlobalIndx, int Sector, Eigen::MatrixXcd * f_annMat,
+                           Eigen::MatrixXcd Local_Hamiltonian_ED, std::vector<cmplx > Utensor, std::vector<Eigen::VectorXi> Uindex, double muTB, unsigned long long dim, unsigned long long dim_prev   ) ;
 
 
 void write_PARMS() ;
@@ -44,7 +45,7 @@ void write_Delta_diag(   ImgFreqFtn & weiss_field_diag) ;
 
 
 
-void ctqmc_rutgers(  Eigen::MatrixXcd Local_Hamiltonian_ED, double muTB,  ImgFreqFtn & weiss_field) {
+void ctqmc_rutgers(  Eigen::MatrixXcd Local_Hamiltonian_ED, double muTB,  ImgFreqFtn & weiss_field, std::vector<cmplx > Utensor, std::vector<Eigen::VectorXi> Uindex  ) {
     int   Nstate = NSpinOrbit_per_atom;
 //    ifroot std::cout << "#############################\n"
 //                     << "Start Hub-I solver:#of state="<< Nstate << "   U:"<<UHubb<<" U':"<<Uprime <<" J:" <<JHund
@@ -142,12 +143,12 @@ void ctqmc_rutgers(  Eigen::MatrixXcd Local_Hamiltonian_ED, double muTB,  ImgFre
         /*Construct Hamiltonian*/
         ifroot std::cout << "HamiltonianConstruc\n";
         HamiltonianConstruc( Himp, f_ann,   Nstate, SectorToGlobalIndx, Sector, f_annMat[Sector],
-                             Local_Hamiltonian_ED, muTB, dim_for_sector[Sector], dim_for_sector[Sector-1]);
+                             Local_Hamiltonian_ED, Utensor, Uindex,
+                             muTB, dim_for_sector[Sector], dim_for_sector[Sector-1]);
         timeEndHam =clock();
         ifroot std::cout << "construct:" << (timeEndHam - timeStartHam)/(CLOCKS_PER_SEC) <<"\n";
 
         /*diagonalization*/
-//        Eigen::SelfAdjointEigenSolver<Eigen::MatrixXcd> ces(Himp);
         Eigen::MatrixXd Himp_r = Himp.real();
         Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd> ces(Himp_r);
         ces.compute(Himp_r);
@@ -204,7 +205,7 @@ void ctqmc_rutgers_seg(  Eigen::MatrixXcd Local_Hamiltonian_ED, double muTB,  Im
                 fprintf(cix,      "%d ", (1-occupation_Bits(i,alp))*(alp+1+operationState));
             }
 
-            fprintf(cix,      "%+0.8f", getTotEng(Local_Hamiltonian_ED, muTB,alp));
+            fprintf(cix,      "%+0.8f", getTotEng_seg(Local_Hamiltonian_ED, muTB,alp));
             fprintf(cix,      " 0 \n");
         }//alp
 
@@ -449,7 +450,9 @@ void write_cix_file(int NSector, int maxDim, int Nstate, unsigned long long * di
 
 
 
-void HamiltonianConstruc(  Eigen::MatrixXcd & Himp,  Eigen::MatrixXi **f_ann, int Nstate, unsigned long long ** SectorToGlobalIndx, int Sector, Eigen::MatrixXcd * f_annMat, Eigen::MatrixXcd Local_Hamiltonian_ED, double muTB, unsigned long long dim, unsigned long long dim_prev   ) {
+void HamiltonianConstruc(  Eigen::MatrixXcd & Himp,  Eigen::MatrixXi **f_ann, int Nstate, unsigned long long ** SectorToGlobalIndx, int Sector, Eigen::MatrixXcd * f_annMat,
+                           Eigen::MatrixXcd Local_Hamiltonian_ED, std::vector<cmplx > Utensor, std::vector<Eigen::VectorXi> Uindex,
+                           double muTB, unsigned long long dim, unsigned long long dim_prev   ) {
     unsigned long long  rankf =       choose(Nstate-1,Sector-1);            //# of number state with occupied alp
 
     Eigen::MatrixXcd numOperat [NSpinOrbit_per_atom];
@@ -468,16 +471,30 @@ void HamiltonianConstruc(  Eigen::MatrixXcd & Himp,  Eigen::MatrixXi **f_ann, in
         Himp -=  muTB *  numOperat[alp] ; //H_loc e_ab f^+_a *f_b
     }//alp
 
-//dd interaction only TODO
-    for(int alp=0; alp<NSpinOrbit_per_atom; alp+=2) { //0,2,4...NSpinOrbit_per_atom-2
-        Himp += UHubb   * numOperat[alp] *numOperat[alp+1] ;
-        for(int bet=0; bet<alp; bet+=2) {
-            Himp +=  Uprime         *  numOperat[alp  ]  * numOperat[bet+1]; //H_interaction
-            Himp +=  Uprime         *  numOperat[alp+1]  * numOperat[bet];   //H_interaction
-            Himp += (Uprime-JHund)  *  numOperat[alp  ]  * numOperat[bet  ]; //H_interaction
-            Himp += (Uprime-JHund)  *  numOperat[alp+1]  * numOperat[bet+1]; //H_interaction
+////dd interaction only TODO
+//    for(int alp=0; alp<NSpinOrbit_per_atom; alp+=2) { //0,2,4...NSpinOrbit_per_atom-2
+//        Himp += UHubb   * numOperat[alp] *numOperat[alp+1] ;
+//        for(int bet=0; bet<alp; bet+=2) {
+//            Himp +=  Uprime         *  numOperat[alp  ]  * numOperat[bet+1]; //H_interaction
+//            Himp +=  Uprime         *  numOperat[alp+1]  * numOperat[bet];   //H_interaction
+//            Himp += (Uprime-JHund)  *  numOperat[alp  ]  * numOperat[bet  ]; //H_interaction
+//            Himp += (Uprime-JHund)  *  numOperat[alp+1]  * numOperat[bet+1]; //H_interaction
+//        }
+//    }//alp
+
+    for(int ll=0; ll<Utensor.size(); ll++) {
+        int i = Uindex[ll](0);
+        int j = Uindex[ll](1);
+        int k = Uindex[ll](2);
+        int l = Uindex[ll](3);
+//        Himp += 0.5* Utensor[ll] * f_annMat[i].adjoint() * f_annMat[j].adjoint() * f_annMat[l] *f_annMat[k];
+//Note: f^+[j] * f[l] = - f[l]*f^+[j] + \delta_{lj}
+        Himp -= 0.5* Utensor[ll] * f_annMat[i].adjoint()  * f_annMat[l]  * f_annMat[j].adjoint()  *f_annMat[k];
+        if(l==j) {
+            Himp += 0.5* Utensor[ll] * f_annMat[i].adjoint()   *f_annMat[k];
         }
-    }//alp
+    }
+
     if ( (Himp.imag()).norm() > 1e-5) {
         std::cout << "imag part of Himp:" <<   (Himp.imag()).norm() <<"\n";
         exit(1);
@@ -575,7 +592,7 @@ int F_dagger_sign(int i, unsigned long long alp) {
     }
     return  std::pow(-1, count);
 }
-double getTotEng( Eigen::MatrixXcd Local_Hamiltonian_ED, double muTB,  unsigned long long   alp) {
+double getTotEng_seg( Eigen::MatrixXcd Local_Hamiltonian_ED, double muTB,  unsigned long long   alp) {
 
     double TotEng=0;
     for(int i=0; i<NSpinOrbit_per_atom; i++) {

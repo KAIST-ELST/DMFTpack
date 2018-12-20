@@ -36,7 +36,8 @@ void SCGF2 (int solverDim, Eigen::MatrixXcd projimpurity_site_Hamiltonian, Eigen
             std::vector<Eigen::VectorXi> projUindex, std::vector<cmplx > projUtensor);
 
 
-void ctqmc_rutgers(  Eigen::MatrixXcd Local_Hamiltonian_ED, double muTB,  ImgFreqFtn & weiss_field) ;
+//void ctqmc_rutgers(  Eigen::MatrixXcd Local_Hamiltonian_ED, double muTB,  ImgFreqFtn & weiss_field) ;
+void ctqmc_rutgers(  Eigen::MatrixXcd Local_Hamiltonian_ED, double muTB,  ImgFreqFtn & weiss_field, std::vector<cmplx > Utensor, std::vector<Eigen::VectorXi> Uindex  ) ;
 void ctqmc_rutgers_seg(  Eigen::MatrixXcd Local_Hamiltonian_ED, double muTB,  ImgFreqFtn & weiss_field) ;
 
 
@@ -329,7 +330,7 @@ void SOLVER(
             for(int n =0; n<N_freq; n++) {
                 projweiss_field.setMatrix(n,  (projSolverBasis).adjoint()* projweiss_field.getMatrix(n) *(projSolverBasis));
             }
-            ctqmc_rutgers(  projimpurity_site_Hamiltonian_diag,  muTB, projweiss_field);
+            ctqmc_rutgers(  projimpurity_site_Hamiltonian_diag,  muTB, projweiss_field, projUtensor, projUindex);
 
             /*set solver command*/
             ifroot std::cout << "Rutgers(K. Haule), CT-HYB solver\n";
@@ -338,7 +339,6 @@ void SOLVER(
             MPI_Comm communication;
             std::ostringstream impSolver_hyb_comm;
             char *hyb_In [] = {"PARAMS", NULL};
-//            impSolver_hyb_comm << "/home/users1/jhsim/bin/ctqmc_rutgers";   //   alps_input.h5 >> std.hyb.out"; C2
             impSolver_hyb_comm << ( SOLVERdir + SOLVERexe).c_str();   //   alps_input.h5 >> std.hyb.out"; C2
             char * command_hyb = new char[impSolver_hyb_comm.str().size()+1];
             std::strcpy(command_hyb,impSolver_hyb_comm.str().c_str());
