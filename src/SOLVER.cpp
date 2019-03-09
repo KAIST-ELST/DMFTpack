@@ -10,6 +10,12 @@
 #endif
 
 
+void rot_Uijkl(
+    std::vector<cmplx > & Utensor, std::vector<Eigen::VectorXi>  & Uindex,
+    std::vector<cmplx > & rotUtensor, std::vector<Eigen::VectorXi>  & rotUindex,
+    Eigen::MatrixXcd & SolverBasis, int n_spinorb
+) ;
+
 void IPT( int solverDim,Eigen::MatrixXcd projimpurity_site_Hamiltonian,  ImgFreqFtn & weiss_field, Eigen::MatrixXcd & projNumMatrix,
           ImgFreqFtn & SE_out,      ImgFreqFtn & Gwimp_out, double muTB,
           std::vector<Eigen::VectorXi> projUindex, std::vector<cmplx > projUtensor        ) ;
@@ -37,8 +43,8 @@ void SCGF2 (int solverDim, Eigen::MatrixXcd projimpurity_site_Hamiltonian, Eigen
 
 
 //void ctqmc_rutgers(  Eigen::MatrixXcd Local_Hamiltonian_ED, double muTB,  ImgFreqFtn & weiss_field) ;
-void ctqmc_rutgers(  Eigen::MatrixXcd Local_Hamiltonian_ED, double muTB,  ImgFreqFtn & weiss_field, std::vector<cmplx > Utensor, std::vector<Eigen::VectorXi> Uindex  ) ;
-void ctqmc_rutgers_seg(  Eigen::MatrixXcd Local_Hamiltonian_ED, double muTB,  ImgFreqFtn & weiss_field) ;
+void ctqmc_rutgers(  Eigen::MatrixXcd Local_Hamiltonian_ED, double muTB,  ImgFreqFtn & weiss_field, std::vector<cmplx > Utensor, std::vector<Eigen::VectorXi> Uindex, int solverDim  ) ;
+void ctqmc_rutgers_seg(  Eigen::MatrixXcd Local_Hamiltonian_ED, double muTB,  ImgFreqFtn & weiss_field, std::vector<cmplx > Utensor, std::vector<Eigen::VectorXi> Uindex) ;
 
 
 
@@ -73,6 +79,13 @@ void weak_solver(
                                  SE_out, Gwimp_in_out,
                                  projUindex, projUtensor);
     }//2PT
+    //else if(SOLVERtype == std::string("SC2PT")) {
+
+    //    SCGF2( solverDim,projimpurity_site_Hamiltonian, projNumMatrix,
+    //           SE_out, Gwimp_in_out, projweiss_field, muTB,
+    //           projUindex, projUtensor);
+
+    //}//SC2PT
     else {
         ifroot std::cout << "Please set  Lowlevel_SOLVERTYPE = HF or 2PT\n";
     }
@@ -259,7 +272,7 @@ void SOLVER(
             sleep(2);
 
 
-            ctqmc_rutgers_seg(  projimpurity_site_Hamiltonian_diag,  muTB, projweiss_field);
+            ctqmc_rutgers_seg(  projimpurity_site_Hamiltonian_diag,  muTB, projweiss_field,projUtensor, projUindex   );
 
             /*set solver command*/
             MPI_Comm communication;
@@ -283,13 +296,6 @@ void SOLVER(
             /*read output*/
             SE_out.read_diag(std::string("Sw.dat"));
             Gwimp_in_out.read_diag(std::string("Gw.dat"));
-//            for(int n =0; n<N_freq; n++) {
-//                SE_out.setMatrix(n,  projSolverBasis* SE_out.getMatrix(n) *(projSolverBasis).adjoint());
-//            }
-//            for(int n =0; n<N_freq; n++) {
-//                Gwimp_in_out.setMatrix(n,  projSolverBasis* Gwimp_in_out.getMatrix(n) *(projSolverBasis).adjoint());
-//            }
-//
             MPI_Barrier(MPI_COMM_WORLD);
             ifroot  std::cout << "Reading output data..\n";
 
@@ -322,15 +328,22 @@ void SOLVER(
 
             Eigen::MatrixXcd  projimpurity_site_Hamiltonian_diag;
             projimpurity_site_Hamiltonian_diag.setZero(solverDim,solverDim);
-            for(int h1=0; h1<solverDim; h1++) {
-                for(int h2=0; h2<solverDim; h2++) {
-                    projimpurity_site_Hamiltonian_diag(h1,h2) = (projSolverBasis.adjoint() * projimpurity_site_Hamiltonian* projSolverBasis)(h1,h2);
-                }
-            }
+
+            projimpurity_site_Hamiltonian_diag = (projSolverBasis.adjoint() * projimpurity_site_Hamiltonian* projSolverBasis);
+//            for(int h1=0; h1<solverDim; h1++) {
+//                for(int h2=0; h2<solverDim; h2++) {
+//                    projimpurity_site_Hamiltonian_diag(h1,h2) = (projSolverBasis.adjoint() * projimpurity_site_Hamiltonian* projSolverBasis)(h1,h2);
+//                }
+//            }
             for(int n =0; n<N_freq; n++) {
                 projweiss_field.setMatrix(n,  (projSolverBasis).adjoint()* projweiss_field.getMatrix(n) *(projSolverBasis));
             }
-            ctqmc_rutgers(  projimpurity_site_Hamiltonian_diag,  muTB, projweiss_field, projUtensor, projUindex);
+
+            std::vector<cmplx > rotUtensor;
+            std::vector<Eigen::VectorXi> rotUindex;
+
+            rot_Uijkl(projUtensor, projUindex, rotUtensor, rotUindex, projSolverBasis, solverDim);
+            ctqmc_rutgers(  projimpurity_site_Hamiltonian_diag,  muTB, projweiss_field, rotUtensor, rotUindex, solverDim);
 
             /*set solver command*/
             ifroot std::cout << "Rutgers(K. Haule), CT-HYB solver\n";
@@ -381,6 +394,7 @@ void SOLVER(
             Id.setIdentity(solverDim,solverDim);
             std::string print_msg = std::string("Gwimp_EIG in SOLVER.cpp");
             FourierTransform (Gwimp_EIG, projNumMatrix, beta, Id) ;
+            projNumMatrix *= -1;
 
 
 
@@ -417,6 +431,16 @@ void SOLVER(
         ifroot std::cout << "\nIPT solver\n";
         IPT( solverDim, projimpurity_site_Hamiltonian, projweiss_field, projNumMatrix,SE_out, Gwimp_in_out, muTB, projUindex, projUtensor);
     }//IPT
+    else if(SOLVERtype == std::string("HF")) {
+
+        on_shot_HF( solverDim,
+                    SE_out, Gwimp_in_out,
+                    projUindex, projUtensor);
+    }//HF
+    else {
+        std::cout << "Please check <SOLVER_TYPE> \n";
+        exit(1);
+    }
 
 
 
@@ -446,15 +470,15 @@ void SOLVER(
             NumMatrix(n0,m0) = projNumMatrix(n,m);  // alps CT-SEG num matrix.
         }
     }
-    ifroot{
-        std::cout << "\nNum ele (decomp,solver), at" <<solver_block<<":";
-        for(int n=0; n<N_peratom_HartrOrbit; n+=1) {
-            std::cout <<std::fixed << std::setprecision(4)<< std::fixed
-            <<  real(NumMatrix(solver_block*solverDim+n,  solver_block*solverDim+n)) <<" " ;
-        }
-        std::cout << std::fixed << std::setprecision(4)<< std::fixed   << ";  (total)  = "<< (NumMatrix.block(solver_block*solverDim, solver_block*solverDim, solverDim, solverDim)).trace()   <<"\n" ;
-        std::cout << "\n\n";
-    }
+//    ifroot{
+//        std::cout << "\nNum ele (decomp,solver), at" <<solver_block<<":";
+//        for(int n=0; n<N_peratom_HartrOrbit; n+=1) {
+//            std::cout <<std::fixed << std::setprecision(4)<< std::fixed
+//            <<  real(NumMatrix(solver_block*solverDim+n,  solver_block*solverDim+n)) <<" " ;
+//        }
+//        std::cout << std::fixed << std::setprecision(4)<< std::fixed   << ";  (total)  = "<< (NumMatrix.block(solver_block*solverDim, solver_block*solverDim, solverDim, solverDim)).trace()   <<"\n" ;
+//        std::cout << "\n\n";
+//    }
 
 
 

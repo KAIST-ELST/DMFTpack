@@ -176,9 +176,8 @@ void read_inputFile(const std::string &hamiltonian) {
         ifroot analysis_example(system_name+std::string(".scfout"));
         MPI_Barrier(MPI_COMM_WORLD);
         sleep(5);
-//        hamiltonian = std::string("Hk.HWR");
     }
-    NumAtom_per_cluster    =   read_int(std::string("input.parm"), std::string("N_ATOMS_CLUSTER"),1)   ;   //total Num of atoms
+    NumAtom_per_cluster    =   read_int(std::string("input.parm"), std::string("N_ATOMS_CLUSTER"),1)   ;   //num atoms for each cluster. Thus, num cluster = NumAtom/NumAtom_per_cluster
     NumAtom          =   read_int(std::string("input.parm"), std::string("N_ATOMS"),-1)   ;   //total Num of atoms
     NumCorrAtom      =   read_int(std::string("input.parm"), std::string("N_CORRELATED_ATOMS"),-1) ; //Num of atoms, which inlude correlated and/or HF orbitals
     NumberOfElectron = read_double(std::string("input.parm"), std::string("N_ELECTRONS"), false, -1) ;    // Number of electron per unit cell = NumOrbit * FillingFactor
@@ -542,8 +541,8 @@ void setCorrelatedSpaceIndex( std::vector<int> HartreeOrbital_idx, int NumCorrAt
     for (int i=0; i<N_peratom_HartrOrbit*NumCorrAtom; i++) isOrbitalCorrinHart[i] = isOrbitalCorrinHart_vec[i];
 
     ifroot std::cout << "is Dynamical orbital\n";
-    int temp=0;
     for(int i=0; i<NumOrbit; i++) isOrbitalCorr[i] = 0;
+    int temp=0;
     for(int i=0; i<NumOrbit; i++) {
         if(isOrbitalHartr[i] == 1) {
             ifroot std::cout << "correlated orbitals: " <<i<<"\n";
@@ -569,8 +568,10 @@ void setCorrelatedSpaceIndex( std::vector<int> HartreeOrbital_idx, int NumCorrAt
             }
         }
     }
-    if(not( test == NumCorrAtom*NSpinOrbit_per_atom)) {
-        ifroot       std::cout << "Please check input,  total number of Correlated orbital !=  NumCorrAtom*NSpinOrbit_per_atom\n" << test2<<", " <<NumCorrAtom*NSpinOrbit_per_atom ;
+    if(not( test2 == NumCorrAtom*NSpinOrbit_per_atom)) {
+        ifroot std::cout
+                << "Please check input,  total number of Correlated orbital !=  NumCorrAtom*NSpinOrbit_per_atom\n"
+                << test2<<", " <<NumCorrAtom*NSpinOrbit_per_atom ;
         MPI_Barrier(MPI_COMM_WORLD);
         exit(1);
     }
@@ -668,4 +669,6 @@ bool operator==( cmplx  a, int b)
 
 
 
-//DF_CorrBase  <lowenergy_projected_orbal |  low_energy_KS_band >
+//DF_CorrBase  = <lowenergy_projected_orbal |  low_energy_KS_band >
+//KS_eigenVectors_orthoBasis  = <orthogonal basis |  KS_band >
+//transformMatrix_k =  basis transformation from orthogonal to non-orthogonal basis, e.g.,  //\ket{ortho_j} = \ket{DFT_AO_i} T_{ij}

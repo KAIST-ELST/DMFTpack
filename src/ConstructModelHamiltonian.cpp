@@ -73,9 +73,13 @@ int Construct_Hk_Sk(
         for(int indx=0; indx<H_RMatrix.size(); indx++) {
             H_k_inModelSpace[k](H_Rindex(indx,3),H_Rindex(indx,4))
             += H_RMatrix(indx)* exp ( -I*( (kmesh[k][0]*ax*H_Rindex(indx,0))+(kmesh[k][1]*ay*H_Rindex(indx,1))+(kmesh[k][2]*az*H_Rindex(indx,2))) )  ;
+
+//            std::cout << H_Rindex(indx,0) <<" " << H_Rindex(indx, 1)  <<" " << H_Rindex(indx, 2)<<"\n";
+//            std::cout << H_Rindex(indx,3) <<" " << H_Rindex(indx, 4) <<"\n";
+//            std::cout << H_RMatrix(indx) <<"\n";
         }
 //        std::cout <<k<<"bb\n";
-
+//std::cout << H_k_inModelSpace[k] <<"\n";
         /*S(k),   H*S |\psi> = E |\psi>      */
         if (overlap_exist==1) {
             S_overlap[k].setZero(NumOrbit,NumOrbit);
@@ -160,20 +164,26 @@ void  ConstructModelHamiltonian
     else {
         for(int k = 0;  k < knum; k++) {
             dual_DM_direct[k].setZero(NumOrbit, NumOrbit);
-            Eigen::GeneralizedSelfAdjointEigenSolver<Eigen::MatrixXcd> ces1(NumOrbit);
-            ces1.compute( H_k_inModelSpace[k], S_overlap[k] );       //  HS \psi = S  \psi E,  Here eigenvectors(i,n) = <i|n> in dual space set.
+
+            Eigen::SelfAdjointEigenSolver<Eigen::MatrixXcd> ces1(S_overlap[k]);
+            Eigen::MatrixXcd S_invsq =  (  ces1.operatorInverseSqrt() );
+            Eigen::MatrixXcd S_sq = S_invsq.inverse();
+            Eigen::MatrixXcd Hk = S_invsq * H_k_inModelSpace[k] * S_invsq;
+
+            Eigen::SelfAdjointEigenSolver<Eigen::MatrixXcd> ces(Hk);
+            ces.compute(Hk);
+
+            for (int n=0; n<NumOrbit; n++) {
+                dual_DM_direct[k](n,n) =  1./(1+std::exp(beta*(ces.eigenvalues()(n)-muDFT))) ;
+            }
+
+            dual_DM_direct[k] = (ces.eigenvectors() * dual_DM_direct[k] * (ces.eigenvectors()).adjoint()).eval();
+            dual_DM_direct[k] =  (S_invsq * dual_DM_direct[k] * S_sq).eval();
 
 
-            for (int i=0; i<NumOrbit; i++) {
-                for (int j=0; j<NumOrbit; j++) {
-                    for (int n=0; n<NumOrbit; n++) {
-                        dual_DM_direct[k](i,j) +=   ces1.eigenvectors()(i,n) * 1./(1+std::exp(beta*(ces1.eigenvalues()(n)-muDFT)))  * std::conj( ces1.eigenvectors()(j,n) );
-                    }
-                }
-            }//n
-            dual_DM_direct[k] = (dual_DM_direct[k] * S_overlap[k]).eval();
         }//k
     }
+    ifroot std::cout <<"Now, we have occupation matrix\n";
     //    */
 
 
@@ -286,7 +296,6 @@ void  ConstructModelHamiltonian
             }
         }
 //        SpreadFtn( knum,  S_overlap, transformMatrix_k, accumulated_Num_SpinOrbital);
-
     }//overlap
 //    else {
 //        for(int k = 0;  k < knum; k++) {
@@ -300,7 +309,7 @@ void  ConstructModelHamiltonian
 //        }
 //    }
     /*info:spread function*/
-    std::cout << "Hk was constructed..\n"  ;
+    ifroot    std::cout << "Hk was constructed..\n"  ;
 
 
 

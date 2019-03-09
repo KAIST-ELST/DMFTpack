@@ -35,11 +35,6 @@ void read_HR(Eigen::MatrixXi &H_Rindex, Eigen::VectorXcd  &H_RMatrix, const std:
         fscanf(dataIN,"%d %d %d   %d %d    %d %d     %lf  %lf\n",&n,&l,&m,  &Atom1, &Atom2,    &i,&j,   &HopRe,  &HopIm);
         int i0=accumulated_Num_SpinOrbital[Atom1-1]+i-1;
         int m0=accumulated_Num_SpinOrbital[Atom2-1]+j-1;
-        if(i0 > NumOrbit or m0>NumOrbit) {
-            printf("%d %d %d   %d %d    %d %d     %lf  %lf\n",n,l,m,  Atom1, Atom2,    i,j,   HopRe,  HopIm);
-            fflush(stdout);
-            assert(i0 < NumOrbit and m0<NumOrbit);
-        }
         H_Rindex(index,0) = n;
         H_Rindex(index,1) = l;
         H_Rindex(index,2) = m;
@@ -49,17 +44,32 @@ void read_HR(Eigen::MatrixXi &H_Rindex, Eigen::VectorXcd  &H_RMatrix, const std:
 
         H_RMatrix(index) = HopRe + I*HopIm;
 
+
+
         if(n==0 and l==0 and m==0 and Atom1==Atom2 and  i0/2==m0/2 and isOrbitalHartrDFT[i0] ) {
             H_RMatrix(index) += Zeeman_field_spin[Atom1-1](i0%2, m0%2);
         }
         if ( magnetism<2  and i0%2 != m0%2)  H_RMatrix(index) =0;
-        if( ( std::isnan(std::abs(H_RMatrix(index)) ) or   std::isinf(std::abs(H_RMatrix(index)))      ))   {
+
+
+//        if( ( std::isnan(std::abs(H_RMatrix(index)) ) or   std::isinf(std::abs(H_RMatrix(index)))      ))   {
+//            printf("%d %d %d   %d %d    %d %d     %lf  %lf\n",n,l,m,  Atom1, Atom2,    i,j,   HopRe,  HopIm);
+//            fflush(stdout);
+//            printf("%d %d %d    %d      %d        %lf  %lf\n",H_Rindex(index,0),H_Rindex(index,1),H_Rindex(index,2),  H_Rindex(index,3), H_Rindex(index,4), real(H_RMatrix(index)), imag(H_RMatrix(index)));
+//            fflush(stdout);
+//            assert(0);
+//        }
+        if(i0 > NumOrbit or m0>NumOrbit) {
             printf("%d %d %d   %d %d    %d %d     %lf  %lf\n",n,l,m,  Atom1, Atom2,    i,j,   HopRe,  HopIm);
             fflush(stdout);
-            printf("%d %d %d    %d      %d        %lf  %lf\n",H_Rindex(index,0),H_Rindex(index,1),H_Rindex(index,2),  H_Rindex(index,3), H_Rindex(index,4), real(H_RMatrix(index)), imag(H_RMatrix(index)));
-            fflush(stdout);
-            assert(0);
+            assert(i0 < NumOrbit and m0<NumOrbit);
         }
+//
+//
+//            std::cout << H_Rindex(index,0) <<" " << H_Rindex(index, 1)  <<" " << H_Rindex(index, 2)<<"\n";
+//            std::cout << H_Rindex(index,3) <<" " << H_Rindex(index, 4) <<"\n";
+//           std::cout << H_RMatrix(index) <<"\n";
+
         index++;
     }
     fclose(dataIN);
@@ -88,6 +98,7 @@ int read_OverlapMat(Eigen::MatrixXi &S_overlap_Rindex, Eigen::VectorXcd  &S_over
 
         FILE *Overlap= fopen(readfile.c_str(),"r");
 
+        int n_max,l_max,m_max, Atom1_max, Atom2_max, i_max,j_max;
         while(!feof(Overlap)) {
             int n,l,m, Atom1, Atom2, i,j;
             double HopRe, HopIm;
@@ -100,21 +111,30 @@ int read_OverlapMat(Eigen::MatrixXi &S_overlap_Rindex, Eigen::VectorXcd  &S_over
             S_overlap_Rindex(index,3)=i0;
             S_overlap_Rindex(index,4)=m0;
             S_overlap_RMatrix(index) = HopRe + I * HopIm;
-            if((Atom1!=Atom2 or n!=0 or l!=0 or m!=0) and std::abs(HopRe+I*HopIm) > S_max_ofdiagonal  ) S_max_ofdiagonal=  std::abs(HopRe+I*HopIm);
+            if((Atom1!=Atom2 or n!=0 or l!=0 or m!=0) and std::abs(HopRe+I*HopIm) > S_max_ofdiagonal  ) {
+                n_max = n;
+                l_max = l;
+                m_max = m;
+                Atom1_max = Atom1;
+                Atom2_max = Atom2;
+                i_max = i;
+                j_max = j;
+                S_max_ofdiagonal=  std::abs(HopRe+I*HopIm);
+            }
             index++;
         }
 
         if (mpi_rank ==0)  std::cout << "We have Overlap matrix"  <<"\n";
-        if (mpi_rank ==0)  std::cout <<"OverlapMatrix_max_offdiagonal: "<< S_max_ofdiagonal<<"\n";
-
-
-
-
+        if (mpi_rank ==0)  std::cout <<"OverlapMatrix_max_offdiagonal: "
+                                         <<n_max<< ","
+                                         <<l_max<<","
+                                         <<m_max<< "; "
+                                         << Atom1_max <<","
+                                         << Atom2_max <<"; "
+                                         <<i_max <<","
+                                         <<j_max <<"= "
+                                         << S_max_ofdiagonal<<"\n";
     }
-
-
-
-
     return overlap_exist;
 }
 

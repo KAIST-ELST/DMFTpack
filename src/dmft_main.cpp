@@ -16,7 +16,6 @@
 
 //#define debug_jhs 1
 
-//bool dmft_scf_check( Eigen::MatrixXcd NumMatrixLatt, Eigen::MatrixXcd NumMatrixImp);
 bool dmft_scf_check( Eigen::MatrixXcd NumMatrixLatt, Eigen::MatrixXcd NumMatrixImp, Eigen::MatrixXcd NumMatrix, time_t timeStartIt, time_t timeEndIt, int currentIt ) ;
 
 double  TightBinding(double mu, const std::string &hamiltonian, ImgFreqFtn & SelfE_w,
@@ -137,8 +136,8 @@ int main(int argc, char *argv[]) {
     int mystaE, myendE;
     para_range(0,Spectral_EnergyGrid-1, mpi_numprocs, mpi_rank, &mystaE, &myendE);
 
-    weiss_field_weakCorr.Initialize(    beta, N_freq, NumHartrOrbit_per_cluster,NumCluster, mixingType);
     weiss_fieldTB_weakCorr.Initialize(  beta, N_freq, NumHartrOrbit_per_cluster,NumCluster, mixingType);
+    weiss_field_weakCorr.Initialize(    beta, N_freq, NumHartrOrbit_per_cluster,NumCluster, mixingType);
     weiss_fieldTB_strongCorr.Initialize(beta, N_freq, NSpinOrbit_per_atom,NumCorrAtom, mixingType);
     weiss_field_strongCorr.Initialize(  beta, N_freq, NSpinOrbit_per_atom,NumCorrAtom, mixingType);
 
@@ -386,7 +385,6 @@ int main(int argc, char *argv[]) {
         ImgFreqFtn SelfEnergy_w_out(0);
         SelfEnergy_w_out.Initialize(         beta, N_freq, NumHartrOrbit_per_cluster, NumCluster, mixingType);
         for(int cl=0; cl < NumCluster;  cl++) {
-
             ImgFreqFtn SE_out(0);
             ImgFreqFtn SE_lowlevel(0);
             ImgFreqFtn SE_strong(0);
@@ -397,18 +395,12 @@ int main(int argc, char *argv[]) {
 
             std::vector<int> strongCorr(NSpinOrbit_per_atom);
 
-
-
             ImgFreqFtn Gw_weak(beta, N_freq, NumHartrOrbit_per_cluster, 1,0);
             Gw_weak.update_full(std::string("Gw_loc.full.dat") + intToString(cl),1);
 
 
             ImgFreqFtn Gw_strong(0);
             Gw_strong.Initialize(beta, N_freq, NSpinOrbit_per_atom,1,0);
-
-
-
-
 
             /*Weakly correlated subspace in the impurity site*/
             if(NumHartrOrbit_per_cluster>NSpinOrbit_per_atom) {
@@ -420,7 +412,7 @@ int main(int argc, char *argv[]) {
 
                 SE_lowlevel.dataOut(std::string("Bare_Sw_lowlevel.dat") + intToString(cl));
 
-                /*remove local lowlevel*/
+                /*remove double counting contribution*/
                 for(int at=cl*NumAtom_per_cluster; at < (cl+1)*NumAtom_per_cluster; at++) {
                     ifroot std::cout <<"Run low level solver for active space\n";
                     for (int n=0; n<N_freq+3; n++) {
@@ -449,11 +441,11 @@ int main(int argc, char *argv[]) {
                             }
                         }
                     }
-                }
+                }//at
                 for (int n=0; n<N_freq+2; n++) {
                     SE_out.setMatrix(n,SE_lowlevel.getMatrix(n));
                 }
-            }//if
+            }//if, weak solver
 
             for(int at=cl*NumAtom_per_cluster; at < (cl+1)*NumAtom_per_cluster; at++) {
 
@@ -475,9 +467,19 @@ int main(int argc, char *argv[]) {
                 }
 
 
+                //strongly correlated subspace
                 for (int i=0; i<NSpinOrbit_per_atom; i++)  strongCorr[i] = CorrToHartr(at, i ) ;
-                //strong correlated subspace
                 ifroot std::cout << "High-level solver for atom " << at <<"\n";
+                for (int n=0; n<N_freq+3; n++) {
+                    for (int i=0; i<NSpinOrbit_per_atom; i++) {
+                        for (int j=0; j<NSpinOrbit_per_atom; j++) {
+                            int iF = CorrToHartr(at,i)  - cl * NumHartrOrbit_per_cluster ;
+                            int jF = CorrToHartr(at,j)  - cl * NumHartrOrbit_per_cluster ;
+                            Gw_strong.setValue(n,i,j, Gw_weak.getValue(n,iF,jF));
+                        }
+                    }
+                }
+
                 SOLVER(SOLVERtype,
                        NSpinOrbit_per_atom, at, strongCorr,
                        impurity_site_Hamiltonian, weiss_field_strongCorr,
@@ -498,11 +500,7 @@ int main(int argc, char *argv[]) {
                     }
                 }
 
-
-
-
                 /*combine all result (Sw_weak, Sw_strong, Sw_DFTdc)  to SE_out*/
-
                 for (int n=0; n<N_freq+2; n++) {
                     for (int i=0; i<NSpinOrbit_per_atom; i++) {
                         for (int j=0; j<NSpinOrbit_per_atom; j++) {
@@ -515,13 +513,6 @@ int main(int argc, char *argv[]) {
                 SE_strong.dataOut(std::string("Bare_Sw_strong.dat")+intToString(at));
             }//at
 
-
-
-
-
-
-
-
             Gw_weak.dataOut_full((std::string("Gw_imp.full.dat")+ intToString(cl)  ) );
             Gw_weak.dataOut(std::string("Gw_imp.dat"+ intToString(cl)));
 
@@ -531,7 +522,8 @@ int main(int argc, char *argv[]) {
 
             if(doublecounting==1) {
                 for (int  w=0; w<N_freq+1; w++) {
-                    SE_out.setMatrix(w,  SE_out.getMatrix(w) - Sw_doublecounting.block(cl*NumHartrOrbit_per_cluster, cl*NumHartrOrbit_per_cluster, NumHartrOrbit_per_cluster, NumHartrOrbit_per_cluster  ));
+                    SE_out.setMatrix(w,
+                                     SE_out.getMatrix(w) - Sw_doublecounting.block(cl*NumHartrOrbit_per_cluster, cl*NumHartrOrbit_per_cluster, NumHartrOrbit_per_cluster, NumHartrOrbit_per_cluster  ));
                 }
             }
             SelfEnergy_w_out.update(     SE_out,   1,    cl, 0 );
@@ -546,8 +538,6 @@ int main(int argc, char *argv[]) {
 
         SelfEnergy_w.dataOut_full(std::string("Sw_SOLVER.full.dat"));
         SelfEnergy_w.dataOut(std::string("Sw_SOLVER.dat"));
-
-
         NumMatrixImp = NumMatrix;
 
 
@@ -937,7 +927,7 @@ bool dmft_scf_check( Eigen::MatrixXcd NumMatrixLatt, Eigen::MatrixXcd NumMatrixI
             for(int  n=at*N_peratom_HartrOrbit; n<at*N_peratom_HartrOrbit+N_peratom_HartrOrbit; n++) {
                 std::cout << "         ";
                 for(int m=at*N_peratom_HartrOrbit; m<at*N_peratom_HartrOrbit+N_peratom_HartrOrbit; m++) {
-                    std::cout <<NumMatrix(n,m) <<"   ";
+                    std::cout <<NumMatrixLatt(n,m) <<"   ";
                 }
                 std::cout << "\n";
             }
@@ -947,8 +937,17 @@ bool dmft_scf_check( Eigen::MatrixXcd NumMatrixLatt, Eigen::MatrixXcd NumMatrixI
             std::cout << "\nNum ele (decomp,lattice)  = ";
             double sum=0;
             for(int n=0; n<N_peratom_HartrOrbit; n+=1) {
-                std::cout <<std::fixed << std::setprecision(4)<< std::fixed   <<  real(NumMatrix(at*N_peratom_HartrOrbit+n,at*N_peratom_HartrOrbit+n)) <<" " ;
-                sum+= real(NumMatrix(at*N_peratom_HartrOrbit+n,at*N_peratom_HartrOrbit+n));
+                std::cout <<std::fixed << std::setprecision(4)<< std::fixed   <<  real(NumMatrixLatt(at*N_peratom_HartrOrbit+n,at*N_peratom_HartrOrbit+n)) <<" " ;
+                sum+= real(NumMatrixLatt(at*N_peratom_HartrOrbit+n,at*N_peratom_HartrOrbit+n));
+            }
+            std::cout << std::fixed << std::setprecision(4)<< std::fixed   << ";  (total)  = "<<  sum <<"\n" ;
+        }
+        for(int at=0; at<NumCorrAtom; at++) {
+            std::cout << "\nNum ele (decomp,solver)  = ";
+            double sum=0;
+            for(int n=0; n<N_peratom_HartrOrbit; n+=1) {
+                std::cout <<std::fixed << std::setprecision(4)<< std::fixed   <<  real(NumMatrixImp(at*N_peratom_HartrOrbit+n,at*N_peratom_HartrOrbit+n)) <<" " ;
+                sum+= real(NumMatrixImp(at*N_peratom_HartrOrbit+n,at*N_peratom_HartrOrbit+n));
             }
             std::cout << std::fixed << std::setprecision(4)<< std::fixed   << ";  (total)  = "<<  sum <<"\n" ;
         }
@@ -965,7 +964,6 @@ bool dmft_scf_check( Eigen::MatrixXcd NumMatrixLatt, Eigen::MatrixXcd NumMatrixI
 
 
     /*SCF check; */
-//    MPI_Barrier(MPI_COMM_WORLD);
     ImgFreqFtn GwDMFT_Loc(beta, N_freq, N_peratom_HartrOrbit, NumCorrAtom,0);
     ImgFreqFtn GwDMFT_Imp(beta, N_freq, N_peratom_HartrOrbit, NumCorrAtom,0);
     if(N_peratom_HartrOrbit>0) GwDMFT_Loc.update_full(std::string("Gw_loc.full.dat0"),1);

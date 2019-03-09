@@ -182,12 +182,14 @@ void SpreadFtn_PWF( int knum,
 
 
 
+    ifroot std::cout << "Calculate Spread function..\n";
     Eigen::MatrixXi  x_overlap_Rindex,y_overlap_Rindex, z_overlap_Rindex   ;
     Eigen::VectorXcd x_overlap_RMatrix,y_overlap_RMatrix, z_overlap_RMatrix    ;
     int temp;
     temp =          read_OverlapMat(x_overlap_Rindex, x_overlap_RMatrix, std::string("OverlapMatrix_x.HWR"), accumulated_Num_SpinOrbital);
     temp =          read_OverlapMat(y_overlap_Rindex, y_overlap_RMatrix, std::string("OverlapMatrix_y.HWR"), accumulated_Num_SpinOrbital);
     temp =          read_OverlapMat(z_overlap_Rindex, z_overlap_RMatrix, std::string("OverlapMatrix_z.HWR"), accumulated_Num_SpinOrbital);
+    int NumCorrOrbit = NumCorrAtom * N_peratom_HartrOrbit;
 
 
 
@@ -218,19 +220,19 @@ void SpreadFtn_PWF( int knum,
 
 
 
-    x_overlap2_R0_mpiLocal.setZero(N_peratom_HartrOrbit, N_peratom_HartrOrbit);
-    y_overlap2_R0_mpiLocal.setZero(N_peratom_HartrOrbit, N_peratom_HartrOrbit);
-    z_overlap2_R0_mpiLocal.setZero(N_peratom_HartrOrbit, N_peratom_HartrOrbit);
-    x_overlap2_R0.setZero(N_peratom_HartrOrbit, N_peratom_HartrOrbit);
-    y_overlap2_R0.setZero(N_peratom_HartrOrbit, N_peratom_HartrOrbit);
-    z_overlap2_R0.setZero(N_peratom_HartrOrbit, N_peratom_HartrOrbit);
+    x_overlap2_R0_mpiLocal.setZero(NumCorrOrbit, NumCorrOrbit);
+    y_overlap2_R0_mpiLocal.setZero(NumCorrOrbit, NumCorrOrbit);
+    z_overlap2_R0_mpiLocal.setZero(NumCorrOrbit, NumCorrOrbit);
+    x_overlap2_R0.setZero(NumCorrOrbit, NumCorrOrbit);
+    y_overlap2_R0.setZero(NumCorrOrbit, NumCorrOrbit);
+    z_overlap2_R0.setZero(NumCorrOrbit, NumCorrOrbit);
 
-    x_overlap_R0_mpiLocal.setZero(N_peratom_HartrOrbit, N_peratom_HartrOrbit);
-    y_overlap_R0_mpiLocal.setZero(N_peratom_HartrOrbit, N_peratom_HartrOrbit);
-    z_overlap_R0_mpiLocal.setZero(N_peratom_HartrOrbit, N_peratom_HartrOrbit);
-    x_overlap_R0.setZero(N_peratom_HartrOrbit, N_peratom_HartrOrbit);
-    y_overlap_R0.setZero(N_peratom_HartrOrbit, N_peratom_HartrOrbit);
-    z_overlap_R0.setZero(N_peratom_HartrOrbit, N_peratom_HartrOrbit);
+    x_overlap_R0_mpiLocal.setZero(NumCorrOrbit, NumCorrOrbit);
+    y_overlap_R0_mpiLocal.setZero(NumCorrOrbit, NumCorrOrbit);
+    z_overlap_R0_mpiLocal.setZero(NumCorrOrbit, NumCorrOrbit);
+    x_overlap_R0.setZero(NumCorrOrbit, NumCorrOrbit);
+    y_overlap_R0.setZero(NumCorrOrbit, NumCorrOrbit);
+    z_overlap_R0.setZero(NumCorrOrbit, NumCorrOrbit);
 
 
     Eigen::MatrixXcd  eye;
@@ -238,7 +240,6 @@ void SpreadFtn_PWF( int knum,
     Eigen::MatrixXcd Bra_ProjOrbitals_Ket_KSenergy;
 
     for(int k = 0;  k < knum; k++) {
-
         /*S(k),   H*S |\psi> = E |\psi>      */
         x_overlap_k.setZero(NumOrbit,NumOrbit);
         y_overlap_k.setZero(NumOrbit,NumOrbit);
@@ -272,27 +273,29 @@ void SpreadFtn_PWF( int knum,
             }
         }
         Eigen::MatrixXcd KS_eigenVectors_nonOrtho_DFT_dual_Basis
-            =  S_overlap[k].inverse() *  (   (transformMatrix_k[k].adjoint().inverse())* KS_eigenVectors_orthoBasis[k]); //<\phi^\alpha |  kn>
+            =  S_overlap[k].inverse() *  (   (transformMatrix_k[k].adjoint().inverse())* KS_eigenVectors_orthoBasis[k]); // <\phi^\alpha |  kn>
+
+//        Eigen::MatrixXcd KS_eigenVectors_nonOrtho_DFT_dual_Basis
+//            =  transformMatrix_k[k] * KS_eigenVectors_orthoBasis[k];
+
 
         // <nk|r|nk>
         x_overlap_k = (KS_eigenVectors_nonOrtho_DFT_dual_Basis.adjoint()*x_overlap_k*KS_eigenVectors_nonOrtho_DFT_dual_Basis).eval();
         y_overlap_k = (KS_eigenVectors_nonOrtho_DFT_dual_Basis.adjoint()*y_overlap_k*KS_eigenVectors_nonOrtho_DFT_dual_Basis).eval();
         z_overlap_k = (KS_eigenVectors_nonOrtho_DFT_dual_Basis.adjoint()*z_overlap_k*KS_eigenVectors_nonOrtho_DFT_dual_Basis).eval();
 
+        //  <PWF|r|PWF>
         x_overlap_k = (Bra_ProjOrbitals_Ket_KSenergy*x_overlap_k*Bra_ProjOrbitals_Ket_KSenergy.adjoint()).eval();
         y_overlap_k = (Bra_ProjOrbitals_Ket_KSenergy*y_overlap_k*Bra_ProjOrbitals_Ket_KSenergy.adjoint()).eval();
         z_overlap_k = (Bra_ProjOrbitals_Ket_KSenergy*z_overlap_k*Bra_ProjOrbitals_Ket_KSenergy.adjoint()).eval();
 
-//    {}
-//
-//    for(int k = 0;  k < knum; k++) {}
-        x_overlap2_R0_mpiLocal += (x_overlap_k.adjoint() * x_overlap_k ).block(FromValToKS[k][0], FromValToKS[k][0], N_peratom_HartrOrbit, N_peratom_HartrOrbit);
-        y_overlap2_R0_mpiLocal += (y_overlap_k.adjoint() * y_overlap_k ).block(FromValToKS[k][0], FromValToKS[k][0], N_peratom_HartrOrbit, N_peratom_HartrOrbit);
-        z_overlap2_R0_mpiLocal += (z_overlap_k.adjoint() * z_overlap_k ).block(FromValToKS[k][0], FromValToKS[k][0], N_peratom_HartrOrbit, N_peratom_HartrOrbit);
-        x_overlap_R0_mpiLocal  += (x_overlap_k                         ).block(FromValToKS[k][0], FromValToKS[k][0], N_peratom_HartrOrbit, N_peratom_HartrOrbit);
-        y_overlap_R0_mpiLocal  += (y_overlap_k                         ).block(FromValToKS[k][0], FromValToKS[k][0], N_peratom_HartrOrbit, N_peratom_HartrOrbit);
-        z_overlap_R0_mpiLocal  += (z_overlap_k                         ).block(FromValToKS[k][0], FromValToKS[k][0], N_peratom_HartrOrbit, N_peratom_HartrOrbit);
-    }
+        x_overlap2_R0_mpiLocal += (x_overlap_k.adjoint() * x_overlap_k ).block(FromValToKS[k][0], FromValToKS[k][0], NumCorrOrbit, NumCorrOrbit);
+        y_overlap2_R0_mpiLocal += (y_overlap_k.adjoint() * y_overlap_k ).block(FromValToKS[k][0], FromValToKS[k][0], NumCorrOrbit, NumCorrOrbit);
+        z_overlap2_R0_mpiLocal += (z_overlap_k.adjoint() * z_overlap_k ).block(FromValToKS[k][0], FromValToKS[k][0], NumCorrOrbit, NumCorrOrbit);
+        x_overlap_R0_mpiLocal  += (x_overlap_k                         ).block(FromValToKS[k][0], FromValToKS[k][0], NumCorrOrbit, NumCorrOrbit);
+        y_overlap_R0_mpiLocal  += (y_overlap_k                         ).block(FromValToKS[k][0], FromValToKS[k][0], NumCorrOrbit, NumCorrOrbit);
+        z_overlap_R0_mpiLocal  += (z_overlap_k                         ).block(FromValToKS[k][0], FromValToKS[k][0], NumCorrOrbit, NumCorrOrbit);
+    }//k
 
 
 
@@ -312,12 +315,19 @@ void SpreadFtn_PWF( int knum,
     y_overlap_R0/=knum_mpiGlobal;
     z_overlap_R0/=knum_mpiGlobal;
 
+    if(mpi_rank==0 )   std::cout << "<TB> center (Angs), PWF:\n";
+    for(int h1F=0; h1F<NumCorrOrbit; h1F++) {
+        double Dx = real( x_overlap_R0(h1F,h1F) );
+        double Dy = real( y_overlap_R0(h1F,h1F) );
+        double Dz = real( z_overlap_R0(h1F,h1F) );
+        ifroot std::cout << h1F << ": " <<(Dx) <<" " <<   (Dy) <<" " << (Dz) <<"\n";
+    }
 
     if(mpi_rank==0 )   std::cout << "<TB> Spread function, PWF:\n";
-    for(int h1F=0; h1F<N_peratom_HartrOrbit; h1F++) {
+    for(int h1F=0; h1F<NumCorrOrbit; h1F++) {
         double Dx = real(x_overlap2_R0(h1F,h1F) - x_overlap_R0(h1F,h1F) * x_overlap_R0(h1F,h1F) );
         double Dy = real(y_overlap2_R0(h1F,h1F) - y_overlap_R0(h1F,h1F) * y_overlap_R0(h1F,h1F) );
         double Dz = real(z_overlap2_R0(h1F,h1F) - z_overlap_R0(h1F,h1F) * z_overlap_R0(h1F,h1F) );
-        ifroot std::cout << h1F << " " << std::sqrt(Dx+Dy+Dz)<<"\n" ;
+        ifroot std::cout << h1F << ": " <<std::sqrt(Dx) <<" " <<   std::sqrt(Dy) <<" " << std::sqrt(Dz) <<" : "   << std::sqrt(Dx+Dy+Dz)<<"\n" ;
     }
 }

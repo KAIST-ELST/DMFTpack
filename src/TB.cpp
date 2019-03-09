@@ -187,8 +187,14 @@ double  TightBinding(double mu, const std::string &hamiltonian, ImgFreqFtn & Sel
 
 
     /*FBZ, k-space grid*/
+// (kx,ky,kz) = kx + ky*(k_pointx) + kz*(kpxy)
+// =>
+// kx=  k % k_pointx
+// ky=  (k % kpxy) / k_pointx
+// kx=   k / kpxy
+
     if (  k_grid_dos ) {//dos
-        int kpxy= k_pointx*k_pointy;                             // (kx,ky,kz) = kx + ky*(kpx) + kz*(kpxy)
+        int kpxy= k_pointx*k_pointy;
         double  delx,dely,delz;
         delx       = 2.*pi / (ax * double(k_pointx));
         dely       = 2.*pi / (ay * double(k_pointy));
@@ -273,6 +279,8 @@ double  TightBinding(double mu, const std::string &hamiltonian, ImgFreqFtn & Sel
 
     downfolding_ftn(knum, knum_mpiGlobal, NBAND, H_k_inModelSpace, KS_eigenVectors_orthoBasis, KS_eigenEnergy,  muDFT);
     Find_best_correlated_basis(H_k_inModelSpace, SolverBasis, mu);
+    SpreadFtn_PWF(knum, S_overlap, transformMatrix_k, KS_eigenVectors_orthoBasis, accumulated_Num_SpinOrbital);
+    NumMat_PWF(knum, knum_mpiGlobal, mu, NumMatrix, KS_eigenEnergy, DF_CorrBase);
 
 
 
@@ -310,7 +318,13 @@ double  TightBinding(double mu, const std::string &hamiltonian, ImgFreqFtn & Sel
             Construct_hyb_delta ( NumHartrOrbit_per_cluster, weaklyCorr,  SelfE_w, Gw,  mu, weiss_fieldTBweakCorr, clust, SolverBasis);
             if(NSpinOrbit_per_atom>0) {
                 for(int atom=clust*NumAtom_per_cluster; atom < (clust+1)*NumAtom_per_cluster; atom++) {
-                    for (int i=0; i<NSpinOrbit_per_atom; i++)  strongCorr[i] = CorrToHartr(atom, i );
+                    ifroot std::cout <<"Construct weiss field for atom " << atom << std::endl;
+                    ifroot std::cout <<"Orbital: ";
+                    for (int i=0; i<NSpinOrbit_per_atom; i++) {
+                        strongCorr[i] = CorrToHartr(atom, i );
+                        ifroot std::cout << strongCorr[i] <<" " ;
+                    }
+                    ifroot std::cout << std::endl;
                     Construct_hyb_delta (   NSpinOrbit_per_atom, strongCorr, SelfE_w, Gw,  mu, weiss_fieldTBstrongCorr, atom, SolverBasis);
                 }
             }
@@ -332,7 +346,7 @@ double  TightBinding(double mu, const std::string &hamiltonian, ImgFreqFtn & Sel
             fclose(OBSERV);
         }//mpi_rank
         upfolding_density(densityMatDFT,  KS_eigenVectors_orthoBasis,H_Rindex, mu, S_overlap, transformMatrix_k);
-    }
+    }//DMFT
 
 ////////////////////////////////////////////////////////////
 //Free energy calculation
@@ -429,7 +443,6 @@ void Find_best_correlated_basis(std::vector<Eigen::MatrixXcd> & H_k_inModelSpace
             }
 
         }//k
-
         for(int ATOM=0 ; ATOM < NumCorrAtom; ATOM++) {
             MPI_Allreduce(Gloc_w0_mpilocal[ATOM].data(), Gloc_w0[ATOM].data(), Gloc_w0[ATOM].size(), MPI_DOUBLE_COMPLEX, MPI_SUM,  MPI_COMM_WORLD);
             Gloc_w0[ATOM] /= knum_mpiGlobal;
@@ -438,19 +451,20 @@ void Find_best_correlated_basis(std::vector<Eigen::MatrixXcd> & H_k_inModelSpace
 
             for (int n=0; n<NSpinOrbit_per_atom; n++) {
                 for (int m=0; m<NSpinOrbit_per_atom; m++) {
-                    int n0 = CorrToHartr(ATOM,n);
-                    int m0 = CorrToHartr(ATOM,m);
+                    int n0 = CorrToHartr(ATOM,n) - N_peratom_HartrOrbit *ATOM;
+                    int m0 = CorrToHartr(ATOM,m) - N_peratom_HartrOrbit *ATOM;
 
                     SolverBasis_atom.at(ATOM)(n0,m0) =  ces.eigenvectors()(n,m);
                 }
             }
-        }
-        for(int ATOM=0 ; ATOM < NumCorrAtom; ATOM++) {
             ifroot {
                 std::cout << "Solver:Gloc_w0:\n" << Gloc_w0[ATOM] <<"\n";
                 std::cout <<"\n";
                 std::cout << "Solver:Basis:\n" << SolverBasis_atom[ATOM] <<"\n";
+                std::cout << "Solver:Gloc_w0_eval:\n" << ces.eigenvalues() <<"\n";
             }
+        }
+        for(int ATOM=0 ; ATOM < NumCorrAtom; ATOM++) {
             SolverBasis.block(ATOM*N_peratom_HartrOrbit, ATOM*N_peratom_HartrOrbit, N_peratom_HartrOrbit, N_peratom_HartrOrbit) = SolverBasis_atom[ATOM];
         }
 

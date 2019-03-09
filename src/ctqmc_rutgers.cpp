@@ -38,15 +38,17 @@ void HamiltonianConstruc(  Eigen::MatrixXcd & Himp,  Eigen::MatrixXi **f_ann, in
 
 
 void write_PARMS() ;
-void write_cix_file(int NSector, int maxDim, int Nstate, unsigned long long * dim_for_sector,  std::vector<std::vector<double> > & ImpTotalEnergy, Eigen::MatrixXcd ** f_annMat) ;
+void write_cix_file(int NSector, int maxDim, int Nstate, unsigned long long * dim_for_sector,  std::vector<std::vector<double> > & ImpTotalEnergy, Eigen::MatrixXcd ** f_annMat,
+                    std::vector<cmplx > Utensor, std::vector<Eigen::VectorXi> Uindex  ) ;
 void write_Delta(   ImgFreqFtn & weiss_field );
 void write_Delta_diag(   ImgFreqFtn & weiss_field_diag) ;
 
 
 
 
-void ctqmc_rutgers(  Eigen::MatrixXcd Local_Hamiltonian_ED, double muTB,  ImgFreqFtn & weiss_field, std::vector<cmplx > Utensor, std::vector<Eigen::VectorXi> Uindex  ) {
-    int   Nstate = NSpinOrbit_per_atom;
+void ctqmc_rutgers(  Eigen::MatrixXcd Local_Hamiltonian_ED, double muTB,
+                     ImgFreqFtn & weiss_field, std::vector<cmplx > Utensor, std::vector<Eigen::VectorXi> Uindex, int solverDim  ) {
+    int   Nstate = solverDim;
 //    ifroot std::cout << "#############################\n"
 //                     << "Start Hub-I solver:#of state="<< Nstate << "   U:"<<UHubb<<" U':"<<Uprime <<" J:" <<JHund
 //                     << "\nNstate (imp+bath) should be smaller than 36  (int) or  70 (unsigned long long)\n";
@@ -59,11 +61,7 @@ void ctqmc_rutgers(  Eigen::MatrixXcd Local_Hamiltonian_ED, double muTB,  ImgFre
     else                {
         NSector = Nstate+1;                                   //Total number of the election in the system , 0,1,2,... Nstate
     }
-
-
     NSector = Nstate+1;                                   //Total number of the election in the system , 0,1,2,... Nstate
-
-
 
     unsigned long long  dim_for_sector[NSector];
     unsigned long long ** SectorToGlobalIndx;
@@ -163,7 +161,7 @@ void ctqmc_rutgers(  Eigen::MatrixXcd Local_Hamiltonian_ED, double muTB,  ImgFre
     }//section
 
     ifroot std::cout << "\nwrite_cix_file\n";
-    ifroot     write_cix_file(NSector,  maxDim, Nstate, dim_for_sector, ImpTotalEnergy, f_annMat);
+    ifroot     write_cix_file(NSector,  maxDim, Nstate, dim_for_sector, ImpTotalEnergy, f_annMat, Utensor, Uindex);
     write_Delta(    weiss_field);
     ifroot write_PARMS();
 
@@ -181,7 +179,8 @@ void ctqmc_rutgers(  Eigen::MatrixXcd Local_Hamiltonian_ED, double muTB,  ImgFre
     delete [] f_ann;
 } //ct_qmc_rut
 
-void ctqmc_rutgers_seg(  Eigen::MatrixXcd Local_Hamiltonian_ED, double muTB,  ImgFreqFtn & weiss_field) {
+void ctqmc_rutgers_seg(  Eigen::MatrixXcd Local_Hamiltonian_ED, double muTB,
+                         ImgFreqFtn & weiss_field,  std::vector<cmplx > Utensor, std::vector<Eigen::VectorXi> Uindex) {
     ifroot{
 
         FILE * cix = fopen("rutgers_input.cix", "w");
@@ -227,17 +226,17 @@ void ctqmc_rutgers_seg(  Eigen::MatrixXcd Local_Hamiltonian_ED, double muTB,  Im
         int length = (int) Utensor.size();
         int nH=0;
         while(nH < length) {
-            if( isOrbitalCorrinHart[Uindex[nH](0) ] and
-                    isOrbitalCorrinHart[Uindex[nH](1) ] and
-                    isOrbitalCorrinHart[Uindex[nH](2) ] and
-                    isOrbitalCorrinHart[Uindex[nH](3) ] ) {
-                fprintf(cix, " %d %d %d %d %+0.8f\n",
-                        Hart2Corr[Uindex[nH](0)],
-                        Hart2Corr[Uindex[nH](1)],
-                        Hart2Corr[Uindex[nH](3)],
-                        Hart2Corr[Uindex[nH](2)],  real(Utensor[nH]) );
-                assert(imag(Utensor[nH]) < 1e-5);
-            }
+//            if( isOrbitalCorrinHart[Uindex[nH](0) ] and
+//                    isOrbitalCorrinHart[Uindex[nH](1) ] and
+//                    isOrbitalCorrinHart[Uindex[nH](2) ] and
+//                    isOrbitalCorrinHart[Uindex[nH](3) ] ) {}
+            fprintf(cix, " %d %d %d %d %+0.8f\n",
+                    Uindex[nH](0),
+                    Uindex[nH](1),
+                    Uindex[nH](3),
+                    Uindex[nH](2),  real(Utensor[nH]) );
+            assert(imag(Utensor[nH]) < 1e-5);
+//            {}
             nH++;
         }
 
@@ -315,7 +314,8 @@ void write_Delta_diag(   ImgFreqFtn & weiss_field) {
 }
 
 
-void write_cix_file(int NSector, int maxDim, int Nstate, unsigned long long * dim_for_sector,  std::vector<std::vector<double> > & ImpTotalEnergy, Eigen::MatrixXcd ** f_annMat) {
+void write_cix_file(int NSector, int maxDim, int Nstate, unsigned long long * dim_for_sector,  std::vector<std::vector<double> > & ImpTotalEnergy, Eigen::MatrixXcd ** f_annMat,
+                    std::vector<cmplx > Utensor, std::vector<Eigen::VectorXi> Uindex  ) {
     FILE * cix = fopen("rutgers_input.cix", "w");
     fprintf(cix, "# Cix file for cluster DMFT with CTQMC\n");
     fprintf(cix, "# cluster_size, number of states, number of baths, maximum matrix size\n");
@@ -422,17 +422,20 @@ void write_cix_file(int NSector, int maxDim, int Nstate, unsigned long long * di
     int length = (int) Utensor.size();
     int nH=0;
     while(nH < length) {
-        if( isOrbitalCorrinHart[Uindex[nH](0) ] and
-                isOrbitalCorrinHart[Uindex[nH](1) ] and
-                isOrbitalCorrinHart[Uindex[nH](2) ] and
-                isOrbitalCorrinHart[Uindex[nH](3) ] ) {
-            fprintf(cix, " %d %d %d %d %+0.8f\n",
-                    Hart2Corr[Uindex[nH](0)],
-                    Hart2Corr[Uindex[nH](1)],
-                    Hart2Corr[Uindex[nH](3)],
-                    Hart2Corr[Uindex[nH](2)],  real(Utensor[nH]) );
-            assert(imag(Utensor[nH]) < 1e-5);
+//        if( isOrbitalCorrinHart[Uindex[nH](0) ] and
+//                isOrbitalCorrinHart[Uindex[nH](1) ] and
+//                isOrbitalCorrinHart[Uindex[nH](2) ] and
+//                isOrbitalCorrinHart[Uindex[nH](3) ] ) {}
+        fprintf(cix, " %d %d %d %d %+0.8f\n",
+                Uindex[nH](0),
+                Uindex[nH](1),
+                Uindex[nH](3),
+                Uindex[nH](2),  real(Utensor[nH]) );
+        if ( imag(Utensor[nH]) > 1e-5) {
+            std::cout << "imag part of Utensor" << Uindex[nH](0) << Uindex[nH](1) <<  Uindex[nH](2) <<  Uindex[nH](3) <<Utensor[nH] <<"\n";
+            exit(1);
         }
+//        {}
         nH++;
     }
 
@@ -471,16 +474,11 @@ void HamiltonianConstruc(  Eigen::MatrixXcd & Himp,  Eigen::MatrixXi **f_ann, in
         Himp -=  muTB *  numOperat[alp] ; //H_loc e_ab f^+_a *f_b
     }//alp
 
-////dd interaction only TODO
-//    for(int alp=0; alp<NSpinOrbit_per_atom; alp+=2) { //0,2,4...NSpinOrbit_per_atom-2
-//        Himp += UHubb   * numOperat[alp] *numOperat[alp+1] ;
-//        for(int bet=0; bet<alp; bet+=2) {
-//            Himp +=  Uprime         *  numOperat[alp  ]  * numOperat[bet+1]; //H_interaction
-//            Himp +=  Uprime         *  numOperat[alp+1]  * numOperat[bet];   //H_interaction
-//            Himp += (Uprime-JHund)  *  numOperat[alp  ]  * numOperat[bet  ]; //H_interaction
-//            Himp += (Uprime-JHund)  *  numOperat[alp+1]  * numOperat[bet+1]; //H_interaction
-//        }
-//    }//alp
+    if ( (Himp.imag()).norm() > 1e-5) {
+        std::cout << "imag part of H0:" <<   (Himp.imag()).norm() <<"\n";
+        exit(1);
+    }
+
 
     for(int ll=0; ll<Utensor.size(); ll++) {
         int i = Uindex[ll](0);

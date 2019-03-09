@@ -52,7 +52,7 @@ void FourierTransform_tau (Eigen::MatrixXcd * delta_w, Eigen::MatrixXcd  & delta
         Eigen::MatrixXcd tail = AsymtoV.adjoint() * (( I*w * id  - AsymtoH).inverse()) * AsymtoV  ;
         delta_t +=   (delta_w[i] - tail ) * std::exp(-I*w*tau);
     }
-//    for(int i=0; i<N_freq*2; i++) {
+//    for(int i=0; i<N_freq*2; i++) {}
     for(int i=N_freq; i<N_freq*2; i++) {
         w=w0local+i*dwlocal ;
 //        Eigen::MatrixXcd tail = moments3/std::pow((I*w),3);

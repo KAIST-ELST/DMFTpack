@@ -24,7 +24,7 @@ void  downfolding_ftn
             /*project out rest space ;*/
             /*d-orbital space extraction*/
             Eigen::MatrixXcd  S_overlap_dSpace;
-            DF_CorrBase[k].setZero( N_peratom_HartrOrbit*NumCorrAtom, NBAND[k]);
+            DF_CorrBase[k].setZero( N_peratom_HartrOrbit*NumCorrAtom, NBAND[k]); // At the final stage, DF_CorrBase[k](NBAND, NBAND) = <downfolded orbitals | nk >
             int p00=0;
             for(int cl1=0; cl1<NumCluster; cl1++) {
 //                for(int p0=HartrRange_DFT[at1][0] ; p0<HartrRange_DFT[at1][1] ; p0++) {}
@@ -81,22 +81,6 @@ void  downfolding_ftn
 
 
 
-
-
-    //Construct  effective Hamiltonian
-//    for(int k = 0;  k < knum; k++) {
-//        for(int at1=0; at1<NumCorrAtom; at1++) {
-//            for(int p0=HartrRange[at1][0] ; p0<HartrRange[at1][1] ; p0++) {
-//                for(int q0=HartrRange[at1][0] ; q0<HartrRange[at1][1] ; q0++) {
-//                    if(doublecounting == 1)         H_k_inModelSpace[k](p0,q0)  -=  Sw_doublecounting(LongRangeOrder[p0],LongRangeOrder[q0]);
-//                    H_k_inModelSpace[k](p0,q0)  +=  Sw_Hartree(LongRangeOrder[p0],LongRangeOrder[q0]);
-//                }
-//            }
-//        }
-//        if (mpi_rank ==0 and k==0  )          std::cout << "Effective Hamiltonian in model space = H_DFT - doublecounting + Sw_Hartree\n";
-//    }
-
-
     //(Re-)construct local energy level
     ifroot        std::cout <<"Himp, on-site:";
     std::vector<Eigen::MatrixXcd>  HRtemp(NumCluster);
@@ -141,6 +125,9 @@ void  downfolding_ftn
                          (impurity_site_Hamiltonian.block(cl*NumHartrOrbit_per_cluster,cl*NumHartrOrbit_per_cluster,
                                  NumHartrOrbit_per_cluster, NumHartrOrbit_per_cluster) )  <<"\n";
     }
+
+
+
 }
 
 

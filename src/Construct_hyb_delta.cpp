@@ -10,7 +10,8 @@ void Construct_hyb_delta(int impurityDim, std::vector<int> impurityOrbit,
                          ImgFreqFtn &  weiss_fieldTB, int atom,     Eigen::MatrixXcd & SolverBasis  ) {
     int   h2, h1F, h2F, h1H,h2H;
     cmplx iw;
-    Eigen::MatrixXcd   projimpurity_site_Hamiltonian, projSolverBasis ;
+    Eigen::MatrixXcd   projimpurity_site_Hamiltonian;
+//Eigen::MatrixXcd projSolverBasis ;
 //    int start_hyb_index = atom*impurityDim;
 
     std::vector<Eigen::MatrixXcd>     projSw(N_freq);
@@ -48,7 +49,7 @@ void Construct_hyb_delta(int impurityDim, std::vector<int> impurityOrbit,
                 iw=I*pi*(2.*n+1.)/beta;
                 weiss_fieldTB.setValueSubMat( n, atom,  h1, h1,
                                               iw+mu
-                                              - impurity_site_Hamiltonian(h1,h1)-   projSw[n](h1,h1)
+                                              - projimpurity_site_Hamiltonian(h1,h1)-   projSw[n](h1,h1)
                                               - 1.0/projGw[n](h1,h1));
                 //NOTE : (1/G_{ii}) \neq G^{-1}_{ii}
             }//n
