@@ -49,15 +49,11 @@ DEPFILE = dependency
 ###Intel MKL
 ##########################
 
-#CC = mpiicpc
-#INTEL = /home/users1/jhsim/intel_2019/
-
-#CC = mpic++
-#INTEL = /opt/intel/intel_2017_beta
-
-
-CC =  mpic++
+CC = mpiicpc
 INTEL = /home/users1/jhsim/intel_2019/
+
+
+
 
 
 MKL = ${INTEL}/mkl

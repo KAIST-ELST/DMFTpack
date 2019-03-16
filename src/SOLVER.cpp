@@ -26,10 +26,16 @@ void on_shot_HF (int solverDim,
                  std::vector<Eigen::VectorXi> projUindex, std::vector<cmplx > projUtensor
                 ) ;
 
-void SecondOrderPerturbation  ( int solverDim,
-                                ImgFreqFtn & SE_out,      ImgFreqFtn & Gwimp_out,
-                                std::vector<Eigen::VectorXi> projUindex, std::vector<cmplx > projUtensor);
+void SecondOrderPerturbation_weak  ( int solverDim,
+                                     ImgFreqFtn & SE_out,      ImgFreqFtn & Gwimp_out,
+                                     std::vector<Eigen::VectorXi> projUindex, std::vector<cmplx > projUtensor);
 
+
+
+void SecondOrderPerturbation  ( int solverDim,   Eigen::MatrixXcd projimpurity_site_Hamiltonian,  ImgFreqFtn & weiss_field, Eigen::MatrixXcd & projNumMatrix,
+                                ImgFreqFtn & SE_out,      ImgFreqFtn & Gwimp_out, double muTB,
+                                std::vector<Eigen::VectorXi> projUindex, std::vector<cmplx > projUtensor
+                              ) ;
 
 
 void SCHF (int solverDim, Eigen::MatrixXcd projimpurity_site_Hamiltonian, Eigen::MatrixXcd & projNumMatrix,
@@ -75,9 +81,9 @@ void weak_solver(
     }//SCHF
     else if(SOLVERtype == std::string("2PT")) {
         ifroot std::cout << "\n2PT solver\n";
-        SecondOrderPerturbation( solverDim,
-                                 SE_out, Gwimp_in_out,
-                                 projUindex, projUtensor);
+        SecondOrderPerturbation_weak( solverDim,
+                                      SE_out, Gwimp_in_out,
+                                      projUindex, projUtensor);
     }//2PT
     //else if(SOLVERtype == std::string("SC2PT")) {
 
@@ -423,9 +429,10 @@ void SOLVER(
     }//SCHF
     else if(SOLVERtype == std::string("2PT")) {
         ifroot std::cout << "\n2PT solver\n";
-        SecondOrderPerturbation( solverDim,
-                                 SE_out, Gwimp_in_out,
-                                 projUindex, projUtensor);
+//        SecondOrderPerturbation( solverDim,
+//                                 SE_out, Gwimp_in_out,
+//                                 projUindex, projUtensor);
+        SecondOrderPerturbation( solverDim, projimpurity_site_Hamiltonian, projweiss_field, projNumMatrix,SE_out, Gwimp_in_out, muTB, projUindex, projUtensor);
     }//2PT
     else if(SOLVERtype == std::string("IPT")) {
         ifroot std::cout << "\nIPT solver\n";

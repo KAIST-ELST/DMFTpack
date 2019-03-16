@@ -54,9 +54,10 @@ void write_results(int DFTIt, int currentIt, std::string system_name, int  NumCl
 double muTB;
 double muDFT;
 
-void dc_for_dmft( Eigen::MatrixXcd  & Sw_doublecounting, std::vector<Eigen::VectorXi> & Uindex, std::vector<cmplx >  & Utensor, Eigen::MatrixXcd & NelectronDFT, int NumCorrAtom, int NumCluster) ;
+void dc_for_dmft( Eigen::MatrixXcd  & Sw_doublecounting, std::vector<Eigen::VectorXi> & Uindex, std::vector<cmplx >  & Utensor, Eigen::MatrixXcd & NelectronDFT,
+                  int NumCorrAtom, int initial_dc, ImgFreqFtn & SelfEnergy_w) ;
 //void set_HFself_energy( Eigen::MatrixXcd & NumMatrix, Eigen::MatrixXi & Uindex, Eigen::VectorXcd & Utensor, ImgFreqFtn & SelfEnergy_w   );
-void set_Hartree_self_energy( Eigen::MatrixXcd & NumMatrix, std::vector<Eigen::VectorXi >  Uindex, std::vector<cmplx >  Utensor,ImgFreqFtn & SelfEnergy_w   );
+//void set_Hartree_self_energy( Eigen::MatrixXcd & NumMatrix, std::vector<Eigen::VectorXi >  Uindex, std::vector<cmplx >  Utensor,ImgFreqFtn & SelfEnergy_w   );
 
 
 
@@ -303,7 +304,7 @@ int main(int argc, char *argv[]) {
 
 
     muTB = TightBinding (muTB, std::string("Hk.HWR"), SelfEnergy_w,  weiss_fieldTB_weakCorr, weiss_fieldTB_strongCorr, 1, SolverBasis);
-    dc_for_dmft( Sw_doublecounting,  Uindex,  Utensor, NumMatrix, NumCorrAtom, NumCluster);
+    dc_for_dmft( Sw_doublecounting,  Uindex,  Utensor, NumMatrix, NumCorrAtom, 0, SelfEnergy_w);
 
 
     ifroot {
@@ -398,9 +399,21 @@ int main(int argc, char *argv[]) {
             ImgFreqFtn Gw_weak(beta, N_freq, NumHartrOrbit_per_cluster, 1,0);
             Gw_weak.update_full(std::string("Gw_loc.full.dat") + intToString(cl),1);
 
-
             ImgFreqFtn Gw_strong(0);
             Gw_strong.Initialize(beta, N_freq, NSpinOrbit_per_atom,1,0);
+
+
+            for(int at=cl*NumAtom_per_cluster; at < (cl+1)*NumAtom_per_cluster; at++) {
+                for (int n=0; n<N_freq+3; n++) {
+                    for (int i=0; i<NSpinOrbit_per_atom; i++) {
+                        for (int j=0; j<NSpinOrbit_per_atom; j++) {
+                            int iF = CorrToHartr(at,i)  - cl * NumHartrOrbit_per_cluster ;
+                            int jF = CorrToHartr(at,j)  - cl * NumHartrOrbit_per_cluster ;
+                            Gw_strong.setValue(n,i,j, Gw_weak.getValue(n,iF,jF));
+                        }
+                    }
+                }
+            }
 
             /*Weakly correlated subspace in the impurity site*/
             if(NumHartrOrbit_per_cluster>NSpinOrbit_per_atom) {
@@ -415,15 +428,15 @@ int main(int argc, char *argv[]) {
                 /*remove double counting contribution*/
                 for(int at=cl*NumAtom_per_cluster; at < (cl+1)*NumAtom_per_cluster; at++) {
                     ifroot std::cout <<"Run low level solver for active space\n";
-                    for (int n=0; n<N_freq+3; n++) {
-                        for (int i=0; i<NSpinOrbit_per_atom; i++) {
-                            for (int j=0; j<NSpinOrbit_per_atom; j++) {
-                                int iF = CorrToHartr(at,i)  - cl * NumHartrOrbit_per_cluster ;
-                                int jF = CorrToHartr(at,j)  - cl * NumHartrOrbit_per_cluster ;
-                                Gw_strong.setValue(n,i,j, Gw_weak.getValue(n,iF,jF));
-                            }
-                        }
-                    }
+//                    for (int n=0; n<N_freq+3; n++) {
+//                        for (int i=0; i<NSpinOrbit_per_atom; i++) {
+//                            for (int j=0; j<NSpinOrbit_per_atom; j++) {
+//                                int iF = CorrToHartr(at,i)  - cl * NumHartrOrbit_per_cluster ;
+//                                int jF = CorrToHartr(at,j)  - cl * NumHartrOrbit_per_cluster ;
+//                                Gw_strong.setValue(n,i,j, Gw_weak.getValue(n,iF,jF));
+//                            }
+//                        }
+//                    }
                     ImgFreqFtn SE_lowlevel_local(0);
                     SE_lowlevel_local.Initialize(beta, N_freq, NumHartrOrbit_per_cluster,1,0);
                     weak_solver(Lowlevel_SOLVERtype,
@@ -470,15 +483,6 @@ int main(int argc, char *argv[]) {
                 //strongly correlated subspace
                 for (int i=0; i<NSpinOrbit_per_atom; i++)  strongCorr[i] = CorrToHartr(at, i ) ;
                 ifroot std::cout << "High-level solver for atom " << at <<"\n";
-                for (int n=0; n<N_freq+3; n++) {
-                    for (int i=0; i<NSpinOrbit_per_atom; i++) {
-                        for (int j=0; j<NSpinOrbit_per_atom; j++) {
-                            int iF = CorrToHartr(at,i)  - cl * NumHartrOrbit_per_cluster ;
-                            int jF = CorrToHartr(at,j)  - cl * NumHartrOrbit_per_cluster ;
-                            Gw_strong.setValue(n,i,j, Gw_weak.getValue(n,iF,jF));
-                        }
-                    }
-                }
 
                 SOLVER(SOLVERtype,
                        NSpinOrbit_per_atom, at, strongCorr,
@@ -495,7 +499,7 @@ int main(int argc, char *argv[]) {
                         for (int j=0; j<NSpinOrbit_per_atom; j++) {
                             int iF = CorrToHartr(at,i) - cl*NumHartrOrbit_per_cluster;
                             int jF = CorrToHartr(at,j) - cl*NumHartrOrbit_per_cluster;
-                            Gw_weak.setValue(n,iF,jF, Gw_strong.getValue(n,i,j));
+                            Gw_weak.setValue(n,iF,jF, Gw_strong.getValue(n,i,j));   // G^-1 = G_weak^-1 + G_strong^-1
                         }
                     }
                 }
@@ -557,7 +561,7 @@ int main(int argc, char *argv[]) {
         /*Solve TB hamiltonian to get, Gloc, mu, ...*/
         muTB = TightBinding (muTB, std::string("Hk.HWR"), SelfEnergy_w,
                              weiss_fieldTB_weakCorr, weiss_fieldTB_strongCorr,1, SolverBasis);
-        dc_for_dmft( Sw_doublecounting,  Uindex,  Utensor, NumMatrix, NumCorrAtom, NumCluster);
+        dc_for_dmft( Sw_doublecounting,  Uindex,  Utensor, NumMatrix, NumCorrAtom, 1, SelfEnergy_w);
         NumMatrixLatt = NumMatrix;
 
         /***********************************************************
@@ -594,7 +598,7 @@ int main(int argc, char *argv[]) {
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
 void dc_for_dmft( Eigen::MatrixXcd  & Sw_doublecounting, std::vector<Eigen::VectorXi> & Uindex, std::vector<cmplx >  & Utensor, Eigen::MatrixXcd & NelectronDFT,
-                  int NumCorrAtom, int NumCluster) {
+                  int NumCorrAtom, int initial_dc, ImgFreqFtn & SelfEnergy_w) {
     ifroot std::cout << "*************************\n";
     ifroot std::cout << "Calculate double counting\n";
     ifroot std::cout << "*************************\n";
@@ -608,89 +612,72 @@ void dc_for_dmft( Eigen::MatrixXcd  & Sw_doublecounting, std::vector<Eigen::Vect
                   (N_peratom_HartrOrbit*N_peratom_HartrOrbit);
     double averJ = JHund;
 
-    if(dctype.find(std::string("fll")) != std::string::npos)  {
-        /*FLL DC*/
-        if( dctype.find(std::string("Uprime")) != std::string::npos)  averU = Uprime;
-
-        double sumSpinUp=0, sumSpinDown=0;
-
+    if (dctype == "sigma0" and initial_dc==1) {
+        Eigen::MatrixXcd Id;
+        Id.setIdentity(N_peratom_HartrOrbit,N_peratom_HartrOrbit);
         for(int at=0; at<NumCorrAtom; at++) {
-            sumSpinUp=0;
-            sumSpinDown=0;
-            for(int n=0; n<N_peratom_HartrOrbit; n+=2) {
-                int nH =    at*N_peratom_HartrOrbit + n;
-                sumSpinUp   += real(NelectronDFT(nH,nH));
-                sumSpinDown += real(NelectronDFT(nH+1,nH+1));
-            }
-            for(int i=0; i<N_peratom_HartrOrbit; i+=2) {
-                Sw_doublecounting_atom[at](i,i  )=     averU*(sumSpinDown+sumSpinUp-0.5)-averJ*(sumSpinUp-0.5);
-                Sw_doublecounting_atom[at](i+1,i+1)=     averU*(sumSpinDown+sumSpinUp-0.5)-averJ*(sumSpinDown-0.5);
-            }
-            ifroot std::cout << "Spin up:" << sumSpinUp << " Spin down:" << sumSpinDown <<"\n";
-        }//at
+            double temp = real((SelfEnergy_w.getMatrix(0,at, N_peratom_HartrOrbit)).trace() / N_peratom_HartrOrbit);
+            Sw_doublecounting_atom[at] =
+                Sw_doublecounting.block(at*N_peratom_HartrOrbit,at*N_peratom_HartrOrbit, N_peratom_HartrOrbit, N_peratom_HartrOrbit)
+                + temp *Id;
+        }
     }
-    if(dctype =="amf") {
-        /*AMF DC*/
+    else {
+        if(dctype.find(std::string("fll")) != std::string::npos or dctype.find(std::string("sigma0")) != std::string::npos )  {
+            /*FLL DC*/
+            if( dctype.find(std::string("Uprime")) != std::string::npos)  averU = Uprime;
 
-        double sumSpinUp=0, sumSpinDown=0;
+            double sumSpinUp=0, sumSpinDown=0;
 
-        for(int at=0; at<NumCorrAtom; at++) {
-            sumSpinUp=0;
-            sumSpinDown=0;
-            for(int n=0; n<N_peratom_HartrOrbit; n+=2) {
-                int nH =    at*N_peratom_HartrOrbit + n;
-                sumSpinUp   += real(NelectronDFT(nH,nH));
-                sumSpinDown += real(NelectronDFT(nH+1,nH+1));
-            }
-            double n0 = (sumSpinDown+sumSpinDown)/N_peratom_HartrOrbit;
+            for(int at=0; at<NumCorrAtom; at++) {
+                sumSpinUp=0;
+                sumSpinDown=0;
+                for(int n=0; n<N_peratom_HartrOrbit; n+=2) {
+                    int nH =    at*N_peratom_HartrOrbit + n;
+                    sumSpinUp   += real(NelectronDFT(nH,nH));
+                    sumSpinDown += real(NelectronDFT(nH+1,nH+1));
+                }
+                for(int i=0; i<N_peratom_HartrOrbit; i+=2) {
+                    Sw_doublecounting_atom[at](i,i  )=     averU*(sumSpinDown+sumSpinUp-0.5)-averJ*(sumSpinUp-0.5);
+                    Sw_doublecounting_atom[at](i+1,i+1)=     averU*(sumSpinDown+sumSpinUp-0.5)-averJ*(sumSpinDown-0.5);
+                }
+                ifroot std::cout << "Spin up:" << sumSpinUp << " Spin down:" << sumSpinDown <<"\n";
+            }//at
+        }
+        else if(dctype =="amf") {
+            /*AMF DC*/
+            double sumSpinUp=0, sumSpinDown=0;
 
-            for(int i=0; i<N_peratom_HartrOrbit; i++) {
-                Sw_doublecounting_atom[at](i,i  )=     averU*n0*(N_peratom_HartrOrbit-1) - averJ*n0*(N_peratom_HartrOrbit/2 - 1);
-            }
-        }//at
+            for(int at=0; at<NumCorrAtom; at++) {
+                sumSpinUp=0;
+                sumSpinDown=0;
+                for(int n=0; n<N_peratom_HartrOrbit; n+=2) {
+                    int nH =    at*N_peratom_HartrOrbit + n;
+                    sumSpinUp   += real(NelectronDFT(nH,nH));
+                    sumSpinDown += real(NelectronDFT(nH+1,nH+1));
+                }
+                double n0 = (sumSpinDown+sumSpinDown)/N_peratom_HartrOrbit;
+
+                for(int i=0; i<N_peratom_HartrOrbit; i++) {
+                    Sw_doublecounting_atom[at](i,i  )=     averU*n0*(N_peratom_HartrOrbit-1) - averJ*n0*(N_peratom_HartrOrbit/2 - 1);
+                }
+            }//at
+        }
+        else if (dctype =="nominal") {
+            /*nominal DC*/
+            double sumSpinUp=0, sumSpinDown=0;
+
+            for(int at=0; at<NumCorrAtom; at++) {
+                sumSpinUp=0;
+                sumSpinDown=0;
+                for(int i=0; i<N_peratom_HartrOrbit; i+=2) {
+                    Sw_doublecounting_atom[at](i,i  )=     averU*(nominal_charge-0.5) - averJ*(nominal_charge/2.0 - 0.5);
+                    Sw_doublecounting_atom[at](i+1,i+1)=     averU*(nominal_charge-0.5) - averJ*(nominal_charge/2.0 - 0.5);
+                }
+                ifroot std::cout << "Spin up:" << sumSpinUp << " Spin down:" << sumSpinDown <<"\n";
+            }//at
+        }
     }
-    else if (dctype =="nominal") {
-        /*nominal DC*/
-        double sumSpinUp=0, sumSpinDown=0;
-
-        for(int at=0; at<NumCorrAtom; at++) {
-            sumSpinUp=0;
-            sumSpinDown=0;
-            for(int i=0; i<N_peratom_HartrOrbit; i+=2) {
-//                int iL = (at*N_peratom_HartrOrbit)+i;
-                Sw_doublecounting_atom[at](i,i  )=     averU*(nominal_charge-0.5) - averJ*(nominal_charge/2.0 - 0.5);
-                Sw_doublecounting_atom[at](i+1,i+1)=     averU*(nominal_charge-0.5) - averJ*(nominal_charge/2.0 - 0.5);
-            }
-            ifroot std::cout << "Spin up:" << sumSpinUp << " Spin down:" << sumSpinDown <<"\n";
-        }//at
-    }
-
-
-
-//    /*HF DC*/
-//    Eigen::MatrixXcd DFT_HF;
-//    DFT_HF.setZero(N_peratom_HartrOrbit*NumCorrAtom, N_peratom_HartrOrbit*NumCorrAtom);
-//    for(int at=0; at<NumCorrAtom; at++) {
-//        for(int idx=0;  idx <  Utensor.size(); idx++) {
-//            int a = at*N_peratom_HartrOrbit + Uindex(idx,0);
-//            int b = at*N_peratom_HartrOrbit + Uindex(idx,1);
-//            int c = at*N_peratom_HartrOrbit + Uindex(idx,2);
-//            int d = at*N_peratom_HartrOrbit + Uindex(idx,3);
-//            DFT_HF(b,d) +=   Utensor[idx] * NelectronDFT(c,a);
-//            DFT_HF(b,c) -=   Utensor[idx] * NelectronDFT(d,a);
-//        }
-//    }//at
-//    Eigen::SelfAdjointEigenSolver<Eigen::MatrixXcd> ces(DFT_HF);
-//    double averHF =0;
-//    for(int i=0; i<N_peratom_HartrOrbit*NumCorrAtom; i++) {
-//        averHF += ces.eigenvalues()[i];
-//    }
-//    averHF  /= (N_peratom_HartrOrbit * NumCorrAtom);
-//    Sw_doublecounting.setIdentity(N_peratom_HartrOrbit*NumCorrAtom, N_peratom_HartrOrbit*NumCorrAtom);
-//    Sw_doublecounting *= averHF;
-
-
-
     Sw_doublecounting.setZero(NumCorrAtom*N_peratom_HartrOrbit, NumCorrAtom*N_peratom_HartrOrbit);
     for (int at=0; at<NumCorrAtom; at++) {
         Sw_doublecounting.block(at*N_peratom_HartrOrbit,at*N_peratom_HartrOrbit, N_peratom_HartrOrbit, N_peratom_HartrOrbit) = Sw_doublecounting_atom[at];
