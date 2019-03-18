@@ -31,7 +31,7 @@ double  TightBinding(double mu, const std::string &hamiltonian, ImgFreqFtn & Sel
 void weak_solver(
     std::string SOLVERtype,
     int solverDim,
-    ImgFreqFtn & SE_out,  ImgFreqFtn & Gwimp_in_out,
+    ImgFreqFtn & SE_out,  ImgFreqFtn & Gwimp_in_out, ImgFreqFtn & GwHF,
     std::vector<Eigen::VectorXi> projUindex, std::vector<cmplx > projUtensor
 );
 
@@ -402,6 +402,11 @@ int main(int argc, char *argv[]) {
             ImgFreqFtn Gw_strong(0);
             Gw_strong.Initialize(beta, N_freq, NSpinOrbit_per_atom,1,0);
 
+            ImgFreqFtn GwHF_weak(beta, N_freq, NumHartrOrbit_per_cluster, 1,0);
+            GwHF_weak.update_full(std::string("GwHF_loc.full.dat") + intToString(cl),1);
+            ImgFreqFtn GwHF_strong(0);
+            GwHF_strong.Initialize(beta, N_freq, NSpinOrbit_per_atom,1,0);
+
 
             for(int at=cl*NumAtom_per_cluster; at < (cl+1)*NumAtom_per_cluster; at++) {
                 for (int n=0; n<N_freq+3; n++) {
@@ -410,6 +415,7 @@ int main(int argc, char *argv[]) {
                             int iF = CorrToHartr(at,i)  - cl * NumHartrOrbit_per_cluster ;
                             int jF = CorrToHartr(at,j)  - cl * NumHartrOrbit_per_cluster ;
                             Gw_strong.setValue(n,i,j, Gw_weak.getValue(n,iF,jF));
+                            GwHF_strong.setValue(n,i,j, GwHF_weak.getValue(n,iF,jF));
                         }
                     }
                 }
@@ -420,7 +426,7 @@ int main(int argc, char *argv[]) {
                 ifroot std::cout <<"Run low level solver\n";
                 weak_solver(Lowlevel_SOLVERtype,
                             NumHartrOrbit_per_cluster,
-                            SE_lowlevel,Gw_weak,
+                            SE_lowlevel, Gw_weak, GwHF_weak,
                             Uindex,Utensor);
 
                 SE_lowlevel.dataOut(std::string("Bare_Sw_lowlevel.dat") + intToString(cl));
@@ -428,20 +434,11 @@ int main(int argc, char *argv[]) {
                 /*remove double counting contribution*/
                 for(int at=cl*NumAtom_per_cluster; at < (cl+1)*NumAtom_per_cluster; at++) {
                     ifroot std::cout <<"Run low level solver for active space\n";
-//                    for (int n=0; n<N_freq+3; n++) {
-//                        for (int i=0; i<NSpinOrbit_per_atom; i++) {
-//                            for (int j=0; j<NSpinOrbit_per_atom; j++) {
-//                                int iF = CorrToHartr(at,i)  - cl * NumHartrOrbit_per_cluster ;
-//                                int jF = CorrToHartr(at,j)  - cl * NumHartrOrbit_per_cluster ;
-//                                Gw_strong.setValue(n,i,j, Gw_weak.getValue(n,iF,jF));
-//                            }
-//                        }
-//                    }
                     ImgFreqFtn SE_lowlevel_local(0);
                     SE_lowlevel_local.Initialize(beta, N_freq, NumHartrOrbit_per_cluster,1,0);
                     weak_solver(Lowlevel_SOLVERtype,
                                 NSpinOrbit_per_atom,
-                                SE_lowlevel_local, Gw_strong,
+                                SE_lowlevel_local, Gw_strong, GwHF_strong,
                                 Uindex_stronglyCorr,Utensor_stronglyCorr);
 
                     for (int n=0; n<N_freq+3; n++) {
@@ -458,15 +455,16 @@ int main(int argc, char *argv[]) {
                 for (int n=0; n<N_freq+2; n++) {
                     SE_out.setMatrix(n,SE_lowlevel.getMatrix(n));
                 }
+
             }//if, weak solver
 
+            //strong solver
             for(int at=cl*NumAtom_per_cluster; at < (cl+1)*NumAtom_per_cluster; at++) {
 
+                //double counting
                 std::vector<Eigen::MatrixXcd >  dc_weakCorr(N_freq+1);
                 for (int n=0; n<N_freq+1; n++) {
                     dc_weakCorr[n].setZero(NSpinOrbit_per_atom,NSpinOrbit_per_atom);
-                }
-                for (int n=0; n<N_freq+1; n++) {
                     for (int i=0; i<NSpinOrbit_per_atom; i++) {
                         for (int j=0; j<NSpinOrbit_per_atom; j++) {
                             int iF = CorrToHartr(at, i)  - cl * NumHartrOrbit_per_cluster;
@@ -475,7 +473,7 @@ int main(int argc, char *argv[]) {
                         }
                     }
                 }
-                for (int n=0; n<N_freq; n++) {
+                for (int n=0; n<N_freq+1; n++) {
                     dc_weakCorr[n] -= dc_weakCorr[N_freq];
                 }
 
@@ -533,6 +531,7 @@ int main(int argc, char *argv[]) {
             SelfEnergy_w_out.update(     SE_out,   1,    cl, 0 );
         }//cl, solver
 
+        //self-energy mixing.
         if(mixingFtn==1)   {
             mixing_self_energy.mixing ( SelfEnergy_w, SelfEnergy_w_out, mixing, currentIt, 1);
             MPI_Barrier(MPI_COMM_WORLD);
@@ -921,20 +920,21 @@ bool dmft_scf_check( Eigen::MatrixXcd NumMatrixLatt, Eigen::MatrixXcd NumMatrixI
         }
 
         for(int at=0; at<NumCorrAtom; at++) {
-            std::cout << "\nNum ele (decomp,lattice)  = ";
-            double sum=0;
-            for(int n=0; n<N_peratom_HartrOrbit; n+=1) {
-                std::cout <<std::fixed << std::setprecision(4)<< std::fixed   <<  real(NumMatrixLatt(at*N_peratom_HartrOrbit+n,at*N_peratom_HartrOrbit+n)) <<" " ;
-                sum+= real(NumMatrixLatt(at*N_peratom_HartrOrbit+n,at*N_peratom_HartrOrbit+n));
-            }
-            std::cout << std::fixed << std::setprecision(4)<< std::fixed   << ";  (total)  = "<<  sum <<"\n" ;
-        }
-        for(int at=0; at<NumCorrAtom; at++) {
             std::cout << "\nNum ele (decomp,solver)  = ";
             double sum=0;
             for(int n=0; n<N_peratom_HartrOrbit; n+=1) {
                 std::cout <<std::fixed << std::setprecision(4)<< std::fixed   <<  real(NumMatrixImp(at*N_peratom_HartrOrbit+n,at*N_peratom_HartrOrbit+n)) <<" " ;
                 sum+= real(NumMatrixImp(at*N_peratom_HartrOrbit+n,at*N_peratom_HartrOrbit+n));
+            }
+            std::cout << std::fixed << std::setprecision(4)<< std::fixed   << ";  (total)  = "<<  sum <<"\n" ;
+        }
+
+        for(int at=0; at<NumCorrAtom; at++) {
+            std::cout << "\nNum ele (decomp,lattice)  = ";
+            double sum=0;
+            for(int n=0; n<N_peratom_HartrOrbit; n+=1) {
+                std::cout <<std::fixed << std::setprecision(4)<< std::fixed   <<  real(NumMatrixLatt(at*N_peratom_HartrOrbit+n,at*N_peratom_HartrOrbit+n)) <<" " ;
+                sum+= real(NumMatrixLatt(at*N_peratom_HartrOrbit+n,at*N_peratom_HartrOrbit+n));
             }
             std::cout << std::fixed << std::setprecision(4)<< std::fixed   << ";  (total)  = "<<  sum <<"\n" ;
         }

@@ -147,10 +147,12 @@ void GreenFtn_w(  int NumCluster, int NumHartrOrbit_per_cluster, std::vector<Eig
 
 
 
-
+    std::vector<Eigen::MatrixXcd > GwHF;
     Gw.resize(N_freq);
+    GwHF.resize(N_freq);
     for(int n=0; n < N_freq; n++) {
         Gw[n].setZero( NumCluster*NumHartrOrbit_per_cluster, NumCluster*NumHartrOrbit_per_cluster);
+        GwHF[n].setZero( NumCluster*NumHartrOrbit_per_cluster, NumCluster*NumHartrOrbit_per_cluster);
     }
     int COL = NumHartrOrbit_per_cluster * NumHartrOrbit_per_cluster;
 
@@ -158,6 +160,12 @@ void GreenFtn_w(  int NumCluster, int NumHartrOrbit_per_cluster, std::vector<Eig
     Eigen::MatrixXcd Gw_loc        (NumCluster, N_freq*COL);
     Gw_loc_mpiLoc.setZero(NumCluster, N_freq*COL);
     Gw_loc.setZero(NumCluster, N_freq*COL);
+
+
+    Eigen::MatrixXcd GwHF_loc_mpiLoc (NumCluster, N_freq*COL);
+    Eigen::MatrixXcd GwHF_loc        (NumCluster, N_freq*COL);
+    GwHF_loc_mpiLoc.setZero(NumCluster, N_freq*COL);
+    GwHF_loc.setZero(NumCluster, N_freq*COL);
 
     for(int k=0; k<knum; k++) {
         densityMatDFT[k].setZero(NBAND[k],NBAND[k]);
@@ -263,7 +271,8 @@ void GreenFtn_w(  int NumCluster, int NumHartrOrbit_per_cluster, std::vector<Eig
 //                            int q0 =  KS2Hartr[q]-at*N_peratom_HartrOrbit;
                             int p=HartrIndex[cl*NumHartrOrbit_per_cluster + i0];
                             int q=HartrIndex[cl*NumHartrOrbit_per_cluster + m0];
-                            Gw_loc_mpiLoc(cl, n*COL+(i0*NumHartrOrbit_per_cluster+m0)) +=Gkw( p, q );
+                            Gw_loc_mpiLoc(cl, n*COL+(i0*NumHartrOrbit_per_cluster+m0)) += Gkw( p, q );
+                            GwHF_loc_mpiLoc(cl, n*COL+(i0*NumHartrOrbit_per_cluster+m0)) += Gkw0( p, q );
                         }
                     }
                 }
@@ -288,6 +297,7 @@ void GreenFtn_w(  int NumCluster, int NumHartrOrbit_per_cluster, std::vector<Eig
             if(n<N_freq) {
                 for(int h1=0; h1<COL; h1++) {
                     Gw_loc_mpiLoc(ATOM,n*COL+(h1)) /= knum_mpiGlobal;
+                    GwHF_loc_mpiLoc(ATOM,n*COL+(h1)) /= knum_mpiGlobal;
                 }
             }
         }
@@ -322,7 +332,7 @@ void GreenFtn_w(  int NumCluster, int NumHartrOrbit_per_cluster, std::vector<Eig
             for(int m0=0; m0<NumCluster*NumHartrOrbit_per_cluster; m0++) {
                 int ll0=HartrIndex[l0];
                 int mm0=HartrIndex[m0];
-                NumMat_loc(l0,m0) += occtemp(ll0,mm0);
+                NumMat_loc(l0,m0) += occtemp(ll0,mm0);    //NumMat_loc = \sum(Gkw - Gkw0) + fermi-dirac
             }
         }
     }//k
@@ -354,6 +364,7 @@ void GreenFtn_w(  int NumCluster, int NumHartrOrbit_per_cluster, std::vector<Eig
 
     /*Gw, mpireduce for k space sum*/
     MPI_Allreduce(Gw_loc_mpiLoc.data(), Gw_loc.data(), Gw_loc.size(), MPI_DOUBLE_COMPLEX, MPI_SUM,  MPI_COMM_WORLD);
+    MPI_Allreduce(GwHF_loc_mpiLoc.data(), GwHF_loc.data(), GwHF_loc.size(), MPI_DOUBLE_COMPLEX, MPI_SUM,  MPI_COMM_WORLD);
 
     for(int ATOM=0 ; ATOM < NumCluster; ATOM++) {
         for(int n=0; n<N_freq; n++) {
@@ -363,6 +374,7 @@ void GreenFtn_w(  int NumCluster, int NumHartrOrbit_per_cluster, std::vector<Eig
                     int h2F=ATOM*NumHartrOrbit_per_cluster + h2;
                     int h12=h1*NumHartrOrbit_per_cluster + h2;
                     Gw[n](h1F,h2F)=  Gw_loc(ATOM,n*COL+h12);
+                    GwHF[n](h1F,h2F)=  GwHF_loc(ATOM,n*COL+h12);
                 }
             }
         }
@@ -376,21 +388,31 @@ void GreenFtn_w(  int NumCluster, int NumHartrOrbit_per_cluster, std::vector<Eig
             ss << ATOM;
             FILE *datap2= fopen( (std::string("Gw_loc.dat"     )+ ss.str()).c_str(),"w");
             FILE *datap3= fopen( (std::string("Gw_loc.full.dat")+ ss.str()).c_str(),"w");
+
+            FILE *dataHF2= fopen( (std::string("GwHF_loc.dat"     )+ ss.str()).c_str(),"w");
+            FILE *dataHF3= fopen( (std::string("GwHF_loc.full.dat")+ ss.str()).c_str(),"w");
             for(int n=0; n<N_freq; n++) {
                 fprintf(datap2, "%0.5f", imag(I*pi*(2*n+1)/beta));
+                fprintf(dataHF2, "%0.5f", imag(I*pi*(2*n+1)/beta));
                 for(int h1=0; h1<NumHartrOrbit_per_cluster; h1++) {
                     int h1F = ATOM * NumHartrOrbit_per_cluster +h1;
                     fprintf(datap2, "    %e    %e", real(Gw[n](h1F,h1F)),  imag(Gw[n](h1F,h1F))); //BUG!
+                    fprintf(dataHF2, "    %e    %e", real(GwHF[n](h1F,h1F)),  imag(GwHF[n](h1F,h1F))); //BUG!
                     for(int h2=0; h2<NumHartrOrbit_per_cluster; h2++) {
                         int h2F = ATOM * NumHartrOrbit_per_cluster +h2;
                         if( std::abs(Gw[n](h1F,h2F)) >1e-8)
                             fprintf(datap3, "%d %d %d %e    %e\n",n,h1,h2, real(Gw[n](h1F,h2F)),  imag(Gw[n](h1F,h2F)));
+                        fprintf(dataHF3, "%d %d %d %e    %e\n",n,h1,h2, real(GwHF[n](h1F,h2F)),  imag(GwHF[n](h1F,h2F)));
                     }//h2
                 }//h1
                 fprintf(datap2, "\n");
+                fprintf(dataHF2, "\n");
             }//n
             fclose(datap2);
             fclose(datap3);
+
+            fclose(dataHF2);
+            fclose(dataHF3);
             std::cout << "FILEOUT:Gw_loc.dat" << ATOM <<"\n";
             std::cout << "FILEOUT:Gw_loc.full.dat" <<ATOM <<"\n";
         }//ATOM

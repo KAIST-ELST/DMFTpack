@@ -26,9 +26,9 @@ void on_shot_HF (int solverDim,
                  std::vector<Eigen::VectorXi> projUindex, std::vector<cmplx > projUtensor
                 ) ;
 
-void SecondOrderPerturbation_weak  ( int solverDim,
-                                     ImgFreqFtn & SE_out,      ImgFreqFtn & Gwimp_out,
-                                     std::vector<Eigen::VectorXi> projUindex, std::vector<cmplx > projUtensor);
+void SC2PT_weak  ( int solverDim,
+                   ImgFreqFtn & SE_out,      ImgFreqFtn & Gwimp_out, ImgFreqFtn & GwHF, bool SC,
+                   std::vector<Eigen::VectorXi> projUindex, std::vector<cmplx > projUtensor);
 
 
 
@@ -68,7 +68,7 @@ void proj_to_site( int solverDim, int solver_block, std::vector<int> impurityOrb
 void weak_solver(
     std::string SOLVERtype,
     int solverDim,
-    ImgFreqFtn & SE_out,  ImgFreqFtn & Gwimp_in_out,
+    ImgFreqFtn & SE_out,  ImgFreqFtn & Gwimp_in_out, ImgFreqFtn & GwHF,
     std::vector<Eigen::VectorXi> projUindex, std::vector<cmplx > projUtensor
 )
 {
@@ -81,17 +81,16 @@ void weak_solver(
     }//SCHF
     else if(SOLVERtype == std::string("2PT")) {
         ifroot std::cout << "\n2PT solver\n";
-        SecondOrderPerturbation_weak( solverDim,
-                                      SE_out, Gwimp_in_out,
-                                      projUindex, projUtensor);
+        SC2PT_weak( solverDim,
+                    SE_out, Gwimp_in_out, GwHF, false,
+                    projUindex, projUtensor);
     }//2PT
-    //else if(SOLVERtype == std::string("SC2PT")) {
-
-    //    SCGF2( solverDim,projimpurity_site_Hamiltonian, projNumMatrix,
-    //           SE_out, Gwimp_in_out, projweiss_field, muTB,
-    //           projUindex, projUtensor);
-
-    //}//SC2PT
+    else if(SOLVERtype == std::string("SC2PT")   ) {
+        ifroot std::cout << "\nSC2PT solver\n";
+        SC2PT_weak( solverDim,
+                    SE_out, Gwimp_in_out, GwHF, true,
+                    projUindex, projUtensor);
+    }//SC2PT
     else {
         ifroot std::cout << "Please set  Lowlevel_SOLVERTYPE = HF or 2PT\n";
     }
@@ -230,26 +229,10 @@ void SOLVER(
             Gt_imp.update(std::string("Gt.dat"), 1);
             SE_out.read_diag(std::string("Swl.dat"));
             Gwimp_in_out.read_diag(std::string("Gw.dat"));
-//            for(int n =0; n<N_freq; n++) {
-//                SE_out.setMatrix(n,  projSolverBasis* SE_out.getMatrix(n) *(projSolverBasis).adjoint());
-//            }
-//            for(int n =0; n<N_freq; n++) {
-//                Gwimp_in_out.setMatrix(n,   projSolverBasis* Gwimp_in_out.getMatrix(n) *(projSolverBasis).adjoint());
-//            }
 
             MPI_Barrier(MPI_COMM_WORLD);
             ifroot  std::cout << "Reading output data..\n";
 
-//           for (int n=0; n<solverDim; n++) {
-//               for (int m=0; m<solverDim; m++) {
-//                   projNumMatrix(n,m) = 0;  // alps CT-SEG num matrix.
-//                    cmplx temp =0;
-//                    for (int l=0; l<solverDim; l++) {
-//                        temp += (projSolverBasis)(n,l) * Gt_imp.getValue(N_tau,l) *(projSolverBasis).adjoint()(l,m) ;
-//                    }
-//                    projNumMatrix(n,m) = -temp;  // alps CT-SEG num matrix.
-//                }
-//            }
             for (int l=0; l<solverDim; l++) {
                 projNumMatrix(l,l) = - Gt_imp.getValue(N_tau,l) ;
             }
@@ -336,11 +319,6 @@ void SOLVER(
             projimpurity_site_Hamiltonian_diag.setZero(solverDim,solverDim);
 
             projimpurity_site_Hamiltonian_diag = (projSolverBasis.adjoint() * projimpurity_site_Hamiltonian* projSolverBasis);
-//            for(int h1=0; h1<solverDim; h1++) {
-//                for(int h2=0; h2<solverDim; h2++) {
-//                    projimpurity_site_Hamiltonian_diag(h1,h2) = (projSolverBasis.adjoint() * projimpurity_site_Hamiltonian* projSolverBasis)(h1,h2);
-//                }
-//            }
             for(int n =0; n<N_freq; n++) {
                 projweiss_field.setMatrix(n,  (projSolverBasis).adjoint()* projweiss_field.getMatrix(n) *(projSolverBasis));
             }
@@ -429,9 +407,6 @@ void SOLVER(
     }//SCHF
     else if(SOLVERtype == std::string("2PT")) {
         ifroot std::cout << "\n2PT solver\n";
-//        SecondOrderPerturbation( solverDim,
-//                                 SE_out, Gwimp_in_out,
-//                                 projUindex, projUtensor);
         SecondOrderPerturbation( solverDim, projimpurity_site_Hamiltonian, projweiss_field, projNumMatrix,SE_out, Gwimp_in_out, muTB, projUindex, projUtensor);
     }//2PT
     else if(SOLVERtype == std::string("IPT")) {
@@ -477,15 +452,6 @@ void SOLVER(
             NumMatrix(n0,m0) = projNumMatrix(n,m);  // alps CT-SEG num matrix.
         }
     }
-//    ifroot{
-//        std::cout << "\nNum ele (decomp,solver), at" <<solver_block<<":";
-//        for(int n=0; n<N_peratom_HartrOrbit; n+=1) {
-//            std::cout <<std::fixed << std::setprecision(4)<< std::fixed
-//            <<  real(NumMatrix(solver_block*solverDim+n,  solver_block*solverDim+n)) <<" " ;
-//        }
-//        std::cout << std::fixed << std::setprecision(4)<< std::fixed   << ";  (total)  = "<< (NumMatrix.block(solver_block*solverDim, solver_block*solverDim, solverDim, solverDim)).trace()   <<"\n" ;
-//        std::cout << "\n\n";
-//    }
 
 
 
