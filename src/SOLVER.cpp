@@ -507,6 +507,7 @@ void proj_to_site( int solverDim, int solver_block, std::vector<int> impurityOrb
             int h1F = impurityOrbit.at(h1) ;
             int h2F = impurityOrbit.at(h2) ;
             projimpurity_site_Hamiltonian(h1,h2) = impurity_site_Hamiltonian(h1F,h2F) - Sw_doublecounting(h1F,h2F) +dc_weakCorr.at(N_freq)(h1,h2) ;
+//            projimpurity_site_Hamiltonian(h1,h2) = impurity_site_Hamiltonian(h1F,h2F) - Sw_doublecounting(h1F,h2F) - dc_weakCorr.at(N_freq)(h1,h2) ;
             projNumMatrix(h1,h2) = NumMatrix(h1F,h2F);
             projSolverBasis(h1,h2) =  SolverBasis(h1F,h2F);
         }
@@ -515,6 +516,8 @@ void proj_to_site( int solverDim, int solver_block, std::vector<int> impurityOrb
     ifroot std::cout << "impurity site info\n";
     for (int n=0; n<N_freq; n++) {
         projweiss_field.setMatrix(n,  weiss_field.getMatrix(n,solver_block, solverDim ) +dc_weakCorr.at(n)    );
+//        projweiss_field.setMatrix(n,  weiss_field.getMatrix(n,solver_block, solverDim ) );
+//        projweiss_field.setMatrix(n,  weiss_field.getMatrix(n,solver_block, solverDim ) -  dc_weakCorr.at(n)    );
     }
 
     ifroot std::cout << "Imp H0:\n"  <<std::fixed << std::setprecision(6)<< projimpurity_site_Hamiltonian <<"\n";

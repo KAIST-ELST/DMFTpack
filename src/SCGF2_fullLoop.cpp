@@ -72,9 +72,9 @@ void SC2PT_weak  ( int solverDim,
     }
     for (int n=0; n<N_freq; n++) {
         Gwimp[n] = Gw_weak.getMatrix(n);
-        if (SC == true )
-            GwHFimp[n] = Gw_weak.getMatrix(n);
-        else GwHFimp[n] = GwHF.getMatrix(n);
+//        if (SC == true )
+//            GwHFimp[n] = Gw_weak.getMatrix(n);
+//        else GwHFimp[n] = GwHF.getMatrix(n);
         Swimp_secondOrder[n].setZero(solverDim, solverDim);
     }
     Swimp_secondOrder[N_freq+0].setZero(solverDim, solverDim);
@@ -99,6 +99,7 @@ void SC2PT_weak  ( int solverDim,
     ifroot std::cout << "2PTsolver(occ):\n" << occMat0 <<"\n";
     ifroot std::cout << "2PTsolver (mu):" << muTB <<"\n";
     getFockOperator( Fock, occMat0, solverDim, projUindex, projUtensor) ;
+    ifroot std::cout << "2PTsolver(HF):\n" << Fock <<"\n";
 
     //Sigma_2nd_order
     FourierTransform( GwHFimp, Gt0, GwHFimp[N_freq] );
@@ -297,8 +298,8 @@ void SCHF (int solverDim, Eigen::MatrixXcd projimpurity_site_Hamiltonian, Eigen:
 
 
 
-    /*SCGF2-loop*/
-    int SCGFloop=0;
+    /*SCHF-loop*/
+    int SCHFloop=0;
     double normGwimpDiffOuter=0;
     double mixingSCGF = mixing/10.;
     double mixingHF = mixing/10.;
@@ -309,7 +310,7 @@ void SCHF (int solverDim, Eigen::MatrixXcd projimpurity_site_Hamiltonian, Eigen:
     double normUnit =  MatsubaraFtnnorm(Gwimp,N_freq);
     double normOccMat=0;
     pulayMixing Mixing_SCGF(3, 100, N_freq, solverDim, solverDim );
-    while( (SCGFloop<10 or(normGwimpDiffOuter > 1e-6) or normOccMat>1e-6) and SCGFloop <2000 ) {
+    while( (SCHFloop<10 or(normGwimpDiffOuter > 1e-6) or normOccMat>1e-6) and SCHFloop <2000 ) {
         //transfer previous results
         for (int n=0; n<N_freq+4; n++)
             Gwimp_in[n] = Gwimp[n];
@@ -331,16 +332,16 @@ void SCHF (int solverDim, Eigen::MatrixXcd projimpurity_site_Hamiltonian, Eigen:
         normGwimpDiffOuter= MatsubaraFtnnorm(Gwimp_in, Gwimp, N_freq)  /  normUnit;
 
         /*mixing, Gwimp is used in the next iteration*/
-        if(SCGFloop%500==0) mixingSCGF /= 1.5;
-        if(SCGFloop < 1500) Mixing_SCGF.mixing( Gwimp_in, Gwimp, mixingSCGF, SCGFloop, 1);
+        if(SCHFloop%500==0) mixingSCGF /= 1.5;
+        if(SCHFloop < 1500) Mixing_SCGF.mixing( Gwimp_in, Gwimp, mixingSCGF, SCHFloop, 1);
         else {
             for(int n=0; n<N_freq; n++) {
                 Gwimp[n] =  (1-mixingSCGF) * Gwimp_in[n] + mixingSCGF * Gwimp[n];
             }
         }
-        Gwimp[N_freq].setIdentity(solverDim, solverDim);
-        estimate_asymto(Gwimp,2);
-        estimate_asymto(Gwimp,3);
+//        Gwimp[N_freq].setIdentity(solverDim, solverDim);
+//        estimate_asymto(Gwimp,2);
+//        estimate_asymto(Gwimp,3);
 
         if(stdoutLevel>=2 and mpi_rank==0) {
             std::cout <<"oc:";
@@ -353,12 +354,12 @@ void SCHF (int solverDim, Eigen::MatrixXcd projimpurity_site_Hamiltonian, Eigen:
         }
 
         /*mixing check*/
-        if (SCGFloop%10 == 0) mixing_check_outer(  normGwimpDiffOuter,  mixingSCGF);
-        SCGFloop++;
+        if (SCHFloop%10 == 0) mixing_check_outer(  normGwimpDiffOuter,  mixingSCGF);
+        SCHFloop++;
     }//outer loop
 
     /*Write resutls*/
-    ifroot std::cout << "SCGF loop:" << SCGFloop;
+    ifroot std::cout << "SCGF loop:" << SCHFloop;
     ifroot printf      ("  GwRD:%e", normGwimpDiffOuter);
     ifroot printf      ("  mixing:%e\n:", mixingSCGF);
 
@@ -448,7 +449,6 @@ void SCGF2 (int solverDim, Eigen::MatrixXcd projimpurity_site_Hamiltonian, Eigen
     double normOccMat=0;
     pulayMixing Mixing_SCGF(3, 100, N_freq, solverDim, solverDim );
     while( (SCGFloop<10 or(normGwimpDiffOuter > 1e-6) or normOccMat>1e-6) and SCGFloop <2000 ) {
-
         //transfer previous results
         for (int n=0; n<N_freq+4; n++) {
             Gwimp_in[n] = Gwimp[n];
@@ -461,16 +461,11 @@ void SCGF2 (int solverDim, Eigen::MatrixXcd projimpurity_site_Hamiltonian, Eigen
         Gwimp[N_freq].setIdentity(solverDim, solverDim);
         FourierTransform( Gwimp, Gtimp, Gwimp[N_freq] );
 
-
         /*and HF*/
         getFockOperator( Fock, occMat, solverDim, projUindex, projUtensor) ;
         /*get  Sigma_w,  */
         getStimp ( Stimp, Gtimp, true, solverDim, projUindex, projUtensor);
         FT_t_to_w(Swimp_secondOrder, Stimp, N_freq);
-
-
-
-
 
         /*obtain results*/
         getoccMat(Gwimp, occMat, solverDim);
@@ -489,12 +484,10 @@ void SCGF2 (int solverDim, Eigen::MatrixXcd projimpurity_site_Hamiltonian, Eigen
             }
         }
         Gwimp[N_freq].setIdentity(solverDim, solverDim);
-        estimate_asymto(Gwimp,2);
-        estimate_asymto(Gwimp,3);
+//        estimate_asymto(Gwimp,2);
+//        estimate_asymto(Gwimp,3);
 
         if(stdoutLevel>=2 and mpi_rank==0) {
-
-
             std::cout <<"gt:";
             ces.compute(-Gtimp[N_tau]);
             for(int n=0; n<solverDim; n+=1) {
@@ -509,13 +502,9 @@ void SCGF2 (int solverDim, Eigen::MatrixXcd projimpurity_site_Hamiltonian, Eigen
                 std::cout <<std::fixed << std::setprecision(5)<< std::fixed   <<  ( ces.eigenvalues()[n]  ) <<" " ;
             }
             std::cout <<": " << occMat.trace() <<"\n";
-
         }
-
-
         /*mixing check*/
         if (SCGFloop%10 == 0) mixing_check_outer(  normGwimpDiffOuter,  mixingSCGF);
-
         SCGFloop++;
     }//outer loop
 
@@ -523,11 +512,6 @@ void SCGF2 (int solverDim, Eigen::MatrixXcd projimpurity_site_Hamiltonian, Eigen
     ifroot std::cout << "SCGF loop:" << SCGFloop;
     ifroot printf      ("  SwRD:%e", normGwimpDiffOuter);
     ifroot printf      ("  mixing:%e\n:", mixingSCGF);
-
-
-
-
-
 
     writeResults( Swimp_secondOrder, Fock, Gwimp,    SE_out, Gwimp_out, solverDim);
 
@@ -544,7 +528,6 @@ void getoccMat(Eigen::MatrixXcd * Gwimp, Eigen::MatrixXcd & occMat, int solverDi
 //occMat is not really occupation, but density matrix.
 //i.e. occMat(a,b) = G(a,b; 0-) = -G(a,b; beta-) =   <c^\dagger_b,  c_a> =! <c^\dagger_a,  c_b>
 //
-
     Eigen::MatrixXcd Id;
     Id.setIdentity(solverDim,solverDim);
     FourierTransform(Gwimp, occMat, beta, Id);
@@ -892,81 +875,80 @@ void IPT( int solverDim,  Eigen::MatrixXcd projimpurity_site_Hamiltonian,  ImgFr
     double HFloop=0;
     double HFmixing=0.01;
     Fock_in=Fock;
-    do {
-        HFloop++;
-        //mixing, Gwimp is used in the next iteration
-        if(HFloop < 1500) Mixing_HF.mixing( &Fock_in, &Fock, HFmixing, HFloop, 1);
-        else {
-            Fock =  (1-HFmixing) * Fock_in + HFmixing * Fock;
-        }
-        Fock_in = Fock;
-        getGwimp( Gw0, projimpurity_site_Hamiltonian,Fock, Swimp_secondOrder, delta_w, muTB, solverDim) ; //non-interacting (or HF with n>=2 loop)  Greens Ftn
-        getoccMat(Gw0, occMatHF, solverDim);
-        if(magnetism==0) {
-            for (int n=0; n<solverDim; n+=2) {
-                int up = n, dn =n+1;
-                cmplx avgN = (occMatHF(up,up)+occMatHF(dn,dn))/2.0;
-                occMatHF(up,up)=avgN;
-                occMatHF(dn,dn)=avgN;
-                occMatHF(dn,up)=0.0;
-                occMatHF(up,dn)=0.0;
+//    do {
+//        HFloop++;
+//        //mixing, Gwimp is used in the next iteration
+//        if(HFloop < 1500) Mixing_HF.mixing( &Fock_in, &Fock, HFmixing, HFloop, 1);
+//        else {
+//            Fock =  (1-HFmixing) * Fock_in + HFmixing * Fock;
+//        }
+//        Fock_in = Fock;
+//        getGwimp( Gw0, projimpurity_site_Hamiltonian,Fock, Swimp_secondOrder, delta_w, muTB, solverDim) ; //non-interacting (or HF with n>=2 loop)  Greens Ftn
+//        getoccMat(Gw0, occMatHF, solverDim);
+//        if(magnetism==0) {
+//            for (int n=0; n<solverDim; n+=2) {
+//                int up = n, dn =n+1;
+//                cmplx avgN = (occMatHF(up,up)+occMatHF(dn,dn))/2.0;
+//                occMatHF(up,up)=avgN;
+//                occMatHF(dn,dn)=avgN;
+//                occMatHF(dn,up)=0.0;
+//                occMatHF(up,dn)=0.0;
+//
+//            }
+//        }
+//
+//        /*
+//        ///////////////////////////////////////////////////////////////////////////////////////////////
+//        ///Adjust Chem.Pot
+//                double Nele[history];
+//                for (int i=0; i<history; i++)  Nele[i]=-1;
+//                Nele[0] = real(occMatHF.trace());
+//                double muRD;
+//                double mu_next;
+//                double muUB=0, muLB=0;
+//                int nearAns=0;
+//                double dmu=1;
+//                muHF-=dmu;
+//                int step=0;
+//                while (  std::abs(Nele[0] - NumTotInitial) > std::min(1e-5, 1e-5/((Fock.norm())+1e-5)  )  ) { //   and  std::abs(dmu)>1e-5 ) {}
+//                    muHF += dmu;
+//
+//                    getGwimp( Gw0,projimpurity_site_Hamiltonian,Fock, Swimp_secondOrder, delta_w,  muHF, solverDim) ;
+//                    estimate_asymto(Gw0,2);
+//                    estimate_asymto(Gw0,3);
+//                    getoccMat(Gw0, occMatHF,solverDim);
+//
+//                    for(int i=history-1; i>0 ; i--) Nele[i]=Nele[i-1];
+//                    Nele[0] = real(occMatHF.trace());
+//
+//                    if (nearAns ==0) {
+//                        if ( Nele[0] < NumTotInitial) {
+//                            muLB = muHF;
+//                            if (Nele[1]>NumTotInitial && Nele[1] >0 ) nearAns = 1;
+//                            else dmu = fabs(dmu);
+//                        }
+//                        if ( Nele[0] > NumTotInitial) {
+//                            muUB = muHF;
+//                            if (Nele[1] < NumTotInitial && Nele[1] > 0)  nearAns =1;
+//                            else dmu = -1*fabs(dmu);
+//                        }
+//                        if ( Nele[0] == NumTotInitial) break;
+//        //                assert( std::abs(muHF) <  100)   ;
+//                    }
+//                    else if (nearAns ==1) {
+//                        if (Nele[0] > NumTotInitial) muUB = muHF;
+//                        else if(Nele[0] < NumTotInitial) muLB =muHF;
+//                        mu_next = (muUB+muLB)/2.;
+//                        dmu = mu_next - muHF;
+//                    }
+//                }//while
+//        ////////////////////////////////////////////////////////////////////////////////////////////////////////
+//        //// */
+//        getFockOperator( Fock, occMatHF, solverDim, projUindex, projUtensor) ;
+//        ifroot std::cout << "HF_iter: "<<HFloop<<"\n occMatHF:\n " << occMatHF << "\n Fock_RD:\n" << (Fock_in-Fock).norm() << "\n\n";
+//    } while ( (Fock_in-Fock).norm() > 1e-4   ) ;
+//    getFockOperator( Fock, occMatHF, solverDim, projUindex, projUtensor) ;
 
-            }
-        }
-
-        /*
-        ///////////////////////////////////////////////////////////////////////////////////////////////
-        ///Adjust Chem.Pot
-                double Nele[history];
-                for (int i=0; i<history; i++)  Nele[i]=-1;
-                Nele[0] = real(occMatHF.trace());
-                double muRD;
-                double mu_next;
-                double muUB=0, muLB=0;
-                int nearAns=0;
-                double dmu=1;
-                muHF-=dmu;
-                int step=0;
-                while (  std::abs(Nele[0] - NumTotInitial) > std::min(1e-5, 1e-5/((Fock.norm())+1e-5)  )  ) { //   and  std::abs(dmu)>1e-5 ) {}
-                    muHF += dmu;
-
-                    getGwimp( Gw0,projimpurity_site_Hamiltonian,Fock, Swimp_secondOrder, delta_w,  muHF, solverDim) ;
-                    estimate_asymto(Gw0,2);
-                    estimate_asymto(Gw0,3);
-                    getoccMat(Gw0, occMatHF,solverDim);
-
-                    for(int i=history-1; i>0 ; i--) Nele[i]=Nele[i-1];
-                    Nele[0] = real(occMatHF.trace());
-
-                    if (nearAns ==0) {
-                        if ( Nele[0] < NumTotInitial) {
-                            muLB = muHF;
-                            if (Nele[1]>NumTotInitial && Nele[1] >0 ) nearAns = 1;
-                            else dmu = fabs(dmu);
-                        }
-                        if ( Nele[0] > NumTotInitial) {
-                            muUB = muHF;
-                            if (Nele[1] < NumTotInitial && Nele[1] > 0)  nearAns =1;
-                            else dmu = -1*fabs(dmu);
-                        }
-                        if ( Nele[0] == NumTotInitial) break;
-        //                assert( std::abs(muHF) <  100)   ;
-                    }
-                    else if (nearAns ==1) {
-                        if (Nele[0] > NumTotInitial) muUB = muHF;
-                        else if(Nele[0] < NumTotInitial) muLB =muHF;
-                        mu_next = (muUB+muLB)/2.;
-                        dmu = mu_next - muHF;
-                    }
-                }//while
-        ////////////////////////////////////////////////////////////////////////////////////////////////////////
-        //// */
-        getFockOperator( Fock, occMatHF, solverDim, projUindex, projUtensor) ;
-        ifroot std::cout << "HF_iter: "<<HFloop<<"\n occMatHF:\n " << occMatHF << "\n Fock_RD:\n" << (Fock_in-Fock).norm() << "\n\n";
-    } while ( (Fock_in-Fock).norm() > 1e-4   ) ;
-
-
-    getFockOperator( Fock, occMatHF, solverDim, projUindex, projUtensor) ;
     FourierTransform( Gw0, Gt0, Gw0[N_freq]);
     getStimp ( Stimp, Gt0, false, solverDim, projUindex, projUtensor);
     FT_t_to_w(Swimp_secondOrder, Stimp, N_freq);

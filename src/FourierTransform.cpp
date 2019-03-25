@@ -281,7 +281,7 @@ void FourierTransform (Eigen::MatrixXcd * delta_w, Eigen::MatrixXcd * delta_t, E
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-void FourierTransform (Eigen::MatrixXcd * delta_w, Eigen::MatrixXcd  & delta_t, double  tau,std::string HYB_Ftn, int print ) {
+void FourierTransform (Eigen::MatrixXcd * delta_w, Eigen::MatrixXcd  & delta_t, double  tau,    std::string HYB_Ftn, int print ) {
     if(mpi_rank==0 and print ==1)
         std::cout << HYB_Ftn <<"\n";
 
@@ -290,7 +290,7 @@ void FourierTransform (Eigen::MatrixXcd * delta_w, Eigen::MatrixXcd  & delta_t, 
     FourierTransform_tau(delta_w, delta_t, tau, moments);
 }
 
-void FourierTransform (Eigen::MatrixXcd * delta_w, Eigen::MatrixXcd  & delta_t, double  tau, Eigen::MatrixXcd moments1,std::string HYB_Ftn, int print) {
+void FourierTransform (Eigen::MatrixXcd * delta_w, Eigen::MatrixXcd  & delta_t, double  tau, Eigen::MatrixXcd moments1,     std::string HYB_Ftn, int print) {
     if(mpi_rank==0 and print ==1)
         std::cout << HYB_Ftn <<"\n";
     std::vector<Eigen::MatrixXcd> moments(4);

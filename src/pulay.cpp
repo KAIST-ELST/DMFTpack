@@ -127,7 +127,8 @@ void pulayMixing::mixing(Eigen::MatrixXcd  * inputDensity_n, Eigen::MatrixXcd * 
             }
         }
         else {
-            if( SCGFloop>mixing_history + start_mixing and SCGFloop%mixingStep==0 and   !(lin_dep_check)   ) std::cout << "Warning: PulayMixing,linear dependence arise\n";
+            if( SCGFloop>mixing_history + start_mixing and SCGFloop%mixingStep==0 and   !(lin_dep_check)   )
+                std::cout << "Warning: PulayMixing,linear dependence arise\n";
             for(int i=0; i<dim_i; i++) {
                 optimalDensity[i] = inputDensity_n[i];
                 optimalres[i] =  res_history[0][i];
