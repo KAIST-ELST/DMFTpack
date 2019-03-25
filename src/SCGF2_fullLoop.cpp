@@ -102,7 +102,7 @@ void SC2PT_weak  ( int solverDim,
     ifroot std::cout << "2PTsolver(HF):\n" << Fock <<"\n";
 
     //Sigma_2nd_order
-    FourierTransform( GwHFimp, Gt0, GwHFimp[N_freq] );
+    FourierTransform( GwHFimp, Gt0, GwHFimp[N_freq],  true );
     getStimp ( Stimp, Gt0, false, solverDim, projUindex, projUtensor);
     FT_t_to_w(Swimp_secondOrder, Stimp, N_freq);
 
@@ -459,7 +459,7 @@ void SCGF2 (int solverDim, Eigen::MatrixXcd projimpurity_site_Hamiltonian, Eigen
         /*get occupation and Gt*/
 //        getGwimp( Gwimp,projimpurity_site_Hamiltonian,Fock, Swimp_secondOrder, delta_w, muTB,solverDim) ;
         Gwimp[N_freq].setIdentity(solverDim, solverDim);
-        FourierTransform( Gwimp, Gtimp, Gwimp[N_freq] );
+        FourierTransform( Gwimp, Gtimp, Gwimp[N_freq], true );
 
         /*and HF*/
         getFockOperator( Fock, occMat, solverDim, projUindex, projUtensor) ;
@@ -530,7 +530,7 @@ void getoccMat(Eigen::MatrixXcd * Gwimp, Eigen::MatrixXcd & occMat, int solverDi
 //
     Eigen::MatrixXcd Id;
     Id.setIdentity(solverDim,solverDim);
-    FourierTransform(Gwimp, occMat, beta, Id);
+    FourierTransform(Gwimp, occMat, beta, Id, true);
     occMat *= -1;
 }
 

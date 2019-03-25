@@ -136,11 +136,11 @@ extern double KpathPoint[3*30];
 int  diag_jacobi (cmplx **a_hermitian, int dim, double *eigenVal, cmplx **v_comp);
 void band(Eigen::VectorXd *KS_eigenEnergy, double muDFT, int knum) ;
 void band( std::vector<Eigen::MatrixXcd> & H_k_inModelSpace, double muTB, int knum) ;
-void getAsymto_moments (std::vector<Eigen::MatrixXcd> & moments, Eigen::MatrixXcd * delta_w) ;
-void FourierTransform (Eigen::MatrixXcd * delta_w, Eigen::MatrixXcd * delta_t                                       , std::string FT_ftn=std::string("NOPRINT"), int print=0);
-void FourierTransform (Eigen::MatrixXcd * delta_w, Eigen::MatrixXcd * delta_t , Eigen::MatrixXcd AsymtoV            , std::string FT_ftn=std::string("NOPRINT"), int print=0) ;
-void FourierTransform (Eigen::MatrixXcd * delta_w, Eigen::MatrixXcd & delta_t , double tau                          , std::string FT_ftn=std::string("NOPRINT"), int print=0);
-void FourierTransform (Eigen::MatrixXcd * delta_w, Eigen::MatrixXcd & delta_t , double tau, Eigen::MatrixXcd AsymtoV, std::string FT_ftn=std::string("NOPRINT"), int print=0) ;
+void getAsymto_moments (std::vector<Eigen::MatrixXcd> & moments, Eigen::MatrixXcd * delta_w , bool greenFtnAsym = false) ;
+void FourierTransform (Eigen::MatrixXcd * delta_w, Eigen::MatrixXcd * delta_t                                       , bool greenFtnAsym   = false, std::string FT_ftn=std::string("NOPRINT"), int print=0);
+void FourierTransform (Eigen::MatrixXcd * delta_w, Eigen::MatrixXcd * delta_t , Eigen::MatrixXcd AsymtoV            , bool greenFtnAsym   = false, std::string FT_ftn=std::string("NOPRINT"), int print=0);
+void FourierTransform (Eigen::MatrixXcd * delta_w, Eigen::MatrixXcd & delta_t , double tau                          , bool greenFtnAsym   = false, std::string FT_ftn=std::string("NOPRINT"), int print=0);
+void FourierTransform (Eigen::MatrixXcd * delta_w, Eigen::MatrixXcd & delta_t , double tau, Eigen::MatrixXcd AsymtoV, bool greenFtnAsym   = false, std::string FT_ftn=std::string("NOPRINT"), int print=0);
 void FT_t_to_w (Eigen::MatrixXcd * delta_w, Eigen::MatrixXcd * delta_t, int N_freq );
 
 void dos(Eigen::VectorXd * KS_eigenEnergy,std::vector<Eigen::MatrixXcd> & KS_eigenVectors_orthoBasis , double E_window, double & muDFT ) ;

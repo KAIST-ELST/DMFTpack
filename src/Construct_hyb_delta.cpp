@@ -122,6 +122,6 @@ void write_hyb_t ( ImgFreqFtn & weiss_field, Eigen::MatrixXcd * delta_t, int ato
         }//h1
     }
     std::string HYB = std::string("delta_w in write_hyb_t()");
-    FourierTransform (delta_w, delta_t, HYB,1 ) ;
+    FourierTransform (delta_w, delta_t, false, HYB,1 ) ;
     delete [] delta_w;
 }
