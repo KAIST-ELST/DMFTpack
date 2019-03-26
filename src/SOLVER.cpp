@@ -92,7 +92,7 @@ void weak_solver(
                     projUindex, projUtensor);
     }//SC2PT
     else {
-        ifroot std::cout << "Please set  Lowlevel_SOLVERTYPE = HF or 2PT\n";
+        ifroot std::cout << "Please set  Lowlevel_SOLVERTYPE = HF or SC2PT\n";
     }
 
 }

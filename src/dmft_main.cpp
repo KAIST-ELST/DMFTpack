@@ -430,6 +430,7 @@ int main(int argc, char *argv[]) {
                             SE_lowlevel, Gw_weak, GwHF_weak,
                             Uindex,Utensor);
 
+                SE_lowlevel.dataOut(std::string("Bare_Sw_lowlevel.dat") + intToString(cl));
 
                 /*remove double counting contribution*/
                 for(int at=cl*NumAtom_per_cluster; at < (cl+1)*NumAtom_per_cluster; at++) {
@@ -446,16 +447,15 @@ int main(int argc, char *argv[]) {
                             for (int j=0; j<NSpinOrbit_per_atom; j++) {
                                 int iF = CorrToHartr(at,i) - cl*NumHartrOrbit_per_cluster;
                                 int jF = CorrToHartr(at,j) - cl*NumHartrOrbit_per_cluster;
-//                                SE_lowlevel.setValue(n,iF,jF,
-//                                                     SE_lowlevel.getValue(n,iF,jF)-  SE_lowlevel_local.getValue(n,i,j)   );
-//
                                 SE_lowlevel.setValue(n,iF,jF,
-                                                     SE_lowlevel.getValue(N_freq,iF,jF)-  SE_lowlevel_local.getValue(N_freq,i,j)   );
+                                                     SE_lowlevel.getValue(n,iF,jF)-  SE_lowlevel_local.getValue(n,i,j)   );
+
+//                                SE_lowlevel.setValue(n,iF,jF,
+//                                                     SE_lowlevel.getValue(N_freq,iF,jF)-  SE_lowlevel_local.getValue(N_freq,i,j)   );
                             }
                         }
                     }
                 }//at
-                SE_lowlevel.dataOut(std::string("Bare_Sw_lowlevel.dat") + intToString(cl));
                 for (int n=0; n<N_freq+2; n++) {
                     SE_out.setMatrix(n,SE_lowlevel.getMatrix(n));
                 }

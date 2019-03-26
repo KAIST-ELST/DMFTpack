@@ -72,36 +72,46 @@ void SC2PT_weak  ( int solverDim,
     }
     for (int n=0; n<N_freq; n++) {
         Gwimp[n] = Gw_weak.getMatrix(n);
-//        if (SC == true )
-//            GwHFimp[n] = Gw_weak.getMatrix(n);
-//        else GwHFimp[n] = GwHF.getMatrix(n);
+        if (SC == true ) {
+            GwHFimp[n] = Gw_weak.getMatrix(n);
+////            ifroot std::cout << "2PTsolver from Gw\n";
+        }
+        else {
+            GwHFimp[n] = GwHF.getMatrix(n);
+////            ifroot std::cout << "2PTsolver from GwHF\n";
+        }
         Swimp_secondOrder[n].setZero(solverDim, solverDim);
     }
     Swimp_secondOrder[N_freq+0].setZero(solverDim, solverDim);
     Swimp_secondOrder[N_freq+1].setZero(solverDim, solverDim);
     Swimp_secondOrder[N_freq+2].setZero(solverDim, solverDim);
+//Swimp_secondOrder[N_freq+3].setZero(solverDim, solverDim);
 
 
     Gwimp[N_freq+0].setIdentity(solverDim, solverDim);
-    estimate_asymto(Gwimp,2);
-    estimate_asymto(Gwimp,3);
+//    estimate_asymto(Gwimp,2);
+//    estimate_asymto(Gwimp,3);
+    Gwimp[N_freq+1].setZero(solverDim, solverDim);
+    Gwimp[N_freq+2].setZero(solverDim, solverDim);
     Gwimp[N_freq+3].setZero(solverDim, solverDim);
 
 
     GwHFimp[N_freq+0].setIdentity(solverDim, solverDim);
-    estimate_asymto(GwHFimp,2);
-    estimate_asymto(GwHFimp,3);
+//    estimate_asymto(GwHFimp,2);
+//    estimate_asymto(GwHFimp,3);
+    GwHFimp[N_freq+1].setZero(solverDim, solverDim);
+    GwHFimp[N_freq+2].setZero(solverDim, solverDim);
     GwHFimp[N_freq+3].setZero(solverDim, solverDim);
 
 
-    //HF
+//HF
     getoccMat(Gwimp, occMat0,solverDim);
     ifroot std::cout << "2PTsolver(occ):\n" << occMat0 <<"\n";
     ifroot std::cout << "2PTsolver (mu):" << muTB <<"\n";
     getFockOperator( Fock, occMat0, solverDim, projUindex, projUtensor) ;
     ifroot std::cout << "2PTsolver(HF):\n" << Fock <<"\n";
 
-    //Sigma_2nd_order
+//Sigma_2nd_order
     FourierTransform( GwHFimp, Gt0, GwHFimp[N_freq],  true );
     getStimp ( Stimp, Gt0, false, solverDim, projUindex, projUtensor);
     FT_t_to_w(Swimp_secondOrder, Stimp, N_freq);
@@ -110,6 +120,7 @@ void SC2PT_weak  ( int solverDim,
 
     /*write result to NumMatrix and Sw*/
     writeResults( Swimp_secondOrder, Fock, Gwimp,   SE_out, Gw_weak, solverDim);
+
     MPI_Barrier(MPI_COMM_WORLD);
 
 
@@ -447,7 +458,7 @@ void SCGF2 (int solverDim, Eigen::MatrixXcd projimpurity_site_Hamiltonian, Eigen
     int  RDSwinc  =0;
     double normUnit =  MatsubaraFtnnorm(Gwimp,N_freq);
     double normOccMat=0;
-    pulayMixing Mixing_SCGF(3, 100, N_freq, solverDim, solverDim );
+    pulayMixing Mixing_SCGF(2, 10, N_freq, solverDim, solverDim );
     while( (SCGFloop<10 or(normGwimpDiffOuter > 1e-6) or normOccMat>1e-6) and SCGFloop <2000 ) {
         //transfer previous results
         for (int n=0; n<N_freq+4; n++) {
@@ -488,12 +499,6 @@ void SCGF2 (int solverDim, Eigen::MatrixXcd projimpurity_site_Hamiltonian, Eigen
 //        estimate_asymto(Gwimp,3);
 
         if(stdoutLevel>=2 and mpi_rank==0) {
-            std::cout <<"gt:";
-            ces.compute(-Gtimp[N_tau]);
-            for(int n=0; n<solverDim; n+=1) {
-                std::cout <<std::fixed << std::setprecision(5)<< std::fixed   <<  ( ces.eigenvalues()[n]  ) <<" " ;
-            }
-            std::cout <<": " << -(Gtimp[N_tau].trace()) <<"\n";
 
             std::cout <<"oc:";
             Eigen::SelfAdjointEigenSolver<Eigen::MatrixXcd> ces(solverDim);
@@ -622,9 +627,8 @@ void writeResults(  Eigen::MatrixXcd * Swimp_secondOrder, Eigen::MatrixXcd Fock,
                 Gwimp_out.setValue(n, i, j, Gwimp[n](i,j));
             }
             SE_out.setValue(N_freq,  i,j, Fock(i,j));
-            SE_out.setValue(N_freq+1,i,j, Swimp_secondOrder[N_freq+1](i,j));
-            SE_out.setValue(N_freq+2,i,j, Swimp_secondOrder[N_freq+2](i,j));
-
+            SE_out.setValue(N_freq+1,i,j, Swimp_secondOrder[N_freq](i,j));
+            SE_out.setValue(N_freq+2,i,j, Swimp_secondOrder[N_freq+1](i,j));
 
             Gwimp_out.setValue(N_freq+1, i, j, Gwimp[N_freq](i,j));
             Gwimp_out.setValue(N_freq+2, i, j, Gwimp[N_freq+1](i,j));
@@ -632,8 +636,6 @@ void writeResults(  Eigen::MatrixXcd * Swimp_secondOrder, Eigen::MatrixXcd Fock,
             Gwimp_out.setValue(N_freq+4, i, j, Gwimp[N_freq+3](i,j));
         }
     }//n
-
-    sleep(5);
 }
 
 void mixing_check_outer( double normGwimpDiffOuter, double & mixingSCGF) {
