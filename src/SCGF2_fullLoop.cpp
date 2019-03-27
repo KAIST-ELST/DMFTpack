@@ -458,7 +458,7 @@ void SCGF2 (int solverDim, Eigen::MatrixXcd projimpurity_site_Hamiltonian, Eigen
     int  RDSwinc  =0;
     double normUnit =  MatsubaraFtnnorm(Gwimp,N_freq);
     double normOccMat=0;
-    pulayMixing Mixing_SCGF(2, 10, N_freq, solverDim, solverDim );
+    pulayMixing Mixing_SCGF(2, 100, N_freq, solverDim, solverDim );
     while( (SCGFloop<10 or(normGwimpDiffOuter > 1e-6) or normOccMat>1e-6) and SCGFloop <2000 ) {
         //transfer previous results
         for (int n=0; n<N_freq+4; n++) {
