@@ -474,7 +474,7 @@ void HamiltonianConstruc(  Eigen::MatrixXcd & Himp,  Eigen::MatrixXi **f_ann, in
         Himp -=  muTB *  numOperat[alp] ; //H_loc e_ab f^+_a *f_b
     }//alp
 
-    if ( (Himp.imag()).norm() > 1e-5) {
+    if ( (Himp.imag()).norm() > 1e-5 and mpi_rank == 0 ) {
         std::cout << "imag part of H0:" <<   (Himp.imag()).norm() <<"\n";
         exit(1);
     }
@@ -493,10 +493,10 @@ void HamiltonianConstruc(  Eigen::MatrixXcd & Himp,  Eigen::MatrixXi **f_ann, in
         }
     }
 
-    if ( (Himp.imag()).norm() > 1e-5) {
+    if ( (Himp.imag()).norm() > 1e-5  and mpi_rank == 0  ) {
         std::cout << "imag part of Himp:" <<   (Himp.imag()).norm() <<"\n";
         exit(1);
-    }
+    } //// The matrix elements of the f_annMat in the many-body eigen state basis should be real
 }
 
 

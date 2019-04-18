@@ -199,6 +199,7 @@ void read_inputFile(const std::string &hamiltonian) {
     beta                    = read_double(std::string("input.solver"), std::string("BETA"), false, -1) ;
     NSpinOrbit_per_atom     =    read_int(std::string("input.solver"), std::string("N_ORBITALS"),-1)  ; //correlated orbital per Correlated atom
     N_peratom_HartrOrbit    =    read_int(std::string("input.solver"), std::string("N_HARTREE_ORBITALS"),NSpinOrbit_per_atom)   ; //Hartree orbital per correlated atom
+    N_peratom_HartrOrbit += NSpinOrbit_per_atom;
     impurityBasisSwitch  =       read_int(std::string("input.solver"), std::string("impurityBasisSwitch"),0);
 
 //etc..
@@ -206,13 +207,14 @@ void read_inputFile(const std::string &hamiltonian) {
 
 
 //projector
-    dctype           =   read_string(std::string("input.parm"), std::string("DC_TYPE"), true,std::string("fll"));
+    dctype           =   read_string(std::string("input.parm"), std::string("DC_TYPE"), true,std::string("fll")); //fll,  nominal, fll_Uprime
     if(dctype == std::string("none")) {
         doublecounting =     0;
     }
     else {
         doublecounting =     1;
-        if(dctype == std::string("nominal")) {
+//        if(dctype == std::string("nominal")) {}
+        if ( dctype.find(std::string("nominal")) != std::string::npos      ) {
             nominal_charge   =   read_double(std::string("input.parm"), std::string("N_d"), false,  -1);
         }
     }
@@ -343,7 +345,7 @@ void read_inputFile(const std::string &hamiltonian) {
 //Initial occupation & UMatrix
     /*set Hartree space index*/
     std::vector<int>  HartreeAtom_idx(NumCorrAtom);
-    read_int_array(std::string("input.parm"), std::string("HARTREE_ATOMS"),     HartreeAtom_idx,     NumCorrAtom, false,-1) ;
+    read_int_array(std::string("input.parm"), std::string("HARTREE_ATOMS_INDEX"),     HartreeAtom_idx,     NumCorrAtom, false,-1) ;
     for(int i=0; i<NumCorrAtom; i++) {
         HartreeAtom_idx[i]-=1;   //[0,1,2,...NumCorrAtom-1]   // number of element = NumCorrAtom
     }
@@ -429,6 +431,7 @@ void read_inputFile(const std::string &hamiltonian) {
             gen_Uijkl_density_density(N_peratom_HartrOrbit, UHubb, Uprime, JHund, Utensor_atom, Uindex_atom);
         }
         else gen_Uijkl(N_peratom_HartrOrbit, UHubb, Uprime, JHund, Utensor_atom, Uindex_atom);
+//        else  gen_Uijkl_density_density(N_peratom_HartrOrbit, UHubb, Uprime, JHund, Utensor_atom, Uindex_atom);
     }
 
 

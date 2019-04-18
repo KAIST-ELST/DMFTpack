@@ -7,8 +7,8 @@
 TARGET_dmft=dmft
 DEPFILE = dependency
 
-###################
-###osx
+##################
+##osx
 #################################
 #
 #CC=mpic++
@@ -25,7 +25,7 @@ DEPFILE = dependency
 #DEFINES= -DMPI_ENABLED   \
 #         -DEIGEN_INITIALIZE_MATRICES_BY_ZERO  
 #
-#
+
 #
 #
 ##########################
@@ -45,8 +45,8 @@ DEPFILE = dependency
 #         -DEIGEN_INITIALIZE_MATRICES_BY_ZERO  
 #
 
-##########################
-###Intel MKL
+#########################
+##Intel MKL
 ##########################
 
 CC = mpiicpc

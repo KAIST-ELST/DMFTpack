@@ -373,6 +373,7 @@ int main(int argc, char *argv[]) {
 
 
         weiss_field_strongCorr.dataOut(std::string("delta_w.dat"));
+        weiss_field_strongCorr.dataOut_full(std::string("delta_w.full.dat"));
         ifroot std::cout << "FILEOUT:delta_w.dat\n" ;
 
 
@@ -449,9 +450,6 @@ int main(int argc, char *argv[]) {
                                 int jF = CorrToHartr(at,j) - cl*NumHartrOrbit_per_cluster;
                                 SE_lowlevel.setValue(n,iF,jF,
                                                      SE_lowlevel.getValue(n,iF,jF)-  SE_lowlevel_local.getValue(n,i,j)   );
-
-//                                SE_lowlevel.setValue(n,iF,jF,
-//                                                     SE_lowlevel.getValue(N_freq,iF,jF)-  SE_lowlevel_local.getValue(N_freq,i,j)   );
                             }
                         }
                     }
@@ -480,7 +478,6 @@ int main(int argc, char *argv[]) {
                 for (int n=0; n<N_freq; n++) {
                     dc_weakCorr[n] -= dc_weakCorr[N_freq];
                 }
-
 
                 //strongly correlated subspace
                 for (int i=0; i<NSpinOrbit_per_atom; i++)  strongCorr[i] = CorrToHartr(at, i ) ;
@@ -666,9 +663,11 @@ void dc_for_dmft( Eigen::MatrixXcd  & Sw_doublecounting, std::vector<Eigen::Vect
                 }
             }//at
         }
-        else if (dctype =="nominal") {
+//        if(dctype.find(std::string("fll")) != std::string::npos or dctype.find(std::string("sigma0")) != std::string::npos )  {
+        else if ( dctype.find(std::string("nominal")) != std::string::npos      ) {
             /*nominal DC*/
             double sumSpinUp=0, sumSpinDown=0;
+            if( dctype.find(std::string("Uprime")) != std::string::npos)  averU = Uprime;
 
             for(int at=0; at<NumCorrAtom; at++) {
                 sumSpinUp=0;

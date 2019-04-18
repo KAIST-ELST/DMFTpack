@@ -19,23 +19,30 @@ void FourierTransform_tau (Eigen::MatrixXcd * delta_w, Eigen::MatrixXcd  & delta
 //
     int Dim = delta_w[0].rows();
 
-    Eigen::MatrixXcd AsymtoV = (moments[1]+moments[1].adjoint())/2.0;
+    Eigen::MatrixXcd AsymtoV;
     Eigen::MatrixXcd AsymtoH;
-    Eigen::SelfAdjointEigenSolver<Eigen::MatrixXcd> ces(AsymtoV);
-    ces.compute(AsymtoV);
+    Eigen::MatrixXcd AsymtoH2;
+    Eigen::SelfAdjointEigenSolver<Eigen::MatrixXcd> ces(moments[1]);
+    ces.compute(moments[1]);
     double  a = ces.eigenvalues().minCoeff();
     if(a>0)   {
         AsymtoV = (ces.operatorSqrt()).eval();
-        AsymtoH = ( AsymtoV.adjoint().inverse() *  moments[2] * AsymtoV.inverse() ).eval();
+        Eigen::MatrixXcd M2prime = AsymtoV.adjoint().inverse() * (2.0 * moments[2]) * AsymtoV.inverse();
+        Eigen::MatrixXcd M3prime = AsymtoV.adjoint().inverse() * (2.0 * moments[3]) * AsymtoV.inverse();
+
+        ces.compute( (M3prime/2 - M2prime*M2prime/4) );
+        if(  ces.eigenvalues().minCoeff() > 0   ) {
+            AsymtoH = M2prime/2.0 + ces.operatorSqrt();
+        }
+        else   AsymtoH = M2prime/2.0 ;
+        AsymtoH2 =  M2prime - AsymtoH;
     }
     else {
         AsymtoV.setZero(Dim,Dim);
         AsymtoH.setZero(Dim,Dim);
+        AsymtoH2.setZero(Dim,Dim);
     }
 
-//    AsymtoH.setZero(Dim,Dim);
-
-//    Eigen::MatrixXcd moments3 = moments[3] -  AsymtoV.adjoint() * (AsymtoH*AsymtoH)         * AsymtoV;
 
     double w0local, dwlocal,w ;
     dwlocal = (2*pi)/beta;
@@ -47,33 +54,67 @@ void FourierTransform_tau (Eigen::MatrixXcd * delta_w, Eigen::MatrixXcd  & delta
 
     for(int i=0; i<N_freq; i++) {
         w=w0local+i*dwlocal ;
-        Eigen::MatrixXcd tail = AsymtoV.adjoint() * (( I*w * id  - AsymtoH).inverse()) * AsymtoV  ;
+        Eigen::MatrixXcd tail =  AsymtoV.adjoint() * (( I*w * id  - AsymtoH).inverse()) * AsymtoV
+                                 + AsymtoV.adjoint() * (( I*w * id  - AsymtoH2).inverse()) * AsymtoV  ;
+        tail /= 2.0;
         delta_t +=   (delta_w[i] - tail ) * std::exp(-I*w*tau);
-    }
-    for(int i=N_freq; i<N_freq*2; i++) {
-        w=w0local+i*dwlocal ;
-        Eigen::MatrixXcd tail = AsymtoV.adjoint() * (( I*w * id  - AsymtoH).inverse()) * AsymtoV  ;
-        delta_t +=   ( (moments[1]/(I*w) +moments[2]/std::pow(I*w,2) +moments[3]/std::pow(I*w,3))  - tail ) * std::exp(-I*w*tau);
     }
     delta_t = (delta_t + delta_t.adjoint()).eval(); //alliasing issue and negative freq.sum
     delta_t =  ( delta_t  ) / beta ;
 
 
-    Eigen::MatrixXcd FD_dist;
-    FD_dist.setIdentity(Dim,Dim);
     Eigen::SelfAdjointEigenSolver<Eigen::MatrixXcd> ces2(AsymtoH);
+// G0H = -exp(-\tau H)/(1+exp(-\beta H)
+    Eigen::MatrixXcd G0H ;
+    G0H.setIdentity(Dim,Dim);
+    for(int i=0; i<Dim; i++) {
+        G0H(i,i) =  - 1.0 /(std::exp(ces2.eigenvalues()(i) * tau) + std::exp(ces2.eigenvalues()(i) * (tau-beta))   );
+    }
+    G0H = (ces2.eigenvectors() * G0H * (ces2.eigenvectors().adjoint())).eval();
 
+
+
+    Eigen::MatrixXcd G0H2 ;
+    G0H2.setIdentity(Dim,Dim);
+    ces2.compute(AsymtoH2);
     for(int i=0; i<Dim; i++) {
-        FD_dist(i,i) = 1.0/(1.0+std::exp(ces2.eigenvalues()(i) * beta   ));
+        G0H2(i,i) =  - 1.0 /(std::exp(ces2.eigenvalues()(i) * tau) + std::exp(ces2.eigenvalues()(i) * (tau-beta))   );
     }
-    FD_dist= (ces2.eigenvectors() * FD_dist* (ces2.eigenvectors().adjoint())).eval();
-    Eigen::MatrixXcd expAsymtoHt;
-    expAsymtoHt.setIdentity(Dim,Dim);
-    for(int i=0; i<Dim; i++) {
-        expAsymtoHt(i,i) = std::exp(ces2.eigenvalues()(i) * (beta-tau)   );
-    }
-    expAsymtoHt = (ces2.eigenvectors() * expAsymtoHt * (ces2.eigenvectors().adjoint())).eval();
-    delta_t += AsymtoV.adjoint() * ( -expAsymtoHt * FD_dist) * AsymtoV;
+    G0H2 = (ces2.eigenvectors() * G0H2 * (ces2.eigenvectors().adjoint())).eval();
+
+
+    delta_t += AsymtoV.adjoint() * G0H * AsymtoV /2.0;
+    delta_t += AsymtoV.adjoint() * G0H2 * AsymtoV/2.0;
+
+    delta_t = (delta_t + delta_t.adjoint()).eval(); //alliasing issue and negative Hermicity
+    delta_t /= 2.0;
+
+
+//    Eigen::MatrixXcd   test;
+//    test = (delta_t);
+//    Eigen::SelfAdjointEigenSolver<Eigen::MatrixXcd> ces00(test); // norm > 0
+//    ces00.compute(test);
+//    if(  ces00.eigenvalues().maxCoeff() > 0   ) {
+//
+//
+//        for(int i=0; i<N_freq; i++) {
+//            std::cout << i <<"\n" << delta_w[i] << "\n\n";
+//        }
+//        std::cout << tau <<"\n\n";
+//        std::cout << std::setprecision(10)<<  ces00.eigenvalues().maxCoeff() <<"\n";
+//        std::cout << std::setprecision(6) <<  test <<"\n===============";
+//        std::cout << moments[0] <<"\n\n";
+//        std::cout << moments[1] <<"\n\n";
+//        std::cout << moments[2] <<"\n\n";
+//        std::cout << moments[3] <<"\n\n=================\n";
+//        std::cout << AsymtoV <<"\n\n";
+//        std::cout << AsymtoH <<"\n\n";
+//        std::cout <<  (  G0H ) <<"\n\n";
+//        std::cout <<  (  G0H2 ) <<"\n\n";
+//
+//
+//        assert( ces00.eigenvalues().maxCoeff() < 0  );
+//    }
 }
 
 
@@ -93,13 +134,47 @@ void FourierTransform_(Eigen::MatrixXcd * delta_w, Eigen::MatrixXcd * delta_t, s
     }
 
     int  mysta, myend;
-    double tau;
+    double tau, tau1, tau_prev, mineigval11;
     para_range(0,N_tau, mpi_numprocs, mpi_rank, &mysta, &myend);
     for(int j=mysta; j<=myend; j++) {
         tau=j* beta/N_tau;
         FourierTransform_tau (delta_w, delta_t[j], tau, moments );
     }
     data_sync_EigenMat(delta_t, 0, N_tau, delta_t[0].rows(),  mpi_numprocs);
+
+    int CHECK =0;
+    for(int t=0; t<N_tau+1; t++) {
+        tau = t*beta/N_tau;
+
+        Eigen::MatrixXcd   test;
+        test = delta_t[t];
+        Eigen::SelfAdjointEigenSolver<Eigen::MatrixXcd> ces00(test); // norm > 0
+        ces00.compute(test);
+        double mineigval =  ces00.eigenvalues().minCoeff();
+        mineigval11 = mineigval;
+        if( mineigval >=0 and (t!=0 and t!=N_tau) ) {
+            CHECK=1;
+            for(int t1=t+1; t1<N_tau+1; t1++) {
+                tau1= t1*beta/N_tau;
+                tau_prev = (t-1)*beta/N_tau;
+                delta_t[t] = (delta_t[t1] - delta_t[t-1]) / (tau1- tau_prev )  * ( tau - tau_prev)  +  delta_t[t-1];
+
+                Eigen::SelfAdjointEigenSolver<Eigen::MatrixXcd> ces11(delta_t[t]); // norm > 0
+                ces11.compute(delta_t[t]);
+                mineigval11 =  ces11.eigenvalues().minCoeff();
+
+                if( mineigval11 < 0)     break;
+            }//t1
+        }
+        if(mineigval11 >=0  ) {
+            CHECK=1;
+            delta_t[t].setIdentity(Dim,Dim);
+            delta_t[t] *= -1e-10;
+        }
+    }
+    ifroot   if(CHECK==1)      std::cout <<" Warning : positive Gt\n"   ;
+
+
 }
 
 
@@ -208,7 +283,7 @@ void getAsymto_moments (std::vector<Eigen::MatrixXcd> & moments, Eigen::MatrixXc
         }
 
 
-//        moments.resize(4);   //   m0/iw + m1/(iw**2) + m2/(iw**3) + m3/(iw**4) =     (-i/w, -1/w^2, i/w^3, 1/w^4)  *  (m0,m1,m2,m3)'
+//        moments.resize(4);   //  m0 +  m1/iw + m2/(iw**2) + m3/(iw**3) =     (-i/w, -1/w^2, i/w^3, 1/w^4)  *  (m0,m1,m2,m3)'
         for (int mom=0; mom<4; mom++) {
             std::vector<double> var_j;
             for(int w_Asymto_center=Nv; w_Asymto_center < w_Asymto_range-Nv; w_Asymto_center++) {
@@ -223,8 +298,12 @@ void getAsymto_moments (std::vector<Eigen::MatrixXcd> & moments, Eigen::MatrixXc
                 Eigen::SelfAdjointEigenSolver<Eigen::MatrixXcd> ces(moments1_avg[i]); // norm > 0
                 ces.compute(moments1_avg[i]);
 
+                Eigen::MatrixXcd V_inv = (ces.operatorSqrt()).inverse();
+
+
                 Eigen::SelfAdjointEigenSolver<Eigen::MatrixXcd> ces2(moments1_avg[i]);
-                ces2.compute( moments3_avg[i] - moments2_avg[i]*moments2_avg[i]);   //   <w^2> -  <w>^2  > 0
+                ces2.compute(  V_inv*moments3_avg[i]*V_inv
+                               - (V_inv*moments2_avg[i]*V_inv) * (V_inv*moments2_avg[i]*V_inv) );   //   <w^2> -  <w>^2  > 0
 
                 double  a = ces.eigenvalues().minCoeff();
                 double  b = ces2.eigenvalues().minCoeff();
@@ -374,6 +453,10 @@ void getAsymto_moments (std::vector<Eigen::MatrixXcd> & moments, Eigen::MatrixXc
         }
         delete  [] momentstest;
     }//greenFtn
+    moments[0] = (moments[0]+moments[0].adjoint())/2.0;
+    moments[1] = (moments[1]+moments[1].adjoint())/2.0;
+    moments[2] = (moments[2]+moments[2].adjoint())/2.0;
+    moments[3] = (moments[3]+moments[3].adjoint())/2.0;
 
 
 //    std::cout <<  "moments0" << moments[0] <<"\n";
@@ -464,11 +547,20 @@ void FT_t_to_w (Eigen::MatrixXcd * delta_w, Eigen::MatrixXcd * delta_t, int N_fr
             double tau0 = t*dt;
             double tau1 = (t+1)*dt  ;
             cmplx  partialI =  ( std::exp(I*tau1*wn) - std::exp(I*tau0*wn) );
-//            cmplx  partialI2 = ( I*tau1* std::exp(I*tau1*wn) -  I*tau0 *std::exp(I*tau0*wn) );
-//            delta_w[n] += at[t]*(partialI/(std::pow(wn,2)) - partialI2/wn) +      bt[t] * partialI/(I*wn);
             cmplx  partialI2 = ( tau1* std::exp(I*tau1*wn) -  tau0 *std::exp(I*tau0*wn) );
             delta_w[n] += at[t]*(partialI/(std::pow(wn,2)) + partialI2/ (I*wn)) +      bt[t] * partialI/(I*wn);
         }//t
+
+
+
+        Eigen::MatrixXcd   test;
+        test = (delta_w[n] - delta_w[n].adjoint())/(2*I);
+        Eigen::SelfAdjointEigenSolver<Eigen::MatrixXcd> ces(test); // norm > 0
+        ces.compute(test);
+        if(  ces.eigenvalues().maxCoeff() > 0   ) {
+            std::cout << test <<"\n";
+            assert( ces.eigenvalues().maxCoeff() <= 0  );
+        }
     }
     data_sync_EigenMat(delta_w, 0, N_freq-1, delta_w[0].rows(),  mpi_numprocs);
 }

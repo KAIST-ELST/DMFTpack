@@ -279,7 +279,7 @@ double  TightBinding(double mu, const std::string &hamiltonian, ImgFreqFtn & Sel
 
     downfolding_ftn(knum, knum_mpiGlobal, NBAND, H_k_inModelSpace, KS_eigenVectors_orthoBasis, KS_eigenEnergy,  muDFT);
     Find_best_correlated_basis(H_k_inModelSpace, SolverBasis, mu);
-    SpreadFtn_PWF(knum, S_overlap, transformMatrix_k, KS_eigenVectors_orthoBasis, accumulated_Num_SpinOrbital);
+//    SpreadFtn_PWF(knum, S_overlap, transformMatrix_k, KS_eigenVectors_orthoBasis, accumulated_Num_SpinOrbital);
     NumMat_PWF(knum, knum_mpiGlobal, mu, NumMatrix, KS_eigenEnergy, DF_CorrBase);
 
 
@@ -413,7 +413,7 @@ void Find_best_correlated_basis(std::vector<Eigen::MatrixXcd> & H_k_inModelSpace
 
 
 
-    if(impurityBasisSwitch==1) {
+    if( impurityBasisSwitch == 1) {
 
 
 //        Eigen::MatrixXcd  Gloc_w0[NumCorrAtom], Gloc_w0_mpilocal[NumCorrAtom];
@@ -458,10 +458,10 @@ void Find_best_correlated_basis(std::vector<Eigen::MatrixXcd> & H_k_inModelSpace
                 }
             }
             ifroot {
-                std::cout << "Solver:Gloc_w0:\n" << Gloc_w0[ATOM] <<"\n";
-                std::cout <<"\n";
+//                std::cout << "Solver:Gloc_w0:\n" << Gloc_w0[ATOM] <<"\n";
+//                std::cout <<"\n";
                 std::cout << "Solver:Basis:\n" << SolverBasis_atom[ATOM] <<"\n";
-                std::cout << "Solver:Gloc_w0_eval:\n" << ces.eigenvalues() <<"\n";
+//                std::cout << "Solver:Gloc_w0_eval:\n" << ces.eigenvalues() <<"\n";
             }
         }
         for(int ATOM=0 ; ATOM < NumCorrAtom; ATOM++) {

@@ -16,10 +16,10 @@ void rot_Uijkl(
     Eigen::MatrixXcd & SolverBasis, int n_spinorb
 ) ;
 
-void IPT( int solverDim,Eigen::MatrixXcd projimpurity_site_Hamiltonian,  ImgFreqFtn & weiss_field, Eigen::MatrixXcd & projNumMatrix,
-          ImgFreqFtn & SE_out,      ImgFreqFtn & Gwimp_out, double muTB,
-          std::vector<Eigen::VectorXi> projUindex, std::vector<cmplx > projUtensor        ) ;
-
+//void IPT( int solverDim,Eigen::MatrixXcd projimpurity_site_Hamiltonian,  ImgFreqFtn & weiss_field, Eigen::MatrixXcd & projNumMatrix,
+//          ImgFreqFtn & SE_out,      ImgFreqFtn & Gwimp_out, double muTB,
+//          std::vector<Eigen::VectorXi> projUindex, std::vector<cmplx > projUtensor        ) ;
+//
 
 void on_shot_HF (int solverDim,
                  ImgFreqFtn & SE_out,      ImgFreqFtn & Gwimp_out,
@@ -48,7 +48,6 @@ void SCGF2 (int solverDim, Eigen::MatrixXcd projimpurity_site_Hamiltonian, Eigen
             std::vector<Eigen::VectorXi> projUindex, std::vector<cmplx > projUtensor);
 
 
-//void ctqmc_rutgers(  Eigen::MatrixXcd Local_Hamiltonian_ED, double muTB,  ImgFreqFtn & weiss_field) ;
 void ctqmc_rutgers(  Eigen::MatrixXcd Local_Hamiltonian_ED, double muTB,  ImgFreqFtn & weiss_field, std::vector<cmplx > Utensor, std::vector<Eigen::VectorXi> Uindex, int solverDim  ) ;
 void ctqmc_rutgers_seg(  Eigen::MatrixXcd Local_Hamiltonian_ED, double muTB,  ImgFreqFtn & weiss_field, std::vector<cmplx > Utensor, std::vector<Eigen::VectorXi> Uindex) ;
 
@@ -261,7 +260,11 @@ void SOLVER(
             sleep(2);
 
 
-            ctqmc_rutgers_seg(  projimpurity_site_Hamiltonian_diag,  muTB, projweiss_field,projUtensor, projUindex   );
+            std::vector<cmplx > rotUtensor;
+            std::vector<Eigen::VectorXi> rotUindex;
+            rot_Uijkl(projUtensor, projUindex, rotUtensor, rotUindex, projSolverBasis, solverDim);
+
+            ctqmc_rutgers_seg(  projimpurity_site_Hamiltonian_diag,  muTB, projweiss_field,rotUtensor, rotUindex   );
 
             /*set solver command*/
             MPI_Comm communication;
@@ -315,19 +318,20 @@ void SOLVER(
             /*diagonalize onsite-Hamiltonian*/
             //SOLVER basis transformation
 
-            Eigen::MatrixXcd  projimpurity_site_Hamiltonian_diag;
-            projimpurity_site_Hamiltonian_diag.setZero(solverDim,solverDim);
+//            Eigen::MatrixXcd  projimpurity_site_Hamiltonian_diag;
+//            projimpurity_site_Hamiltonian_diag.setZero(solverDim,solverDim);
 
-            projimpurity_site_Hamiltonian_diag = (projSolverBasis.adjoint() * projimpurity_site_Hamiltonian* projSolverBasis);
-            for(int n =0; n<N_freq; n++) {
-                projweiss_field.setMatrix(n,  (projSolverBasis).adjoint()* projweiss_field.getMatrix(n) *(projSolverBasis));
-            }
-
+//            projimpurity_site_Hamiltonian_diag = (projSolverBasis.adjoint() * projimpurity_site_Hamiltonian* projSolverBasis);
+//            for(int n =0; n<N_freq; n++) {
+//                projweiss_field.setMatrix(n,  (projSolverBasis).adjoint()* projweiss_field.getMatrix(n) *(projSolverBasis));
+//            }
+//
             std::vector<cmplx > rotUtensor;
             std::vector<Eigen::VectorXi> rotUindex;
-
             rot_Uijkl(projUtensor, projUindex, rotUtensor, rotUindex, projSolverBasis, solverDim);
-            ctqmc_rutgers(  projimpurity_site_Hamiltonian_diag,  muTB, projweiss_field, rotUtensor, rotUindex, solverDim);
+
+
+            ctqmc_rutgers(  projimpurity_site_Hamiltonian,  muTB, projweiss_field, rotUtensor, rotUindex, solverDim);
 
             /*set solver command*/
             ifroot std::cout << "Rutgers(K. Haule), CT-HYB solver\n";
@@ -352,13 +356,14 @@ void SOLVER(
             /*read output*/
 
             SE_out.read_uppertrian(std::string("Sw.dat"));
-            for(int n =0; n<N_freq; n++) {
-                SE_out.setMatrix(n,  projSolverBasis* SE_out.getMatrix(n) *(projSolverBasis).adjoint());
-            }
             Gwimp_in_out.read_uppertrian(std::string("Gw.dat"));
-            for(int n =0; n<N_freq; n++) {
-                Gwimp_in_out.setMatrix(n,  projSolverBasis* Gwimp_in_out.getMatrix(n) *(projSolverBasis).adjoint());
-            }
+
+//            for(int n =0; n<N_freq; n++) {
+//                SE_out.setMatrix(n,  projSolverBasis* SE_out.getMatrix(n) *(projSolverBasis).adjoint());
+//            }
+//            for(int n =0; n<N_freq; n++) {
+//                Gwimp_in_out.setMatrix(n,  projSolverBasis* Gwimp_in_out.getMatrix(n) *(projSolverBasis).adjoint());
+//            }
 
             MPI_Barrier(MPI_COMM_WORLD);
             ifroot  std::cout << "Reading output data..\n";
@@ -409,10 +414,10 @@ void SOLVER(
         ifroot std::cout << "\n2PT solver\n";
         SecondOrderPerturbation( solverDim, projimpurity_site_Hamiltonian, projweiss_field, projNumMatrix,SE_out, Gwimp_in_out, muTB, projUindex, projUtensor);
     }//2PT
-    else if(SOLVERtype == std::string("IPT")) {
-        ifroot std::cout << "\nIPT solver\n";
-        IPT( solverDim, projimpurity_site_Hamiltonian, projweiss_field, projNumMatrix,SE_out, Gwimp_in_out, muTB, projUindex, projUtensor);
-    }//IPT
+//    else if(SOLVERtype == std::string("IPT")) {
+//        ifroot std::cout << "\nIPT solver\n";
+//        IPT( solverDim, projimpurity_site_Hamiltonian, projweiss_field, projNumMatrix,SE_out, Gwimp_in_out, muTB, projUindex, projUtensor);
+//    }//IPT
     else if(SOLVERtype == std::string("HF")) {
 
         on_shot_HF( solverDim,
@@ -423,6 +428,16 @@ void SOLVER(
         std::cout << "Please check <SOLVER_TYPE> \n";
         exit(1);
     }
+
+    for(int n =0; n<N_freq; n++) {
+        SE_out.setMatrix(n,  projSolverBasis* SE_out.getMatrix(n) *(projSolverBasis).adjoint());
+    }
+
+    for(int n =0; n<N_freq; n++) {
+        Gwimp_in_out.setMatrix(n,  projSolverBasis* Gwimp_in_out.getMatrix(n) *(projSolverBasis).adjoint());
+    }
+
+    projNumMatrix = projSolverBasis * projNumMatrix * (projSolverBasis.adjoint());
 
 
 
@@ -516,10 +531,40 @@ void proj_to_site( int solverDim, int solver_block, std::vector<int> impurityOrb
     ifroot std::cout << "impurity site info\n";
     for (int n=0; n<N_freq; n++) {
         projweiss_field.setMatrix(n,  weiss_field.getMatrix(n,solver_block, solverDim ) +dc_weakCorr.at(n)    );
-//        projweiss_field.setMatrix(n,  weiss_field.getMatrix(n,solver_block, solverDim ) );
-//        projweiss_field.setMatrix(n,  weiss_field.getMatrix(n,solver_block, solverDim ) -  dc_weakCorr.at(n)    );
     }
 
-    ifroot std::cout << "Imp H0:\n"  <<std::fixed << std::setprecision(6)<< projimpurity_site_Hamiltonian <<"\n";
+    ifroot std::cout << "Imp H0:\n"  << std::fixed << std::setprecision(6)<< projimpurity_site_Hamiltonian <<"\n";
     std::cout << std::fixed << std::setprecision(4);
+
+
+
+
+    Eigen::MatrixXcd weiss0_re =  projweiss_field.getMatrix(0) ;
+    weiss0_re = (weiss0_re + weiss0_re.adjoint()).eval();
+    weiss0_re /= 2.0;
+    ifroot std::cout << "Re[D([w=0)]:\n" << std::fixed << std::setprecision(6)<< weiss0_re <<"\n";
+    std::cout << std::fixed << std::setprecision(4);
+
+    if(  ((projimpurity_site_Hamiltonian + weiss0_re).imag()).norm()  <  1e-5 ) {
+        Eigen::MatrixXd temp =  ((projimpurity_site_Hamiltonian + weiss0_re).real());
+        Eigen::SelfAdjointEigenSolver<Eigen::MatrixXcd> ces( solverDim );
+        ces.compute(    temp   );
+        projSolverBasis = ces.eigenvectors();
+    }
+    else {
+        Eigen::SelfAdjointEigenSolver<Eigen::MatrixXcd> ces( solverDim );
+        ces.compute(    projimpurity_site_Hamiltonian   );
+        projSolverBasis = ces.eigenvectors();
+    }
+
+    ifroot std::cout << "Solver:Basis:\n" << projSolverBasis<<"\n";
+    projimpurity_site_Hamiltonian = (projSolverBasis.adjoint() * projimpurity_site_Hamiltonian* projSolverBasis);
+
+    for(int n =0; n<N_freq; n++) {
+        projweiss_field.setMatrix(n,  (projSolverBasis).adjoint()* projweiss_field.getMatrix(n) *(projSolverBasis));
+    }
+
+    projNumMatrix = projSolverBasis.adjoint() * projNumMatrix * projSolverBasis ;
+
+    ifroot std::cout << "Imp H0:\n"  <<std::fixed << std::setprecision(6)<< projimpurity_site_Hamiltonian <<"\n";
 }
