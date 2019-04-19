@@ -547,7 +547,7 @@ void proj_to_site( int solverDim, int solver_block, std::vector<int> impurityOrb
 
     if(  ((projimpurity_site_Hamiltonian + weiss0_re).imag()).norm()  <  1e-5 ) {
         Eigen::MatrixXd temp =  ((projimpurity_site_Hamiltonian + weiss0_re).real());
-        Eigen::SelfAdjointEigenSolver<Eigen::MatrixXcd> ces( solverDim );
+        Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd> ces( solverDim );
         ces.compute(    temp   );
         projSolverBasis = ces.eigenvectors();
     }
@@ -555,16 +555,31 @@ void proj_to_site( int solverDim, int solver_block, std::vector<int> impurityOrb
         Eigen::SelfAdjointEigenSolver<Eigen::MatrixXcd> ces( solverDim );
         ces.compute(    projimpurity_site_Hamiltonian   );
         projSolverBasis = ces.eigenvectors();
+
+
+
+        Eigen::MatrixXcd temp =  projSolverBasis.adjoint() * (projimpurity_site_Hamiltonian+weiss0_re) * projSolverBasis;
+        Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd> ces2( solverDim );
+        ces2.compute(    temp.real()  );
+
+        projSolverBasis = (  projSolverBasis *  ces2.eigenvectors()  ).eval();
+
     }
 
     ifroot std::cout << "Solver:Basis:\n" << projSolverBasis<<"\n";
     projimpurity_site_Hamiltonian = (projSolverBasis.adjoint() * projimpurity_site_Hamiltonian* projSolverBasis);
+    ifroot std::cout << "Imp H0:\n"  <<std::fixed << std::setprecision(6)<< projimpurity_site_Hamiltonian <<"\n";
+
 
     for(int n =0; n<N_freq; n++) {
         projweiss_field.setMatrix(n,  (projSolverBasis).adjoint()* projweiss_field.getMatrix(n) *(projSolverBasis));
     }
+    weiss0_re =  projweiss_field.getMatrix(0) ;
+    weiss0_re = (weiss0_re + weiss0_re.adjoint()).eval();
+    weiss0_re /= 2.0;
+    ifroot std::cout <<  "Re[D([w=0)]:\n"  <<std::fixed << std::setprecision(6)<<
+                     weiss0_re << "\n";
 
     projNumMatrix = projSolverBasis.adjoint() * projNumMatrix * projSolverBasis ;
 
-    ifroot std::cout << "Imp H0:\n"  <<std::fixed << std::setprecision(6)<< projimpurity_site_Hamiltonian <<"\n";
 }

@@ -150,8 +150,7 @@ void rot_Uijkl(
     std::vector<cmplx > & rotUtensor, std::vector<Eigen::VectorXi>  & rotUindex,
     Eigen::MatrixXcd & SolverBasis, int n_spinorb
 ) {
-    ifroot std::cout << "rot U matrix\n";
-//    std::cout << SolverBasis.adjoint() * SolverBasis;
+    ifroot std::cout << "original U matrix\n";
     Eigen::MatrixXcd SolverBasis_adj = SolverBasis.adjoint();
     int length = (int) Utensor.size();
     int nH=0;
@@ -162,6 +161,7 @@ void rot_Uijkl(
     ifroot std::cout << "\n";
 
 
+    ifroot std::cout << "rot U matrix\n";
     for(int i=0; i<n_spinorb; i++) {
         for(int j=0; j<n_spinorb; j++) {
             for(int k=0; k<n_spinorb; k++) {
@@ -201,5 +201,4 @@ void rot_Uijkl(
     }
 //    write_Uijkl(index, Utensor, Uindex, indexC);
 
-    ifroot std::cout << "rot U matrix\n";
 }
