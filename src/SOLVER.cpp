@@ -541,20 +541,14 @@ void proj_to_site( int solverDim, int solver_block, std::vector<int> impurityOrb
 
 
 
-//        Eigen::MatrixXcd weiss0_re =  projweiss_field.getMatrix(0) ;
-//        weiss0_re = (weiss0_re + weiss0_re.adjoint()).eval();
-//        weiss0_re /= 2.0;
 
         ifroot std::cout << "Re[D([w=0)]:\n" << std::fixed << std::setprecision(6)<< weiss0_re <<"\n";
         std::cout << std::fixed << std::setprecision(4);
 
-//        if(  ((projimpurity_site_Hamiltonian + weiss0_re).imag()).norm()  <  1e-5 ) {{
         if(  (( weiss0_re).imag()).norm()  <  1e-5 ) {
-//            Eigen::MatrixXd temp =  ((projimpurity_site_Hamiltonian + weiss0_re).real());
             Eigen::MatrixXd temp =  ((weiss0_re).real());
             Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd> ces( solverDim/2 );
             ces.compute(    temp   );
-//            projSolverBasis = ces.eigenvectors();
 
             for (int i=0; i<solverDim; i+=2) {
                 for (int j=0; j<solverDim; j+=2) {
@@ -564,16 +558,17 @@ void proj_to_site( int solverDim, int solver_block, std::vector<int> impurityOrb
             }//n
         }
         else {
-            Eigen::MatrixXcd weiss0_re =  projweiss_field.getMatrix(0) ;
-            weiss0_re = (weiss0_re + weiss0_re.adjoint()).eval();
-            weiss0_re /= 2.0;
+            Eigen::MatrixXcd weiss0_reSOC =  projweiss_field.getMatrix(0) ;
+            weiss0_reSOC = (weiss0_reSOC + weiss0_reSOC.adjoint()).eval();
+            weiss0_reSOC /= 2.0;
+
             Eigen::SelfAdjointEigenSolver<Eigen::MatrixXcd> ces( solverDim );
             ces.compute(    projimpurity_site_Hamiltonian   );
             projSolverBasis = ces.eigenvectors();
 
 
 
-            Eigen::MatrixXcd temp =  projSolverBasis.adjoint() * (projimpurity_site_Hamiltonian+weiss0_re) * projSolverBasis;
+            Eigen::MatrixXcd temp =  projSolverBasis.adjoint() * (projimpurity_site_Hamiltonian+weiss0_reSOC) * projSolverBasis;
             Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd> ces2( solverDim );
             ces2.compute(    temp.real()  );
 
