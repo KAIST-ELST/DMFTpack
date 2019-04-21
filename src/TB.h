@@ -22,7 +22,7 @@ int isSameAtom(int , int, int model = 1);
 //int nonNeg(int & a);
 
 extern int knum, knum_mpiGlobal, myksta, mykend , kpxy;
-extern int impurityBasisSwitch;
+//extern int impurityBasisSwitch;
 
 
 //TB.cpp

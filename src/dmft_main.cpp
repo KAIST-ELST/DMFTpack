@@ -43,7 +43,7 @@ void SOLVER(
     ImgFreqFtn & SE_out,  ImgFreqFtn & Gwimp_in_out,
     std::vector<Eigen::VectorXi> projUindex, std::vector<cmplx > projUtensor,
     Eigen::MatrixXcd  Sw_doublecounting,            std::vector<Eigen::MatrixXcd >  dc_weakCorr,
-    double muTB, Eigen::MatrixXcd & SolverBasis
+    double muTB
 );
 
 void Time_print();
@@ -127,6 +127,7 @@ int main(int argc, char *argv[]) {
 
 
     Eigen::MatrixXcd SolverBasis;
+    SolverBasis.setIdentity(NumCorrAtom*N_peratom_HartrOrbit, NumCorrAtom*N_peratom_HartrOrbit);
     ImgFreqFtn weiss_field_weakCorr(0);
     ImgFreqFtn weiss_field_strongCorr(0);
     ImgFreqFtn weiss_fieldTB_weakCorr(0);
@@ -489,7 +490,7 @@ int main(int argc, char *argv[]) {
                        SE_strong, Gw_strong,
                        Uindex_stronglyCorr, Utensor_stronglyCorr,
                        Sw_doublecounting, dc_weakCorr,
-                       muTB, SolverBasis);
+                       muTB);
 
 
 

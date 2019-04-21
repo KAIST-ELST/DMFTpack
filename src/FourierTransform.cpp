@@ -298,17 +298,20 @@ void getAsymto_moments (std::vector<Eigen::MatrixXcd> & moments, Eigen::MatrixXc
                 Eigen::SelfAdjointEigenSolver<Eigen::MatrixXcd> ces(moments1_avg[i]); // norm > 0
                 ces.compute(moments1_avg[i]);
 
-                Eigen::MatrixXcd V_inv = (ces.operatorSqrt()).inverse();
+                if (ces.eigenvalues().minCoeff() >0 ) {
+                    Eigen::MatrixXcd V_inv = (ces.operatorSqrt()).inverse();
 
 
-                Eigen::SelfAdjointEigenSolver<Eigen::MatrixXcd> ces2(moments1_avg[i]);
-                ces2.compute(  V_inv*moments3_avg[i]*V_inv
-                               - (V_inv*moments2_avg[i]*V_inv) * (V_inv*moments2_avg[i]*V_inv) );   //   <w^2> -  <w>^2  > 0
 
-                double  a = ces.eigenvalues().minCoeff();
-                double  b = ces2.eigenvalues().minCoeff();
-                if (var_j[i] < var_j[minPos] and a>0 and b>0)         // Found a smaller min
-                    minPos = i;                       //w_Asymto_center = minPos+Nv
+                    Eigen::SelfAdjointEigenSolver<Eigen::MatrixXcd> ces2(moments1_avg[i]);
+                    ces2.compute(     V_inv*moments3_avg[i]*V_inv
+                                      - (V_inv*moments2_avg[i]*V_inv) * (V_inv*moments2_avg[i]*V_inv) );   //   <w^2> -  <w>^2  > 0
+
+                    double  a = ces.eigenvalues().minCoeff();
+                    double  b = ces2.eigenvalues().minCoeff();
+                    if (var_j[i] < var_j[minPos] and a>0 and b>0)         // Found a smaller min
+                        minPos = i;                       //w_Asymto_center = minPos+Nv
+                }
             }
             int minPos_w_Asymto_center = minPos +Nv;   // <= w_Asymto_range-Nv-1
 
@@ -332,7 +335,6 @@ void getAsymto_moments (std::vector<Eigen::MatrixXcd> & moments, Eigen::MatrixXc
         delete  [] momentstest;
     }
     else if (greenFtnAsym == true ) {
-//        std::cout << "FT GF\n";
         int w_Asymto_end  = N_freq-2;
         int w_Asymto_range = w_Asymto_end - w_Asymto_start +1 ;
 
@@ -457,13 +459,6 @@ void getAsymto_moments (std::vector<Eigen::MatrixXcd> & moments, Eigen::MatrixXc
     moments[1] = (moments[1]+moments[1].adjoint())/2.0;
     moments[2] = (moments[2]+moments[2].adjoint())/2.0;
     moments[3] = (moments[3]+moments[3].adjoint())/2.0;
-
-
-//    std::cout <<  "moments0" << moments[0] <<"\n";
-//    std::cout <<  "moments1" << moments[1] <<"\n";
-//    std::cout <<  "moments2" << moments[2] <<"\n";
-//    std::cout <<  "moments3" << moments[3] <<"\n";
-
 
 
 

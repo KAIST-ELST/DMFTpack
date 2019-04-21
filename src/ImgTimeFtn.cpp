@@ -477,7 +477,7 @@ void  ImgFreqFtn::dataOut_full_pararell(const std::string &filename) {
 //    ImgFreqFtn::update(FtnOutM,mixing, mixingType);
 //}
 //
-void ImgFreqFtn::read_uppertrian(const std::string &filename) {
+void ImgFreqFtn::read_uppertrian(const std::string &filename, int spindim) {
     Eigen::MatrixXcd  * FtnOutM = new Eigen::MatrixXcd [Nfreq_+5];
     for (int w=0; w < Nfreq_+5; w++ ) {
         FtnOutM[w].setZero(Norbit,Norbit);
@@ -491,12 +491,14 @@ void ImgFreqFtn::read_uppertrian(const std::string &filename) {
     while ( w < Nfreq_ and !DATA.eof() ) {
         DATA>> DataFreq;
 
-        for(int n=0; n < Norbit; n++) {
-            for(int m=n; m < Norbit; m++) {
-                DATA >> Retemp;
-                DATA >> Imtemp;
-                FtnOutM[w](n,m) = ( Retemp+I*Imtemp);
-                if(n<m) FtnOutM[w](m,n) = std::conj(FtnOutM[w](n,m));
+        for(int spin = 0 ; spin< spindim; spin++) {
+            for(int n=spin; n < Norbit; n+=spindim) {
+                for(int m=n; m < Norbit; m+=spindim) {
+                    DATA >> Retemp;
+                    DATA >> Imtemp;
+                    FtnOutM[w](n,m) = ( Retemp+I*Imtemp);
+                    if(n<m) FtnOutM[w](m,n) = std::conj(FtnOutM[w](n,m));
+                }
             }
         }
         w++;

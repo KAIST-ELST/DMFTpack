@@ -57,7 +57,7 @@ void ctqmc_rutgers_seg(  Eigen::MatrixXcd Local_Hamiltonian_ED, double muTB,  Im
 
 
 void proj_to_site( int solverDim, int solver_block, std::vector<int> impurityOrbit,
-                   Eigen::MatrixXcd  impurity_site_Hamiltonian, Eigen::MatrixXcd  SolverBasis,  Eigen::MatrixXcd NumMatrix,  ImgFreqFtn & weiss_field,
+                   Eigen::MatrixXcd  impurity_site_Hamiltonian,  Eigen::MatrixXcd NumMatrix,  ImgFreqFtn & weiss_field,
                    Eigen::MatrixXcd & projimpurity_site_Hamiltonian,Eigen::MatrixXcd & projSolverBasis,Eigen::MatrixXcd & projNumMatrix, ImgFreqFtn & projweiss_field,
                    Eigen::MatrixXcd  Sw_doublecounting, std::vector<Eigen::MatrixXcd >  dc_weakCorr
                  ) ;
@@ -104,7 +104,7 @@ void SOLVER(
     ImgFreqFtn & SE_out,  ImgFreqFtn & Gwimp_in_out,
     std::vector<Eigen::VectorXi> projUindex, std::vector<cmplx > projUtensor,
     Eigen::MatrixXcd  Sw_doublecounting,            std::vector<Eigen::MatrixXcd >  dc_weakCorr,
-    double muTB, Eigen::MatrixXcd & SolverBasis
+    double muTB
 )
 {
 
@@ -121,7 +121,7 @@ void SOLVER(
     projSolverBasis.setIdentity(solverDim, solverDim);
 
     proj_to_site ( solverDim, solver_block, impurityOrbit,
-                   impurity_site_Hamiltonian, SolverBasis, NumMatrix, weiss_field,
+                   impurity_site_Hamiltonian, NumMatrix, weiss_field,
                    projimpurity_site_Hamiltonian, projSolverBasis, projNumMatrix, projweiss_field,
                    Sw_doublecounting, dc_weakCorr);
 
@@ -318,19 +318,12 @@ void SOLVER(
             /*diagonalize onsite-Hamiltonian*/
             //SOLVER basis transformation
 
-//            Eigen::MatrixXcd  projimpurity_site_Hamiltonian_diag;
-//            projimpurity_site_Hamiltonian_diag.setZero(solverDim,solverDim);
-
-//            projimpurity_site_Hamiltonian_diag = (projSolverBasis.adjoint() * projimpurity_site_Hamiltonian* projSolverBasis);
-//            for(int n =0; n<N_freq; n++) {
-//                projweiss_field.setMatrix(n,  (projSolverBasis).adjoint()* projweiss_field.getMatrix(n) *(projSolverBasis));
-//            }
-//
             std::vector<cmplx > rotUtensor;
             std::vector<Eigen::VectorXi> rotUindex;
             rot_Uijkl(projUtensor, projUindex, rotUtensor, rotUindex, projSolverBasis, solverDim);
 
 
+            ifroot "write rutgers_input file\n";
             ctqmc_rutgers(  projimpurity_site_Hamiltonian,  muTB, projweiss_field, rotUtensor, rotUindex, solverDim);
 
             /*set solver command*/
@@ -355,15 +348,11 @@ void SOLVER(
 
             /*read output*/
 
-            SE_out.read_uppertrian(std::string("Sw.dat"));
-            Gwimp_in_out.read_uppertrian(std::string("Gw.dat"));
+            int spindim=1;
+            if(magnetism==0 or magnetism==1) spindim=2;
+            SE_out.read_uppertrian(std::string("Sw.dat") , spindim   );
+            Gwimp_in_out.read_uppertrian(std::string("Gw.dat") , spindim );
 
-//            for(int n =0; n<N_freq; n++) {
-//                SE_out.setMatrix(n,  projSolverBasis* SE_out.getMatrix(n) *(projSolverBasis).adjoint());
-//            }
-//            for(int n =0; n<N_freq; n++) {
-//                Gwimp_in_out.setMatrix(n,  projSolverBasis* Gwimp_in_out.getMatrix(n) *(projSolverBasis).adjoint());
-//            }
 
             MPI_Barrier(MPI_COMM_WORLD);
             ifroot  std::cout << "Reading output data..\n";
@@ -509,7 +498,7 @@ void SOLVER(
 
 
 void proj_to_site( int solverDim, int solver_block, std::vector<int> impurityOrbit,
-                   Eigen::MatrixXcd  impurity_site_Hamiltonian, Eigen::MatrixXcd  SolverBasis,  Eigen::MatrixXcd NumMatrix,  ImgFreqFtn & weiss_field,
+                   Eigen::MatrixXcd  impurity_site_Hamiltonian,  Eigen::MatrixXcd NumMatrix,  ImgFreqFtn & weiss_field,
                    Eigen::MatrixXcd & projimpurity_site_Hamiltonian,Eigen::MatrixXcd & projSolverBasis,Eigen::MatrixXcd & projNumMatrix, ImgFreqFtn & projweiss_field,
                    Eigen::MatrixXcd  Sw_doublecounting, std::vector<Eigen::MatrixXcd >  dc_weakCorr
                  ) {
@@ -522,9 +511,7 @@ void proj_to_site( int solverDim, int solver_block, std::vector<int> impurityOrb
             int h1F = impurityOrbit.at(h1) ;
             int h2F = impurityOrbit.at(h2) ;
             projimpurity_site_Hamiltonian(h1,h2) = impurity_site_Hamiltonian(h1F,h2F) - Sw_doublecounting(h1F,h2F) +dc_weakCorr.at(N_freq)(h1,h2) ;
-//            projimpurity_site_Hamiltonian(h1,h2) = impurity_site_Hamiltonian(h1F,h2F) - Sw_doublecounting(h1F,h2F) - dc_weakCorr.at(N_freq)(h1,h2) ;
             projNumMatrix(h1,h2) = NumMatrix(h1F,h2F);
-            projSolverBasis(h1,h2) =  SolverBasis(h1F,h2F);
         }
     }
 
@@ -539,32 +526,63 @@ void proj_to_site( int solverDim, int solver_block, std::vector<int> impurityOrb
 
 
 
-    Eigen::MatrixXcd weiss0_re =  projweiss_field.getMatrix(0) ;
-    weiss0_re = (weiss0_re + weiss0_re.adjoint()).eval();
-    weiss0_re /= 2.0;
-    ifroot std::cout << "Re[D([w=0)]:\n" << std::fixed << std::setprecision(6)<< weiss0_re <<"\n";
-    std::cout << std::fixed << std::setprecision(4);
+    projSolverBasis.setIdentity(solverDim, solverDim);
+    if(impurityBasisSwitch) {
 
-    if(  ((projimpurity_site_Hamiltonian + weiss0_re).imag()).norm()  <  1e-5 ) {
-        Eigen::MatrixXd temp =  ((projimpurity_site_Hamiltonian + weiss0_re).real());
-        Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd> ces( solverDim );
-        ces.compute(    temp   );
-        projSolverBasis = ces.eigenvectors();
+
+        Eigen::MatrixXcd weiss0_re(solverDim/2, solverDim/2);
+        for (int i=0; i<solverDim; i+=2) {
+            for (int j=0; j<solverDim; j+=2) {
+                cmplx temp = ( (projweiss_field.getMatrix(0))(i,j)  + (projweiss_field.getMatrix(0))(i+1,j+1) ) /2;
+                temp += (projimpurity_site_Hamiltonian(i,j) + projimpurity_site_Hamiltonian(i+1, j+1)) /2;
+                weiss0_re( i/2, j/2   ) = temp;
+            }
+        }//n
+
+
+
+//        Eigen::MatrixXcd weiss0_re =  projweiss_field.getMatrix(0) ;
+//        weiss0_re = (weiss0_re + weiss0_re.adjoint()).eval();
+//        weiss0_re /= 2.0;
+
+        ifroot std::cout << "Re[D([w=0)]:\n" << std::fixed << std::setprecision(6)<< weiss0_re <<"\n";
+        std::cout << std::fixed << std::setprecision(4);
+
+//        if(  ((projimpurity_site_Hamiltonian + weiss0_re).imag()).norm()  <  1e-5 ) {{
+        if(  (( weiss0_re).imag()).norm()  <  1e-5 ) {
+//            Eigen::MatrixXd temp =  ((projimpurity_site_Hamiltonian + weiss0_re).real());
+            Eigen::MatrixXd temp =  ((weiss0_re).real());
+            Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd> ces( solverDim/2 );
+            ces.compute(    temp   );
+//            projSolverBasis = ces.eigenvectors();
+
+            for (int i=0; i<solverDim; i+=2) {
+                for (int j=0; j<solverDim; j+=2) {
+                    projSolverBasis(i ,j ) = (ces.eigenvectors())(i/2,j/2);
+                    projSolverBasis(i+1,j+1) = (ces.eigenvectors())(i/2,j/2);
+                }
+            }//n
+        }
+        else {
+            Eigen::MatrixXcd weiss0_re =  projweiss_field.getMatrix(0) ;
+            weiss0_re = (weiss0_re + weiss0_re.adjoint()).eval();
+            weiss0_re /= 2.0;
+            Eigen::SelfAdjointEigenSolver<Eigen::MatrixXcd> ces( solverDim );
+            ces.compute(    projimpurity_site_Hamiltonian   );
+            projSolverBasis = ces.eigenvectors();
+
+
+
+            Eigen::MatrixXcd temp =  projSolverBasis.adjoint() * (projimpurity_site_Hamiltonian+weiss0_re) * projSolverBasis;
+            Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd> ces2( solverDim );
+            ces2.compute(    temp.real()  );
+
+            projSolverBasis = (  projSolverBasis *  ces2.eigenvectors()  ).eval();
+
+        }
     }
-    else {
-        Eigen::SelfAdjointEigenSolver<Eigen::MatrixXcd> ces( solverDim );
-        ces.compute(    projimpurity_site_Hamiltonian   );
-        projSolverBasis = ces.eigenvectors();
 
 
-
-        Eigen::MatrixXcd temp =  projSolverBasis.adjoint() * (projimpurity_site_Hamiltonian+weiss0_re) * projSolverBasis;
-        Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd> ces2( solverDim );
-        ces2.compute(    temp.real()  );
-
-        projSolverBasis = (  projSolverBasis *  ces2.eigenvectors()  ).eval();
-
-    }
 
     ifroot std::cout << "Solver:Basis:\n" << projSolverBasis<<"\n";
     projimpurity_site_Hamiltonian = (projSolverBasis.adjoint() * projimpurity_site_Hamiltonian* projSolverBasis);
@@ -574,7 +592,7 @@ void proj_to_site( int solverDim, int solver_block, std::vector<int> impurityOrb
     for(int n =0; n<N_freq; n++) {
         projweiss_field.setMatrix(n,  (projSolverBasis).adjoint()* projweiss_field.getMatrix(n) *(projSolverBasis));
     }
-    weiss0_re =  projweiss_field.getMatrix(0) ;
+    Eigen::MatrixXcd weiss0_re =  projweiss_field.getMatrix(0) ;
     weiss0_re = (weiss0_re + weiss0_re.adjoint()).eval();
     weiss0_re /= 2.0;
     ifroot std::cout <<  "Re[D([w=0)]:\n"  <<std::fixed << std::setprecision(6)<<

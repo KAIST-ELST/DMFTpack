@@ -78,6 +78,7 @@ extern std::string SOLVERexe, SOLVERdir;
 extern cmplx w0, dw;
 //extern int SOLVERtype;
 extern int  SOCCal,  interOrbitHop;
+extern int impurityBasisSwitch;
 
 extern int **HartrRange;
 //extern int **HartrRange_DFT;

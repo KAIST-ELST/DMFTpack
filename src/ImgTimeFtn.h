@@ -63,7 +63,7 @@ std::vector<Eigen::MatrixXcd> getFtn_data();
     void    setValueSubMat(int w, int site, int dim, int orbit1, int orbit2,  std::complex<double> value);
 
     void    read_diag  (const std::string &filename );
-    void    read_uppertrian  (const std::string &filename );
+    void    read_uppertrian  (const std::string &filename, int spindim=0 );
     void    update  (ImgFreqFtn & rhs, double mixing) ;
     void    update  (ImgFreqFtn & FtnOut_c,           double mixing, int updateSite,  int mixingType  ) ;
     void    update  (Eigen::MatrixXcd * FtnOutM,      double mixing,                  int mixingType  ) ;

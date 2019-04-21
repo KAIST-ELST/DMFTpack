@@ -289,15 +289,15 @@ void read_inputFile(const std::string &hamiltonian) {
     std::vector<int>    subshell_temp(num_subshell);
     std::vector<int> Rydberg_set_temp(num_subshell);
     std::vector<int>     rot_sym_temp(num_subshell);
-    if(num_subshell == NumAtom) {
-        for(int i=0; i<num_subshell; i++) {
-            subshell_temp[i] = accumulated_Num_SpinOrbital_local[i+1] - accumulated_Num_SpinOrbital_local[i];
-            Rydberg_set_temp[i]  = 1;
-        }
+//    if(num_subshell == NumAtom) {
+    for(int i=0; i<num_subshell; i++) {
+        subshell_temp[i] = accumulated_Num_SpinOrbital_local[i+1] - accumulated_Num_SpinOrbital_local[i];
+        Rydberg_set_temp[i]  = 1;
     }
-    else {
-        read_int_array(std::string("input.parm"), std::string("subshell"),        subshell_temp,        num_subshell,false,-1) ;
-        read_int_array(std::string("input.parm"), std::string("Rydberg_set"),     Rydberg_set_temp,     num_subshell,false,-1) ;
+//   }
+    if(num_subshell != NumAtom) {
+        read_int_array(std::string("input.parm"), std::string("subshell"),        subshell_temp,        num_subshell,true,-1) ;
+        read_int_array(std::string("input.parm"), std::string("Rydberg_set"),     Rydberg_set_temp,     num_subshell,true,-1) ;
     }
     for(int i=0; i<num_subshell; i++) rot_sym_temp[i] = i;
     read_int_array(std::string("input.parm"), std::string("rot_sym"),     rot_sym_temp,     num_subshell,true,-1) ;
@@ -345,7 +345,7 @@ void read_inputFile(const std::string &hamiltonian) {
 //Initial occupation & UMatrix
     /*set Hartree space index*/
     std::vector<int>  HartreeAtom_idx(NumCorrAtom);
-    read_int_array(std::string("input.parm"), std::string("HARTREE_ATOMS_INDEX"),     HartreeAtom_idx,     NumCorrAtom, false,-1) ;
+    read_int_array(std::string("input.parm"), std::string("HARTREE_ATOMS"),     HartreeAtom_idx,     NumCorrAtom, false,-1) ;
     for(int i=0; i<NumCorrAtom; i++) {
         HartreeAtom_idx[i]-=1;   //[0,1,2,...NumCorrAtom-1]   // number of element = NumCorrAtom
     }

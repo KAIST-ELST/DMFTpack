@@ -276,7 +276,14 @@ void  ConstructModelHamiltonian
             Eigen::MatrixXcd weightMatrix_preNAOs;
             Eigen::MatrixXcd  principal_number_tfm;
             get_preNAOs(weightMatrix, principal_number_tfm, weightMatrix_preNAOs);
-            ifroot std::cout << "we have pre-NAOs\n";
+            ifroot{
+                ifroot std::cout << "we have pre-NAOs\n";
+                for(int at=0; at<NumAtom; at++) {
+                    for(int h1=accumulated_Num_SpinOrbital[at]; h1<accumulated_Num_SpinOrbital[at+1]; h1++) {
+                        if(isOrbitalHartrDFT[h1]) std::cout << at+1<< " " << h1-accumulated_Num_SpinOrbital[at]+1 <<" " <<  weightMatrix_preNAOs(h1,h1) <<"\n";
+                    }
+                }
+            }
 
             for(int k = 0;  k < knum; k++) {
                 naturalAtomicOrbitals_population_weighted_symmetric_orthogonalization_r(
