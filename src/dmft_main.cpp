@@ -941,6 +941,20 @@ bool dmft_scf_check( Eigen::MatrixXcd NumMatrixLatt, Eigen::MatrixXcd NumMatrixI
                 sum+= real(NumMatrixLatt(at*N_peratom_HartrOrbit+n,at*N_peratom_HartrOrbit+n));
             }
             std::cout << std::fixed << std::setprecision(4)<< std::fixed   << ";  (total)  = "<<  sum <<"\n" ;
+
+            Eigen::SelfAdjointEigenSolver<Eigen::MatrixXcd> ces(N_peratom_HartrOrbit);
+            Eigen::MatrixXcd NumMat_atom1(N_peratom_HartrOrbit, N_peratom_HartrOrbit);
+            for(int n=0; n<N_peratom_HartrOrbit; n+=1) {
+                for(int m=0; m<N_peratom_HartrOrbit; m+=1) {
+                    NumMat_atom1(n,m) = NumMatrix(at*N_peratom_HartrOrbit+n, at*N_peratom_HartrOrbit+m);
+                }
+            }
+            ces.compute(NumMat_atom1);
+            std::cout << "Num ele (diagon, lattice) atom"<<at<<" = ";
+            for(int n=0; n<N_peratom_HartrOrbit; n+=1) {
+                std::cout <<std::fixed << std::setprecision(4)<< std::fixed   <<  ( ces.eigenvalues()[n]  ) <<" " ;
+            }
+            std::cout <<"\n";
         }
 
         // Write results

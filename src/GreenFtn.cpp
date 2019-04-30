@@ -199,7 +199,8 @@ void GreenFtn_w(  int NumCluster, int NumHartrOrbit_per_cluster, std::vector<Eig
         staticHamiltonian_Model[k] = H_k_inModelSpace[k];
         for(int i0=0; i0<NBAND[k]; i0++) {
             for(int m0=0; m0<NBAND[k]; m0++) {
-                if(isOrbitalHartr[i0] and isOrbitalHartr[m0] and isSameAtom(i0,m0) ) {
+//                if(isOrbitalHartr[i0] and isOrbitalHartr[m0] and isSameAtom(i0,m0) ) {}
+                if(isOrbitalHartr[i0] and isOrbitalHartr[m0]  ) {
                     staticHamiltonian_Model[k](i0,m0)  +=  Swmoments[0](i0,m0);
                 }
             }
@@ -248,7 +249,8 @@ void GreenFtn_w(  int NumCluster, int NumHartrOrbit_per_cluster, std::vector<Eig
             /*Gkw for given submat;*/
             for(int i0=0; i0<NBAND[k]; i0++) {
                 for(int m0=0; m0<NBAND[k]; m0++) {
-                    if(isOrbitalHartr[i0] and isOrbitalHartr[m0] and isSameAtom(i0,m0) ) {
+//                    if(isOrbitalHartr[i0] and isOrbitalHartr[m0] and isSameAtom(i0,m0) ) {}
+                    if(isOrbitalHartr[i0] and isOrbitalHartr[m0]  ) {
                         Gkw(i0,m0)  -= SWLOCAL(KS2Hartr[i0],KS2Hartr[m0]) ;
                     }
                 }//msub
@@ -430,7 +432,8 @@ void retarded_GreenFtn2( Eigen::MatrixXcd &retGkw_full,    Eigen::MatrixXcd & re
     retG0kw = -H_k_inModelSpace[k];
     for (int i0=0; i0<NBAND[k]; i0++) {
         for (int m0=0; m0<NBAND[k]; m0++) {
-            if(isOrbitalHartr[i0] and isOrbitalHartr[m0] and isSameAtom(i0,m0) ) {
+//            if(isOrbitalHartr[i0] and isOrbitalHartr[m0] and isSameAtom(i0,m0) ) {}
+            if(isOrbitalHartr[i0] and isOrbitalHartr[m0] ) {
                 retGkw(i0,m0) -= SE.getValue( n, (KS2Hartr[i0]), (KS2Hartr[m0]) );
             }
         }//m
