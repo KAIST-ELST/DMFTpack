@@ -26,7 +26,7 @@ void get_preNAOs(Eigen::MatrixXcd weightMatrix,
                     std::cout << "WARNING: Check rot_sym " << nl <<"," << nll << "\n";
                     exit(1);
                 }
-                cmplx av_occ =         (weightMatrix.block( subshell(nl), subshell(nll)  , size_nl  , size_nll ) ).trace() / size_nl;
+                cmplx av_occ =         (weightMatrix.block( subshell(nl), subshell(nll), size_nl, size_nll ) ).trace() / size_nl;
                 for(int i=0;  i<size_nl;  i++) {
                     weightMatrix_preNAOs(subshell(nl)+i, subshell(nll)+i)  = av_occ;
                 }
@@ -45,7 +45,7 @@ void get_preNAOs(Eigen::MatrixXcd weightMatrix,
             int size_nl  =  subshell(nl+1) - subshell(nl);
             int size_nll =  subshell(nll+1) - subshell(nll);
             if(rot_sym(nl) == rot_sym(nll)) {
-                densityMat_Al_block(nl, nll)  =  (weightMatrix_preNAOs.block( subshell(nl), subshell(nll)  , size_nl  , size_nll ) ).trace();
+                densityMat_Al_block(nl, nll)  =  (weightMatrix_preNAOs.block( subshell(nl), subshell(nll), size_nl, size_nll ) ).trace();
             }
         }
     }
@@ -80,7 +80,7 @@ void get_preNAOs(Eigen::MatrixXcd weightMatrix,
 void get_NAO_transfrom( Eigen::MatrixXcd & Sk, Eigen::MatrixXcd &  KS_evec_k,
                         Eigen::MatrixXcd weightMatrix_preNAOs, Eigen::MatrixXcd & transformMatrix,
                         int kpoint,std::vector<int> & accumulated_Num_SpinOrbital,
-                        Eigen::MatrixXcd principal_number_tfm ,  bool WSW   ) {
+                        Eigen::MatrixXcd principal_number_tfm,  bool WSW   ) {
 
 //preNAO
     Eigen::MatrixXcd KS_evec_preNAOs = Sk * KS_evec_k;
@@ -127,7 +127,7 @@ void get_NAO_transfrom( Eigen::MatrixXcd & Sk, Eigen::MatrixXcd &  KS_evec_k,
                 for(int nll=0; nll<num_subshell; nll++) {
                     for(int j = subshell(nll); j<subshell(nll+1); j++) {
 
-                        S_sub[Rydberg_set[nl]][Rydberg_set[nll]](ii[Rydberg_set[nl]] , jj[Rydberg_set[nll]])
+                        S_sub[Rydberg_set[nl]][Rydberg_set[nll]](ii[Rydberg_set[nl]], jj[Rydberg_set[nll]])
                             = Sk_preNAOs(i,j);
 
                         jj[Rydberg_set[nll]] ++;
@@ -148,7 +148,7 @@ void get_NAO_transfrom( Eigen::MatrixXcd & Sk, Eigen::MatrixXcd &  KS_evec_k,
                     for(int nll=0; nll<num_subshell; nll++) {
                         if( Rydberg_set[nll]==1) {
                             for(int j = subshell(nll); j<subshell(nll+1); j++) {
-                                Os( i , j )  = T_sub(iii, jjj);
+                                Os( i, j )  = T_sub(iii, jjj);
                                 jjj++;
                             }//for, j
                         }
@@ -169,7 +169,7 @@ void get_NAO_transfrom( Eigen::MatrixXcd & Sk, Eigen::MatrixXcd &  KS_evec_k,
                 if( Rydberg_set[nl]==1 and Rydberg_set[nll]==0) {
                     for(int i = subshell(nl); i<subshell(nl+1); i++) {
                         for(int j = subshell(nll); j<subshell(nll+1); j++) {
-                            if(check_Os < std::abs(Sk_preNAOs( i , j )))  check_Os = std::abs(Sk_preNAOs(i,j)) ;
+                            if(check_Os < std::abs(Sk_preNAOs( i, j )))  check_Os = std::abs(Sk_preNAOs(i,j)) ;
                         }//for, j
                     }
                 }
@@ -354,48 +354,48 @@ void get_NAO_transfrom( Eigen::MatrixXcd & Sk, Eigen::MatrixXcd &  KS_evec_k,
     weightMatrix_preNAOs =    ( Ow.adjoint() * weightMatrix_preNAOs * Ow  ).eval();
 
 
+    /*
     if(WSW==true) {
-//N_Restoration
-        /*
-               Eigen::MatrixXcd densityMat_Al_block;
-               densityMat_Al_block.setZero(num_subshell, num_subshell);
-               principal_number_tfm_rediag.setZero(weightMatrix.rows(), weightMatrix.cols());
+    //N_Restoration
+           Eigen::MatrixXcd densityMat_Al_block;
+           densityMat_Al_block.setZero(num_subshell, num_subshell);
+           principal_number_tfm_rediag.setZero(weightMatrix.rows(), weightMatrix.cols());
 
 
-               for(int nl=0; nl<num_subshell; nl++) {
-                   for(int nll=0; nll<num_subshell; nll++) {
-                       int size_nl  =  subshell(nl+1)  - subshell(nl) ;
-                       int size_nll =  subshell(nll+1) - subshell(nll);
-                       if(rot_sym(nl) == rot_sym(nll)) {
-                           densityMat_Al_block(nl, nll)  =
-                               (weightMatrix_preNAOs.block( subshell(nl), subshell(nll)  , size_nl  , size_nll ) ).trace();
-                       }
+           for(int nl=0; nl<num_subshell; nl++) {
+               for(int nll=0; nll<num_subshell; nll++) {
+                   int size_nl  =  subshell(nl+1)  - subshell(nl) ;
+                   int size_nll =  subshell(nll+1) - subshell(nll);
+                   if(rot_sym(nl) == rot_sym(nll)) {
+                       densityMat_Al_block(nl, nll)  =
+                           (weightMatrix_preNAOs.block( subshell(nl), subshell(nll)  , size_nl  , size_nll ) ).trace();
                    }
                }
-               Eigen::SelfAdjointEigenSolver<Eigen::MatrixXcd> ces ( num_subshell );
-               ces.compute(densityMat_Al_block);
-               Eigen::VectorXd eval       =ces.eigenvalues() ;
-               Eigen::MatrixXcd evec      =ces.eigenvectors();
+           }
+           Eigen::SelfAdjointEigenSolver<Eigen::MatrixXcd> ces ( num_subshell );
+           ces.compute(densityMat_Al_block);
+           Eigen::VectorXd eval       =ces.eigenvalues() ;
+           Eigen::MatrixXcd evec      =ces.eigenvectors();
 
 
-               sort_eigen_vectors(  evec,  eval,num_subshell) ;
+           sort_eigen_vectors(  evec,  eval,num_subshell) ;
 
-               for(int nl=0; nl<num_subshell; nl++) {
-                   for(int nll=0; nll<num_subshell; nll++) {
+           for(int nl=0; nl<num_subshell; nl++) {
+               for(int nll=0; nll<num_subshell; nll++) {
 
-                       int size_nl  =  subshell(nl+1) - subshell(nl);
-                       if(rot_sym(nl) == rot_sym(nll)) {
-                           for(int i = 0; i<size_nl; i++) {
-                               principal_number_tfm_rediag( subshell(nl)+i, subshell(nll)+i   ) = evec(nl,nll);
-                           }//for,i
-                       }//if
-                   }
+                   int size_nl  =  subshell(nl+1) - subshell(nl);
+                   if(rot_sym(nl) == rot_sym(nll)) {
+                       for(int i = 0; i<size_nl; i++) {
+                           principal_number_tfm_rediag( subshell(nl)+i, subshell(nll)+i   ) = evec(nl,nll);
+                       }//for,i
+                   }//if
                }
+           }
 
-               Sk_preNAOs =              (principal_number_tfm_rediag.adjoint() * Sk_preNAOs           * principal_number_tfm_rediag).eval();
-               weightMatrix_preNAOs =    (principal_number_tfm_rediag.adjoint() * weightMatrix_preNAOs * principal_number_tfm_rediag).eval();
-        // */
+           Sk_preNAOs =              (principal_number_tfm_rediag.adjoint() * Sk_preNAOs           * principal_number_tfm_rediag).eval();
+           weightMatrix_preNAOs =    (principal_number_tfm_rediag.adjoint() * weightMatrix_preNAOs * principal_number_tfm_rediag).eval();
     }
+    // */
     transformMatrix =     principal_number_tfm * Os * Ow * principal_number_tfm_rediag ;  //<old|new>
 }
 
@@ -411,7 +411,7 @@ Eigen::MatrixXcd getweight_dual( std::vector<Eigen::MatrixXcd> S_overlap, std::v
         Eigen::MatrixXcd dual_DM_dual =  dual_DM_direct[k] * S_overlap[k].inverse();
         weightMatrix_locl += dual_DM_dual ;
     }
-    MPI_Allreduce(weightMatrix_locl.data() , weightMatrix.data(), weightMatrix.size(), MPI_DOUBLE_COMPLEX, MPI_SUM,  MPI_COMM_WORLD);
+    MPI_Allreduce(weightMatrix_locl.data(), weightMatrix.data(), weightMatrix.size(), MPI_DOUBLE_COMPLEX, MPI_SUM,  MPI_COMM_WORLD);
     weightMatrix /= knum_mpiGlobal;
     return weightMatrix;
 }//weight_dual
@@ -428,7 +428,7 @@ Eigen::MatrixXcd getweight_hyb( std::vector<Eigen::MatrixXcd> S_overlap, std::ve
         dual_DM_direct_hyb  = (dual_DM_direct_hyb + dual_DM_direct_hyb.adjoint()).eval();
         weightMatrix_locl += dual_DM_direct_hyb;
     }
-    MPI_Allreduce(weightMatrix_locl.data() , weightMatrix.data(), weightMatrix.size(), MPI_DOUBLE_COMPLEX, MPI_SUM,  MPI_COMM_WORLD);
+    MPI_Allreduce(weightMatrix_locl.data(), weightMatrix.data(), weightMatrix.size(), MPI_DOUBLE_COMPLEX, MPI_SUM,  MPI_COMM_WORLD);
     weightMatrix /= knum_mpiGlobal;
     return weightMatrix;
 }//weight_dual
@@ -445,7 +445,7 @@ Eigen::MatrixXcd getweight_direct(std::vector<Eigen::MatrixXcd> S_overlap,  std:
         Eigen::MatrixXcd temp = (S_overlap[k] * dual_DM_direct[k]);
         weightMatrix_locl += temp;
     }
-    MPI_Allreduce(weightMatrix_locl.data() , weightMatrix.data(), weightMatrix.size(), MPI_DOUBLE_COMPLEX, MPI_SUM,  MPI_COMM_WORLD);
+    MPI_Allreduce(weightMatrix_locl.data(), weightMatrix.data(), weightMatrix.size(), MPI_DOUBLE_COMPLEX, MPI_SUM,  MPI_COMM_WORLD);
     weightMatrix /= knum_mpiGlobal;
     return weightMatrix;
 }//weight_direct
@@ -526,7 +526,7 @@ void lowdin_symmetric_orthogonalization( Eigen::MatrixXcd & Hk, Eigen::MatrixXcd
 void naturalAtomicOrbitals_population_weighted_symmetric_orthogonalization_r(
     Eigen::MatrixXcd & Hk, Eigen::MatrixXcd & Sk, int kpoint,  std::vector<int> & accumulated_Num_SpinOrbital,
     Eigen::MatrixXcd & evec,  Eigen::VectorXd & eval,
-    Eigen::MatrixXcd weightMatrix_preNAOs ,
+    Eigen::MatrixXcd weightMatrix_preNAOs,
     Eigen::MatrixXcd & transformMatrix,
     Eigen::MatrixXcd  principal_number_tfm) {
 
@@ -535,7 +535,7 @@ void naturalAtomicOrbitals_population_weighted_symmetric_orthogonalization_r(
 //    Eigen::MatrixXcd  Sk_preNAOs = preNAOs.adjoint() * (Sk) *preNAOs;    // <i|j> = <i|a> S^-1 <b|c> S^-1 <d|j> = <i|a> S^-1 <d|j>, plz check
     Eigen::MatrixXcd  KS_evec_k  =  evec;
     get_NAO_transfrom(Sk, KS_evec_k, weightMatrix_preNAOs, transformMatrix, kpoint, accumulated_Num_SpinOrbital,
-                      principal_number_tfm, true);   //  \ket{j_ortho} = \ket{preNAOs} T_{ij}
+                      principal_number_tfm, true);   //  \ket{j_ortho} = \ket{DFT_AO} T_{ij}
 
     Hk  = (transformMatrix.adjoint() * Hk * transformMatrix).eval();
 

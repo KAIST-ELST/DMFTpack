@@ -112,26 +112,17 @@ void read_int_array(const std::string &Inputfile, const std::string &keyword, st
             read=1;
         }
     }
-    for (int i =0; i<length; i++) {
-        if(mpi_rank==0) std::cout<< var[i] <<" ";
-    }
-//    if(read==0 and (dft!=-2)) {
-//        for (int i =0; i<length; i++) {
-//            var[i] = dft;
-//        }
-//    }
     if(read==0 and defaultBool == false) {
         std::cout <<"InputFileError\n********************\n"<< keyword << "\n********************\n";
         exit(1);
-    }
-//    else if(read ==0 and dft!=-2){
-//            for (int i =0; i<length; i++) {
-//                var[i] = dft;
-//            }
-//    }
-    else if(read==0 and defaultBool == true) {
+    } else if(read==0 and defaultBool == true) {
         ifroot std::cout <<"We use default value for " << keyword <<"\n";
     }
+
+    for (int i =0; i<length; i++) {
+        if(mpi_rank==0) std::cout<< var[i] <<" ";
+    }
+    if(mpi_rank==0) std::cout <<"\n";
 }
 
 

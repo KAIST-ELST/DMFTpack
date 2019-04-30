@@ -2,8 +2,8 @@
 #include <Eigen/QR>
 #include <Eigen/Eigenvalues>
 void mixing_checker(double resid, double resid_prev, double & mixing,  double mixing_max,  double mixing_min) {
-    if       ( resid_prev > resid ) mixing = std::min (1.07    *mixing ,  mixing_max);
-    else if  ( resid_prev < resid ) mixing = std::max (1./1.09 *mixing ,  mixing_min);
+    if       ( resid_prev > resid ) mixing = std::min (1.07    *mixing,  mixing_max);
+    else if  ( resid_prev < resid ) mixing = std::max (1./1.09 *mixing,  mixing_min);
 }
 
 
@@ -127,7 +127,8 @@ void pulayMixing::mixing(Eigen::MatrixXcd  * inputDensity_n, Eigen::MatrixXcd * 
             }
         }
         else {
-            if( SCGFloop>mixing_history + start_mixing and SCGFloop%mixingStep==0 and   !(lin_dep_check)   ) std::cout << "Warning: PulayMixing,linear dependence arise\n";
+            if( SCGFloop>mixing_history + start_mixing and SCGFloop%mixingStep==0 and   !(lin_dep_check)   )
+                std::cout << "Warning: PulayMixing,linear dependence arise\n";
             for(int i=0; i<dim_i; i++) {
                 optimalDensity[i] = inputDensity_n[i];
                 optimalres[i] =  res_history[0][i];

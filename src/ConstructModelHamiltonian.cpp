@@ -73,9 +73,13 @@ int Construct_Hk_Sk(
         for(int indx=0; indx<H_RMatrix.size(); indx++) {
             H_k_inModelSpace[k](H_Rindex(indx,3),H_Rindex(indx,4))
             += H_RMatrix(indx)* exp ( -I*( (kmesh[k][0]*ax*H_Rindex(indx,0))+(kmesh[k][1]*ay*H_Rindex(indx,1))+(kmesh[k][2]*az*H_Rindex(indx,2))) )  ;
+
+//            std::cout << H_Rindex(indx,0) <<" " << H_Rindex(indx, 1)  <<" " << H_Rindex(indx, 2)<<"\n";
+//            std::cout << H_Rindex(indx,3) <<" " << H_Rindex(indx, 4) <<"\n";
+//            std::cout << H_RMatrix(indx) <<"\n";
         }
 //        std::cout <<k<<"bb\n";
-
+//std::cout << H_k_inModelSpace[k] <<"\n";
         /*S(k),   H*S |\psi> = E |\psi>      */
         if (overlap_exist==1) {
             S_overlap[k].setZero(NumOrbit,NumOrbit);
@@ -160,20 +164,26 @@ void  ConstructModelHamiltonian
     else {
         for(int k = 0;  k < knum; k++) {
             dual_DM_direct[k].setZero(NumOrbit, NumOrbit);
-            Eigen::GeneralizedSelfAdjointEigenSolver<Eigen::MatrixXcd> ces1(NumOrbit);
-            ces1.compute( H_k_inModelSpace[k], S_overlap[k] );       //  HS \psi = S  \psi E,  Here eigenvectors(i,n) = <i|n> in dual space set.
+
+            Eigen::SelfAdjointEigenSolver<Eigen::MatrixXcd> ces1(S_overlap[k]);
+            Eigen::MatrixXcd S_invsq =  (  ces1.operatorInverseSqrt() );
+            Eigen::MatrixXcd S_sq = S_invsq.inverse();
+            Eigen::MatrixXcd Hk = S_invsq * H_k_inModelSpace[k] * S_invsq;
+
+            Eigen::SelfAdjointEigenSolver<Eigen::MatrixXcd> ces(Hk);
+            ces.compute(Hk);
+
+            for (int n=0; n<NumOrbit; n++) {
+                dual_DM_direct[k](n,n) =  1./(1+std::exp(beta*(ces.eigenvalues()(n)-muDFT))) ;
+            }
+
+            dual_DM_direct[k] = (ces.eigenvectors() * dual_DM_direct[k] * (ces.eigenvectors()).adjoint()).eval();
+            dual_DM_direct[k] =  (S_invsq * dual_DM_direct[k] * S_sq).eval();
 
 
-            for (int i=0; i<NumOrbit; i++) {
-                for (int j=0; j<NumOrbit; j++) {
-                    for (int n=0; n<NumOrbit; n++) {
-                        dual_DM_direct[k](i,j) +=   ces1.eigenvectors()(i,n) * 1./(1+std::exp(beta*(ces1.eigenvalues()(n)-muDFT)))  * std::conj( ces1.eigenvectors()(j,n) );
-                    }
-                }
-            }//n
-            dual_DM_direct[k] = (dual_DM_direct[k] * S_overlap[k]).eval();
         }//k
     }
+    ifroot std::cout <<"Now, we have occupation matrix\n";
     //    */
 
 
@@ -192,7 +202,7 @@ void  ConstructModelHamiltonian
             Eigen::MatrixXcd temp = 0.5*(dual_DM_direct[k]);
             occ_temp +=  ((temp + temp.adjoint()))/knum_mpiGlobal;
         }//k
-        MPI_Allreduce(occ_temp.data() , occ.data(), occ.size(), MPI_DOUBLE_COMPLEX, MPI_SUM,  MPI_COMM_WORLD);
+        MPI_Allreduce(occ_temp.data(), occ.data(), occ.size(), MPI_DOUBLE_COMPLEX, MPI_SUM,  MPI_COMM_WORLD);
         if(mpi_rank==0 )   std::cout << "<TB> Mulliken populations:\n";
         ifroot{
             double sum =0;
@@ -214,7 +224,7 @@ void  ConstructModelHamiltonian
                 for (int i=0; i<NumOrbit; i+=2) {
                     for (int j=0; j<NumOrbit; j+=2) {
                         cmplx temp = ( dual_DM_direct[k](i,j) + dual_DM_direct[k](i+1,j+1) )/2.0;
-                        dual_DM_direct[k](i ,j   ) = temp;
+                        dual_DM_direct[k](i,j   ) = temp;
                         dual_DM_direct[k](i+1,j+1) = temp;
                         dual_DM_direct[k](i+1,j   ) = 0.0;
                         dual_DM_direct[k](i,j+1   ) = 0.0;
@@ -266,7 +276,14 @@ void  ConstructModelHamiltonian
             Eigen::MatrixXcd weightMatrix_preNAOs;
             Eigen::MatrixXcd  principal_number_tfm;
             get_preNAOs(weightMatrix, principal_number_tfm, weightMatrix_preNAOs);
-            ifroot std::cout << "we have pre-NAOs\n";
+            ifroot{
+                ifroot std::cout << "we have pre-NAOs\n";
+                for(int at=0; at<NumAtom; at++) {
+                    for(int h1=accumulated_Num_SpinOrbital[at]; h1<accumulated_Num_SpinOrbital[at+1]; h1++) {
+                        if(isOrbitalHartrDFT[h1]) std::cout << at+1<< " " << h1-accumulated_Num_SpinOrbital[at]+1 <<" " <<  weightMatrix_preNAOs(h1,h1) <<"\n";
+                    }
+                }
+            }
 
             for(int k = 0;  k < knum; k++) {
                 naturalAtomicOrbitals_population_weighted_symmetric_orthogonalization_r(
@@ -286,7 +303,6 @@ void  ConstructModelHamiltonian
             }
         }
 //        SpreadFtn( knum,  S_overlap, transformMatrix_k, accumulated_Num_SpinOrbital);
-
     }//overlap
 //    else {
 //        for(int k = 0;  k < knum; k++) {
@@ -300,7 +316,7 @@ void  ConstructModelHamiltonian
 //        }
 //    }
     /*info:spread function*/
-    std::cout << "Hk was constructed..\n"  ;
+    ifroot    std::cout << "Hk was constructed..\n"  ;
 
 
 
@@ -332,7 +348,7 @@ void  ConstructModelHamiltonian
     MPI_Barrier(MPI_COMM_WORLD);
     MPI_Allreduce(&tempd2, &tempd2GL, 1, MPI_DOUBLE, MPI_SUM,  MPI_COMM_WORLD);
     ifroot std::cout << "d-orbital normalization       : "  << tempd2GL/(knum_mpiGlobal*N_peratom_HartrOrbit)<<"\n";
-    MPI_Allreduce(HartreWeightInWindows_local.data() , HartreWeightInWindows_global.data(), HartreWeightInWindows_global.size(), MPI_DOUBLE, MPI_SUM,  MPI_COMM_WORLD);
+    MPI_Allreduce(HartreWeightInWindows_local.data(), HartreWeightInWindows_global.data(), HartreWeightInWindows_global.size(), MPI_DOUBLE, MPI_SUM,  MPI_COMM_WORLD);
     for (int m=0; m<N_peratom_HartrOrbit; m++) {
         ifroot std::cout << "d-orbital in rest energy space: "  << HartreWeightInWindows_global[m] /(knum_mpiGlobal) <<"\n";
     }

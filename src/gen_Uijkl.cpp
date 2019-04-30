@@ -22,20 +22,21 @@ void gen_Uijkl(int n_spinorb, double U, double Uprime, double JH, std::vector<cm
                     int lorb =  l/2;
                     int lspin = l%2;
                     double coeff=0;
-                    if(i!=j and k!=l) { //c^+_i c^+_j  = c_k c_l = 0.
-                        //density-density terms
-                        if(i==k and j==l) {
-                            if (iorb==jorb and ispin!=jspin) coeff = U;             //intra-orbital
-                            if (iorb!=jorb and ispin!=jspin) coeff = Uprime;        //inter-orbital
-                            if (iorb!=jorb and ispin==jspin) coeff = Uprime - JH;   //inter-orbital
-                        }
-                        //spin-flip
-                        else if (iorb  == lorb  and jorb  == korb  and iorb  !=  jorb and
-                                 ispin == kspin and jspin == lspin and ispin !=  jspin    )   coeff = JH;
-                        //pair-hopping
-                        else if (iorb  == jorb  and korb  == lorb  and iorb  !=  lorb and
-                                 ispin == kspin and jspin == lspin and ispin !=  jspin    )   coeff = JH;
+//                    if(i!=j and k!=l) { //c^+_i c^+_j  = c_k c_l = 0.
+                    //density-density terms
+                    if(i==k and j==l) {
+//                            if (iorb==jorb and ispin!=jspin) coeff = U;             //intra-orbital
+                        if (iorb==jorb) coeff = U;             //intra-orbital
+                        else if (iorb!=jorb) coeff = Uprime;        //inter-orbital
+                        if(ispin == jspin) coeff -= JH;
                     }
+                    //spin-flip
+                    else if (korb  == iorb  and lorb  == jorb  and korb  !=  lorb and
+                             kspin != ispin and lspin != jspin and kspin !=  lspin    )   coeff = JH;
+                    //pair-hopping
+                    else if (korb  == lorb  and korb  != iorb  and iorb  ==  jorb and
+                             kspin != lspin and kspin == ispin and lspin ==  jspin    )   coeff = JH;
+//                   }
                     if(coeff!=0) {
                         Eigen::VectorXi temp(4);
 
@@ -53,15 +54,7 @@ void gen_Uijkl(int n_spinorb, double U, double Uprime, double JH, std::vector<cm
             }
         }
     }
-//        if (estimate_dim==0)
-//        {
-//            Utensor.setZero(index);
-//            Uindex.setZero(index,4);
-//        }
-//        else {
     write_Uijkl(index, Utensor, Uindex, indexC);
-//        }
-//    }
 }
 
 void gen_Uijkl_density_density(int n_spinorb, double U, double Uprime, double JH, std::vector<cmplx > & Utensor, std::vector<Eigen::VectorXi>  & Uindex ) {
@@ -70,30 +63,27 @@ void gen_Uijkl_density_density(int n_spinorb, double U, double Uprime, double JH
     int index=0, indexC=0;
     for(int  n=0;   n<n_spinorb; n++) {
         for(int m=0; m<n_spinorb; m++) {
-            if(n!=m) {
-                Eigen::VectorXi temp(4);
+//            if(n!=m) {
+            Eigen::VectorXi temp(4);
+            double interaction =0 ;
 
-                if(  n/2==m/2 and n%2!=m%2)     Utensor.push_back( U          )  ;              //intra-orbital
-                if(  n/2!=m/2 and n%2==m%2)     Utensor.push_back( Uprime - JH);      //inter-orbital,  F
-                if(  n/2!=m/2 and n%2!=m%2)     Utensor.push_back( Uprime     );           //inter-orbital, AF
-                temp(0) = n;
-                temp(1) = m;
-                temp(2) = n;
-                temp(3) = m;
-                Uindex.push_back(temp);
-                index++;
-                if ( isOrbitalCorrinHart[n] and  isOrbitalCorrinHart[m]  ) indexC++;
-            }
+            if(  n/2==m/2      )        interaction = U;            //intra-orbital
+            else if(  n/2!=m/2 )   interaction = Uprime;           //inter-orbital,  F
+
+            if (n%2 == m%2) interaction -= JH;
+            Utensor.push_back(interaction);
+
+            temp(0) = n;
+            temp(1) = m;
+            temp(2) = n;
+            temp(3) = m;
+            Uindex.push_back(temp);
+            index++;
+            if ( isOrbitalCorrinHart[n] and  isOrbitalCorrinHart[m]  ) indexC++;
+//            }
         }
     }
-//    if( estimate_dim==0 ){
-//    Utensor.setZero(index);
-//    Uindex.setZero(index,4);
-//    }
-//    else {
     write_Uijkl(n_spinorb*n_spinorb, Utensor, Uindex, indexC);
-//    }
-//    }
 }
 
 
@@ -151,4 +141,87 @@ void read_Uijkl( std::vector<cmplx > & Utensor, std::vector<Eigen::VectorXi>  & 
         nH++;
     }
     fclose(Uijk_full);
+}
+
+void rot_Uijkl(
+    std::vector<cmplx > & Utensor, std::vector<Eigen::VectorXi>  & Uindex,
+    std::vector<cmplx > & rotUtensor, std::vector<Eigen::VectorXi>  & rotUindex,
+    Eigen::MatrixXcd & SolverBasis, int n_spinorb
+) {
+
+
+    ifroot std::cout << "original U matrix\n";
+    Eigen::MatrixXcd SolverBasis_adj = SolverBasis.adjoint();
+    int length = (int) Utensor.size();
+    int nH=0;
+    while(nH < length) {
+        ifroot std::cout << Uindex[nH](0) <<" " <<Uindex[nH](1)<<" " <<Uindex[nH](2)<<" " <<Uindex[nH](3) <<" : " << Utensor[nH]<<"\n";
+        nH++;
+    }
+    ifroot std::cout << "\n";
+
+
+    ifroot std::cout << "rot U matrix\n";
+    ifroot std::cout << SolverBasis <<"\n";
+    for(int i=0; i<n_spinorb; i++) {
+        for(int j=0; j<n_spinorb; j++) {
+            for(int k=0; k<n_spinorb; k++) {
+                for(int l=0; l<n_spinorb; l++) {
+                    //                    if(i!=j and k!=l and i/2==k/2 and j/2==l/2) {
+                    Eigen::VectorXi temp(4);
+                    temp(0)=i;
+                    temp(1)=j;
+                    temp(2)=k;
+                    temp(3)=l;
+                    int nH=0;
+                    cmplx  interaction=0;
+                    while(nH < length) {
+                        if(
+                            Uindex[nH](0) >= n_spinorb or
+                            Uindex[nH](1) >= n_spinorb or
+                            Uindex[nH](2) >= n_spinorb or
+                            Uindex[nH](3) >= n_spinorb)
+                        {
+                            std::cout <<  Uindex[nH](0)   << "\n";
+                            std::cout <<  Uindex[nH](1)   << "\n";
+                            std::cout <<  Uindex[nH](2)   << "\n";
+                            std::cout <<  Uindex[nH](3)   << "\n";
+                        }
+//                        if(
+//                            mpi_rank==0
+//                        ) {
+//
+//                            std::cout <<  Uindex[nH](0)   << "  ";
+//                            std::cout <<  Uindex[nH](1)   << "  ";
+//                            std::cout <<  Uindex[nH](2)   << "  ";
+//                            std::cout <<  Uindex[nH](3)   << "\n";
+//                            std::cout << SolverBasis_adj(i, Uindex[nH](0))  <<" "
+//                                      << SolverBasis_adj(j, Uindex[nH](1))  <<" "
+//                                      << SolverBasis(Uindex[nH](2) , k)  <<" "
+//                                      << SolverBasis(Uindex[nH](3) , l)  <<" "
+//                                      <<  Utensor[nH] <<"\n";
+//                            std::cout <<
+//                                      SolverBasis_adj(i, Uindex[nH](0)) * SolverBasis_adj(j, Uindex[nH](1)) *
+//                                      Utensor[nH] *
+//                                      SolverBasis(Uindex[nH](2), k) *  SolverBasis(Uindex[nH](3),l) <<"\n";
+//
+//                        }
+                        interaction +=  SolverBasis_adj(i, Uindex[nH](0)) * SolverBasis_adj(j, Uindex[nH](1)) *
+                                        Utensor[nH] *
+                                        SolverBasis(Uindex[nH](2), k) *  SolverBasis(Uindex[nH](3),l);
+                        nH++;
+                    }
+                    if(std::abs(interaction) > 1e-5) {
+                        ifroot std::cout << i <<" " <<j<<" " <<k<<" " <<l <<" : " << interaction<<"\n";
+
+                        rotUindex.push_back(temp);
+                        rotUtensor.push_back(interaction);
+                    }
+                    //                    }
+                }//l
+            }//k
+        }//j
+    }///i
+    //    write_Uijkl(index, Utensor, Uindex, indexC);
+
 }

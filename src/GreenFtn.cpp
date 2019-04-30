@@ -7,7 +7,7 @@
 #define   history                  2
 #define  highFreq2 2
 #define valenceHAMILTONIAN(n,k)                                                                                                                                           \
-{                                                                                                                                                                               \
+{                                                                                                                                                                         \
 	Eigen::MatrixXcd SWLOCAL;\
 	SWLOCAL.setZero(NumCorrAtom*N_peratom_HartrOrbit, NumCorrAtom*N_peratom_HartrOrbit);\
 	if(n<N_freq*highFreq2){\
@@ -29,11 +29,11 @@
 				}\
 			}\
 		}\
-		for(int at1=0; at1<NumCorrAtom; at1++) {\
-			for(int p=HartrRange[at1][0] ; p <HartrRange[at1][1] ; p++){\
-				for(int q=HartrRange[at1][0] ; q <HartrRange[at1][1] ; q++){\
+		for(int cl1=0; cl1<NumCluster; cl1++) {\
+			for(int p=cl1*NumHartrOrbit_per_cluster ; p < (cl1+1)*NumHartrOrbit_per_cluster ; p++){\
+			for(int q=cl1*NumHartrOrbit_per_cluster ; q < (cl1+1)*NumHartrOrbit_per_cluster ; q++){\
 					model_qp_hamiltonian[HartrIndex[p]*NBAND[k]+HartrIndex[q]] += \
-					SWLOCAL(KS2Hartr[p],KS2Hartr[q]);\
+					SWLOCAL(p,q);\
 				}\
 			}\
 		}\
@@ -44,11 +44,11 @@
 				SWLOCAL(a, b) = moments[0](a,b);\
 			}\
 		}\
-		for(int at1=0; at1<NumCorrAtom; at1++) {\
-			for(int p=HartrRange[at1][0] ; p <HartrRange[at1][1] ; p++){\
-				for(int q=HartrRange[at1][0] ; q <HartrRange[at1][1] ; q++){\
+		for(int cl1=0; cl1<NumCluster; cl1++) {\
+			for(int p=cl1*NumHartrOrbit_per_cluster ; p < (cl1+1)*NumHartrOrbit_per_cluster ; p++){\
+			for(int q=cl1*NumHartrOrbit_per_cluster ; q < (cl1+1)*NumHartrOrbit_per_cluster ; q++){\
 					model_qp_hamiltonian[HartrIndex[p]*NBAND[k]+HartrIndex[q]] += \
-					SWLOCAL(KS2Hartr[p],KS2Hartr[q]);\
+					SWLOCAL(p,q);\
 				}\
 			}\
 		}\
@@ -139,44 +139,43 @@ double GreenFtn_w_adjust_mu( std::vector<Eigen::MatrixXcd> &   H_k_inModelSpace,
 }
 
 
-void GreenFtn_w(  int NumCorrAtom, int N_peratom_HartrOrbit, std::vector<Eigen::MatrixXcd> &  H_k_inModelSpace,
+void GreenFtn_w(  int NumCluster, int NumHartrOrbit_per_cluster, std::vector<Eigen::MatrixXcd> &  H_k_inModelSpace,
                   ImgFreqFtn & SelfE_w, std::vector<Eigen::MatrixXcd>  & Gw, double mu,                  std::vector<Eigen::MatrixXcd> & densityMatDFT
-
                ) {
     ifroot  printf("*GreenFtn calculation\n");
 
 
 
-    //    Gw.resize(NumCorrAtom);
-    //    for(int at=0; at < NumCorrAtom; at++) {
-    //        Gw[at].resize(N_freq);
-    //        for(int n=0; n < N_freq; n++) {
-    //            Gw[at][n].setZero(N_peratom_HartrOrbit,N_peratom_HartrOrbit);
-    //        }
-    //    }
 
-
+    std::vector<Eigen::MatrixXcd > GwHF;
     Gw.resize(N_freq);
+    GwHF.resize(N_freq);
     for(int n=0; n < N_freq; n++) {
-        Gw[n].setZero( NumCorrAtom*N_peratom_HartrOrbit, NumCorrAtom*N_peratom_HartrOrbit);
+        Gw[n].setZero( NumCluster*NumHartrOrbit_per_cluster, NumCluster*NumHartrOrbit_per_cluster);
+        GwHF[n].setZero( NumCluster*NumHartrOrbit_per_cluster, NumCluster*NumHartrOrbit_per_cluster);
     }
+    int COL = NumHartrOrbit_per_cluster * NumHartrOrbit_per_cluster;
 
-    int COL=N_peratom_HartrOrbit*N_peratom_HartrOrbit;
+    Eigen::MatrixXcd Gw_loc_mpiLoc (NumCluster, N_freq*COL);
+    Eigen::MatrixXcd Gw_loc        (NumCluster, N_freq*COL);
+    Gw_loc_mpiLoc.setZero(NumCluster, N_freq*COL);
+    Gw_loc.setZero(NumCluster, N_freq*COL);
 
-    Eigen::MatrixXcd Gw_loc_mpiLoc (NumCorrAtom, N_freq*COL);
-    Eigen::MatrixXcd Gw_loc        (NumCorrAtom, N_freq*COL);
-    Gw_loc_mpiLoc.setZero(NumCorrAtom, N_freq*COL);
-    Gw_loc.setZero(NumCorrAtom, N_freq*COL);
+
+    Eigen::MatrixXcd GwHF_loc_mpiLoc (NumCluster, N_freq*COL);
+    Eigen::MatrixXcd GwHF_loc        (NumCluster, N_freq*COL);
+    GwHF_loc_mpiLoc.setZero(NumCluster, N_freq*COL);
+    GwHF_loc.setZero(NumCluster, N_freq*COL);
 
     for(int k=0; k<knum; k++) {
         densityMatDFT[k].setZero(NBAND[k],NBAND[k]);
     }
 
-    Eigen::MatrixXcd NumMat_loc (NumCorrAtom*N_peratom_HartrOrbit, NumCorrAtom*N_peratom_HartrOrbit);
-    NumMat_loc.setZero(NumCorrAtom*N_peratom_HartrOrbit, NumCorrAtom*N_peratom_HartrOrbit);
-    Eigen::MatrixXcd NumMat_loc0 (NumCorrAtom*N_peratom_HartrOrbit, NumCorrAtom*N_peratom_HartrOrbit);
-    NumMat_loc0.setZero(NumCorrAtom*N_peratom_HartrOrbit, NumCorrAtom*N_peratom_HartrOrbit);
-    NumMatrix.setZero(NumCorrAtom*N_peratom_HartrOrbit, NumCorrAtom*N_peratom_HartrOrbit);
+    Eigen::MatrixXcd NumMat_loc (NumCluster*NumHartrOrbit_per_cluster, NumCluster*NumHartrOrbit_per_cluster);
+    Eigen::MatrixXcd NumMat_loc0 (NumCluster*NumHartrOrbit_per_cluster, NumCluster*NumHartrOrbit_per_cluster);
+    NumMat_loc.setZero(NumCluster*NumHartrOrbit_per_cluster, NumCluster*NumHartrOrbit_per_cluster);
+    NumMat_loc0.setZero(NumCluster*NumHartrOrbit_per_cluster, NumCluster*NumHartrOrbit_per_cluster);
+    NumMatrix.setZero(NumCluster*NumHartrOrbit_per_cluster, NumCluster*NumHartrOrbit_per_cluster);
 
     /* Construct Gw_loc : main loop*/
     time_t timeStart, timeEnd;
@@ -200,8 +199,8 @@ void GreenFtn_w(  int NumCorrAtom, int N_peratom_HartrOrbit, std::vector<Eigen::
         staticHamiltonian_Model[k] = H_k_inModelSpace[k];
         for(int i0=0; i0<NBAND[k]; i0++) {
             for(int m0=0; m0<NBAND[k]; m0++) {
-                if(isOrbitalHartr[i0] and isOrbitalHartr[m0] and isSameAtom(i0,m0) ) {
-//                    staticHamiltonian_Model[k](i0,m0)  +=  SelfE_w.getValue(N_freq,i0,m0);
+//                if(isOrbitalHartr[i0] and isOrbitalHartr[m0] and isSameAtom(i0,m0) ) {}
+                if(isOrbitalHartr[i0] and isOrbitalHartr[m0]  ) {
                     staticHamiltonian_Model[k](i0,m0)  +=  Swmoments[0](i0,m0);
                 }
             }
@@ -220,17 +219,18 @@ void GreenFtn_w(  int NumCorrAtom, int N_peratom_HartrOrbit, std::vector<Eigen::
         cmplx   iw=I*pi*(2.*n+1.)/beta;
         //Sw for given freq. n
         Eigen::MatrixXcd SWLOCAL;
-        SWLOCAL.setZero(N_peratom_HartrOrbit*NumCorrAtom, N_peratom_HartrOrbit*NumCorrAtom);
+        SWLOCAL.setZero(NumHartrOrbit_per_cluster*NumCluster,
+                        NumHartrOrbit_per_cluster*NumCluster);
         if(n<N_freq) {
-            for(int a=0; a<NumCorrAtom*N_peratom_HartrOrbit; a++) {
-                for(int b=0; b<NumCorrAtom*N_peratom_HartrOrbit; b++) {
-                    SWLOCAL(a , b) = SelfE_w.getValue(n,a,b);
+            for(int a=0; a<NumCluster*NumHartrOrbit_per_cluster; a++) {
+                for(int b=0; b<NumCluster*NumHartrOrbit_per_cluster; b++) {
+                    SWLOCAL(a, b) = SelfE_w.getValue(n,a,b);
                 }
             }
         }
         else {
-            for(int a=0; a<NumCorrAtom*N_peratom_HartrOrbit; a++) {
-                for(int b=0; b<NumCorrAtom*N_peratom_HartrOrbit; b++) {
+            for(int a=0; a<NumCluster*NumHartrOrbit_per_cluster; a++) {
+                for(int b=0; b<NumCluster*NumHartrOrbit_per_cluster; b++) {
                     SWLOCAL(a,b)   = Swmoments[0](a,b);
                     SWLOCAL(a,b)  += Swmoments[1](a,b)/(iw);
                     SWLOCAL(a,b)  += Swmoments[2](a,b)/std::pow(iw,2);
@@ -249,9 +249,8 @@ void GreenFtn_w(  int NumCorrAtom, int N_peratom_HartrOrbit, std::vector<Eigen::
             /*Gkw for given submat;*/
             for(int i0=0; i0<NBAND[k]; i0++) {
                 for(int m0=0; m0<NBAND[k]; m0++) {
-                    //                    if(isOrbitalCorr[i0] and isOrbitalCorr[m0] and isSameAtom(i0,m0) ) {}
-                    if(isOrbitalHartr[i0] and isOrbitalHartr[m0] and isSameAtom(i0,m0) ) {
-                        //                        assert( 0<= LongRangeOrder[i0]   < N_peratom_HartrOrbit  and  0<= LongRangeOrder[m0]   < N_peratom_HartrOrbit);
+//                    if(isOrbitalHartr[i0] and isOrbitalHartr[m0] and isSameAtom(i0,m0) ) {}
+                    if(isOrbitalHartr[i0] and isOrbitalHartr[m0]  ) {
                         Gkw(i0,m0)  -= SWLOCAL(KS2Hartr[i0],KS2Hartr[m0]) ;
                     }
                 }//msub
@@ -262,22 +261,27 @@ void GreenFtn_w(  int NumCorrAtom, int N_peratom_HartrOrbit, std::vector<Eigen::
             Gkw = Gkw.inverse();
             Gkw0 =  staticHamiltonian_Model[k]     * Gkw0 * staticHamiltonian_Model[k].adjoint();
             /*Gw_loc in the correlated space*/
-            for(int at=0 ; at < NumCorrAtom; at++) {
+            for(int cl=0 ; cl < NumCluster; cl++) {
                 if(n<N_freq) {
-                    //                    for(int i0=0; i0<N_peratom_HartrOrbit; i0+=1) {}
-                    //                        for( int m0=0; m0<N_peratom_HartrOrbit; m0+=1) {}
-                    for(int p=HartrRange[at][0] ; p <HartrRange[at][1] ; p++) {
-                        for(int q=HartrRange[at][0] ; q <HartrRange[at][1] ; q++) {
-                            int p0 =  KS2Hartr[p]-at*N_peratom_HartrOrbit;
-                            int q0 =  KS2Hartr[q]-at*N_peratom_HartrOrbit;
-                            Gw_loc_mpiLoc(at, n*COL+(p0*N_peratom_HartrOrbit+q0)) +=Gkw(HartrIndex[p],HartrIndex[q]);
+//                                        for(int i0=0; i0<N_peratom_HartrOrbit; i0+=1) {}
+//                                            for( int m0=0; m0<N_peratom_HartrOrbit; m0+=1) {}
+//                    for(int p=HartrRange[at][0] ; p <HartrRange[at][1] ; p++) {}
+//                        for(int q=HartrRange[at][0] ; q <HartrRange[at][1] ; q++) {}
+                    for(int i0=0; i0<NumHartrOrbit_per_cluster; i0+=1) {
+                        for( int m0=0; m0<NumHartrOrbit_per_cluster; m0+=1) {
+//                            int p0 =  KS2Hartr[p]-at*N_peratom_HartrOrbit;
+//                            int q0 =  KS2Hartr[q]-at*N_peratom_HartrOrbit;
+                            int p=HartrIndex[cl*NumHartrOrbit_per_cluster + i0];
+                            int q=HartrIndex[cl*NumHartrOrbit_per_cluster + m0];
+                            Gw_loc_mpiLoc(cl, n*COL+(i0*NumHartrOrbit_per_cluster+m0)) += Gkw( p, q );
+                            GwHF_loc_mpiLoc(cl, n*COL+(i0*NumHartrOrbit_per_cluster+m0)) += Gkw0( p, q );
                         }
                     }
                 }
-            }
+            }//cl
             /*NumMat*/
-            for(int l1=0; l1<NumCorrAtom*N_peratom_HartrOrbit; l1++) {
-                for(int l2=0; l2<NumCorrAtom*N_peratom_HartrOrbit; l2++) {
+            for(int l1=0; l1<NumCluster*NumHartrOrbit_per_cluster; l1++) {
+                for(int l2=0; l2<NumCluster*NumHartrOrbit_per_cluster; l2++) {
                     int ll1=HartrIndex[l1];
                     int ll2=HartrIndex[l2];
                     NumMat_loc(l1,l2)  += ( Gkw(ll1,ll2) +std::conj(Gkw(ll2,ll1)) );   // Gkw(-w) = [Gkw(w)]^\dagger
@@ -291,10 +295,11 @@ void GreenFtn_w(  int NumCorrAtom, int N_peratom_HartrOrbit, std::vector<Eigen::
                 }/*l2*/
             }/*l1*/
         }///k
-        for(int ATOM=0 ; ATOM < NumCorrAtom; ATOM++) {
+        for(int ATOM=0 ; ATOM < NumCluster; ATOM++) {
             if(n<N_freq) {
                 for(int h1=0; h1<COL; h1++) {
                     Gw_loc_mpiLoc(ATOM,n*COL+(h1)) /= knum_mpiGlobal;
+                    GwHF_loc_mpiLoc(ATOM,n*COL+(h1)) /= knum_mpiGlobal;
                 }
             }
         }
@@ -315,8 +320,8 @@ void GreenFtn_w(  int NumCorrAtom, int N_peratom_HartrOrbit, std::vector<Eigen::
 
 
     /*NumMat high freq. tails.. Caution: Order is important!!.*/
-    for(int l0=0; l0<NumCorrAtom*N_peratom_HartrOrbit; l0++) {
-        for(int m0=0; m0<NumCorrAtom*N_peratom_HartrOrbit; m0++) {
+    for(int l0=0; l0<NumCluster*NumHartrOrbit_per_cluster; l0++) {
+        for(int m0=0; m0<NumCluster*NumHartrOrbit_per_cluster; m0++) {
             NumMat_loc(l0,m0) /=  beta ;
             NumMat_loc0(l0,m0) /=  beta ;
         }
@@ -325,11 +330,11 @@ void GreenFtn_w(  int NumCorrAtom, int N_peratom_HartrOrbit, std::vector<Eigen::
     }
     for(int k=0; k<knum; k++) {
         Eigen::MatrixXcd  occtemp = (staticHamiltonian_Model[k] * static_ev[k].asDiagonal() ) * staticHamiltonian_Model[k].adjoint();
-        for(int l0=0; l0<NumCorrAtom*N_peratom_HartrOrbit; l0++) {
-            for(int m0=0; m0<NumCorrAtom*N_peratom_HartrOrbit; m0++) {
+        for(int l0=0; l0<NumCluster*NumHartrOrbit_per_cluster; l0++) {
+            for(int m0=0; m0<NumCluster*NumHartrOrbit_per_cluster; m0++) {
                 int ll0=HartrIndex[l0];
                 int mm0=HartrIndex[m0];
-                NumMat_loc(l0,m0) += occtemp(ll0,mm0);
+                NumMat_loc(l0,m0) += occtemp(ll0,mm0);    //NumMat_loc = \sum(Gkw - Gkw0) + fermi-dirac
             }
         }
     }//k
@@ -339,8 +344,8 @@ void GreenFtn_w(  int NumCorrAtom, int N_peratom_HartrOrbit, std::vector<Eigen::
 
 
 
-    for(int l0=0; l0<NumCorrAtom*N_peratom_HartrOrbit; l0++) {
-        for(int m0=0; m0<NumCorrAtom*N_peratom_HartrOrbit; m0++) {
+    for(int l0=0; l0<NumCluster*NumHartrOrbit_per_cluster; l0++) {
+        for(int m0=0; m0<NumCluster*NumHartrOrbit_per_cluster; m0++) {
             NumMat_loc(l0,m0) /=  knum_mpiGlobal ;
             NumMat_loc0(l0,m0) /=  knum_mpiGlobal ;
         }
@@ -349,11 +354,10 @@ void GreenFtn_w(  int NumCorrAtom, int N_peratom_HartrOrbit, std::vector<Eigen::
     NumMat_loc -= NumMat_loc0;
     /*NumMatrix, mpireduce for k space sum*/
     MPI_Allreduce(NumMat_loc.data(), NumMatrix.data(), NumMatrix.size(), MPI_DOUBLE_COMPLEX, MPI_SUM,  MPI_COMM_WORLD);
-    Eigen::SelfAdjointEigenSolver<Eigen::MatrixXcd> ces (N_peratom_HartrOrbit*NumCorrAtom);
 
-
+    Eigen::SelfAdjointEigenSolver<Eigen::MatrixXcd> ces (NumHartrOrbit_per_cluster*NumCluster);
     ces.compute(NumMatrix);
-    for(int i=0; i < N_peratom_HartrOrbit; i++)  {
+    for(int i=0; i < NumHartrOrbit_per_cluster*NumCluster; i++)  {
         if (ces.eigenvalues()[i] < 0 or ces.eigenvalues()[i] >1+1e-10)  {
             ifroot std::cout << "[GreenFtn]: NumMatrix is unphysical, " << ces.eigenvalues()[i]  <<"\n";
             //            exit(1);
@@ -362,15 +366,17 @@ void GreenFtn_w(  int NumCorrAtom, int N_peratom_HartrOrbit, std::vector<Eigen::
 
     /*Gw, mpireduce for k space sum*/
     MPI_Allreduce(Gw_loc_mpiLoc.data(), Gw_loc.data(), Gw_loc.size(), MPI_DOUBLE_COMPLEX, MPI_SUM,  MPI_COMM_WORLD);
+    MPI_Allreduce(GwHF_loc_mpiLoc.data(), GwHF_loc.data(), GwHF_loc.size(), MPI_DOUBLE_COMPLEX, MPI_SUM,  MPI_COMM_WORLD);
 
-    for(int ATOM=0 ; ATOM < NumCorrAtom; ATOM++) {
+    for(int ATOM=0 ; ATOM < NumCluster; ATOM++) {
         for(int n=0; n<N_freq; n++) {
-            for (int h1=0; h1< N_peratom_HartrOrbit; h1++) {
-                for (int h2=0; h2< N_peratom_HartrOrbit; h2++) {
-                    int h1F=ATOM*N_peratom_HartrOrbit + h1;
-                    int h2F=ATOM*N_peratom_HartrOrbit + h2;
-                    int h12=h1*N_peratom_HartrOrbit + h2;
+            for (int h1=0; h1< NumHartrOrbit_per_cluster; h1++) {
+                for (int h2=0; h2< NumHartrOrbit_per_cluster; h2++) {
+                    int h1F=ATOM*NumHartrOrbit_per_cluster + h1;
+                    int h2F=ATOM*NumHartrOrbit_per_cluster + h2;
+                    int h12=h1*NumHartrOrbit_per_cluster + h2;
                     Gw[n](h1F,h2F)=  Gw_loc(ATOM,n*COL+h12);
+                    GwHF[n](h1F,h2F)=  GwHF_loc(ATOM,n*COL+h12);
                 }
             }
         }
@@ -379,26 +385,36 @@ void GreenFtn_w(  int NumCorrAtom, int N_peratom_HartrOrbit, std::vector<Eigen::
 
 
     ifroot {
-        for(int ATOM=0 ; ATOM < NumCorrAtom; ATOM++) {
+        for(int ATOM=0 ; ATOM < NumCluster; ATOM++) {
             std::stringstream ss;
             ss << ATOM;
-            FILE *datap2= fopen( (std::string("Gw_loc.dat"     )+ ss.str()).c_str() ,"w");
-            FILE *datap3= fopen( (std::string("Gw_loc.full.dat")+ ss.str()).c_str() ,"w");
+            FILE *datap2= fopen( (std::string("Gw_loc.dat"     )+ ss.str()).c_str(),"w");
+            FILE *datap3= fopen( (std::string("Gw_loc.full.dat")+ ss.str()).c_str(),"w");
+
+            FILE *dataHF2= fopen( (std::string("GwHF_loc.dat"     )+ ss.str()).c_str(),"w");
+            FILE *dataHF3= fopen( (std::string("GwHF_loc.full.dat")+ ss.str()).c_str(),"w");
             for(int n=0; n<N_freq; n++) {
                 fprintf(datap2, "%0.5f", imag(I*pi*(2*n+1)/beta));
-                for(int h1=0; h1<N_peratom_HartrOrbit; h1++) {
-                    int h1F = ATOM * N_peratom_HartrOrbit +h1;
+                fprintf(dataHF2, "%0.5f", imag(I*pi*(2*n+1)/beta));
+                for(int h1=0; h1<NumHartrOrbit_per_cluster; h1++) {
+                    int h1F = ATOM * NumHartrOrbit_per_cluster +h1;
                     fprintf(datap2, "    %e    %e", real(Gw[n](h1F,h1F)),  imag(Gw[n](h1F,h1F))); //BUG!
-                    for(int h2=0; h2<N_peratom_HartrOrbit; h2++) {
-                        int h2F = ATOM * N_peratom_HartrOrbit +h2;
+                    fprintf(dataHF2, "    %e    %e", real(GwHF[n](h1F,h1F)),  imag(GwHF[n](h1F,h1F))); //BUG!
+                    for(int h2=0; h2<NumHartrOrbit_per_cluster; h2++) {
+                        int h2F = ATOM * NumHartrOrbit_per_cluster +h2;
                         if( std::abs(Gw[n](h1F,h2F)) >1e-8)
                             fprintf(datap3, "%d %d %d %e    %e\n",n,h1,h2, real(Gw[n](h1F,h2F)),  imag(Gw[n](h1F,h2F)));
+                        fprintf(dataHF3, "%d %d %d %e    %e\n",n,h1,h2, real(GwHF[n](h1F,h2F)),  imag(GwHF[n](h1F,h2F)));
                     }//h2
                 }//h1
                 fprintf(datap2, "\n");
+                fprintf(dataHF2, "\n");
             }//n
             fclose(datap2);
             fclose(datap3);
+
+            fclose(dataHF2);
+            fclose(dataHF3);
             std::cout << "FILEOUT:Gw_loc.dat" << ATOM <<"\n";
             std::cout << "FILEOUT:Gw_loc.full.dat" <<ATOM <<"\n";
         }//ATOM
@@ -406,8 +422,8 @@ void GreenFtn_w(  int NumCorrAtom, int N_peratom_HartrOrbit, std::vector<Eigen::
 }/*GreenFtn_w*/
 
 
-void retarded_GreenFtn2( Eigen::MatrixXcd &retGkw_full ,    Eigen::MatrixXcd & retGkw,
-                         std::vector<Eigen::MatrixXcd> &  H_k_inModelSpace , ImgFreqFtn &  SE,
+void retarded_GreenFtn2( Eigen::MatrixXcd &retGkw_full,    Eigen::MatrixXcd & retGkw,
+                         std::vector<Eigen::MatrixXcd> &  H_k_inModelSpace, ImgFreqFtn &  SE,
                          double mu, int k, int n) {
     Eigen::MatrixXcd retG0kw;
     retGkw.setZero(NBAND[k], NBAND[k]);
@@ -416,7 +432,8 @@ void retarded_GreenFtn2( Eigen::MatrixXcd &retGkw_full ,    Eigen::MatrixXcd & r
     retG0kw = -H_k_inModelSpace[k];
     for (int i0=0; i0<NBAND[k]; i0++) {
         for (int m0=0; m0<NBAND[k]; m0++) {
-            if(isOrbitalHartr[i0] and isOrbitalHartr[m0] and isSameAtom(i0,m0) ) {
+//            if(isOrbitalHartr[i0] and isOrbitalHartr[m0] and isSameAtom(i0,m0) ) {}
+            if(isOrbitalHartr[i0] and isOrbitalHartr[m0] ) {
                 retGkw(i0,m0) -= SE.getValue( n, (KS2Hartr[i0]), (KS2Hartr[m0]) );
             }
         }//m

@@ -10,113 +10,125 @@
 #endif
 
 
-void IPT( int solverDim,Eigen::MatrixXcd projimpurity_site_Hamiltonian,  ImgFreqFtn & weiss_field, Eigen::MatrixXcd & projNumMatrix,
-          ImgFreqFtn & SE_out,      ImgFreqFtn & Gwimp_out, double muTB,
-          std::vector<Eigen::VectorXi> projUindex, std::vector<cmplx > projUtensor        ) ;
+void rot_Uijkl(
+    std::vector<cmplx > & Utensor, std::vector<Eigen::VectorXi>  & Uindex,
+    std::vector<cmplx > & rotUtensor, std::vector<Eigen::VectorXi>  & rotUindex,
+    Eigen::MatrixXcd & SolverBasis, int n_spinorb
+) ;
 
-//void  SecOrdDC( ImgFreqFtn & Gwimp,Eigen::MatrixXcd & projNumMatrix, std::vector<Eigen::VectorXi> projUindex, std::vector<cmplx > projUtensor, int solverDim,
-//                ImgFreqFtn & SE_out );
+//void IPT( int solverDim,Eigen::MatrixXcd projimpurity_site_Hamiltonian,  ImgFreqFtn & weiss_field, Eigen::MatrixXcd & projNumMatrix,
+//          ImgFreqFtn & SE_out,      ImgFreqFtn & Gwimp_out, double muTB,
+//          std::vector<Eigen::VectorXi> projUindex, std::vector<cmplx > projUtensor        ) ;
 //
 
+void on_shot_HF (int solverDim,
+                 ImgFreqFtn & SE_out,      ImgFreqFtn & Gwimp_out,
+                 std::vector<Eigen::VectorXi> projUindex, std::vector<cmplx > projUtensor
+                ) ;
+
+void SC2PT_weak  ( int solverDim,
+                   ImgFreqFtn & SE_out,      ImgFreqFtn & Gwimp_out, ImgFreqFtn & GwHF, bool SC,
+                   std::vector<Eigen::VectorXi> projUindex, std::vector<cmplx > projUtensor);
+
+
+
+void SecondOrderPerturbation  ( int solverDim,   Eigen::MatrixXcd projimpurity_site_Hamiltonian,  ImgFreqFtn & weiss_field, Eigen::MatrixXcd & projNumMatrix,
+                                ImgFreqFtn & SE_out,      ImgFreqFtn & Gwimp_out, double muTB,
+                                std::vector<Eigen::VectorXi> projUindex, std::vector<cmplx > projUtensor
+                              ) ;
 
 
 void SCHF (int solverDim, Eigen::MatrixXcd projimpurity_site_Hamiltonian, Eigen::MatrixXcd & projNumMatrix,
            ImgFreqFtn & SE_out,      ImgFreqFtn & Gwimp_out,  ImgFreqFtn & weiss_field, double muTB,
-           std::vector<Eigen::VectorXi> projUindex, std::vector<cmplx > projUtensor, bool high_level_solver,
-           std::vector<Eigen::VectorXi> Uindex_stronglyCorr, std::vector<cmplx > Utensor_stronglyCorr, std::vector<int> strongCorr, ImgFreqFtn & SE_strong       ) ;
+           std::vector<Eigen::VectorXi> projUindex, std::vector<cmplx > projUtensor
+          );
 
 void SCGF2 (int solverDim, Eigen::MatrixXcd projimpurity_site_Hamiltonian, Eigen::MatrixXcd & projNumMatrix,
             ImgFreqFtn & SE_out,      ImgFreqFtn & Gwimp_out,  ImgFreqFtn & weiss_field, double muTB,
-            std::vector<Eigen::VectorXi> projUindex, std::vector<cmplx > projUtensor, bool high_level_solver,
-            std::vector<Eigen::VectorXi> Uindex_stronglyCorr, std::vector<cmplx > Utensor_stronglyCorr, std::vector<int> strongCorr, ImgFreqFtn & SE_strong       );
+            std::vector<Eigen::VectorXi> projUindex, std::vector<cmplx > projUtensor);
 
 
-void ctqmc_rutgers(  Eigen::MatrixXcd Local_Hamiltonian_ED, double muTB,  ImgFreqFtn & weiss_field) ;
-void ctqmc_rutgers_seg(  Eigen::MatrixXcd Local_Hamiltonian_ED, double muTB,  ImgFreqFtn & weiss_field) ;
-
-void SecondOrderPerturbation  ( int solverDim,Eigen::MatrixXcd projimpurity_site_Hamiltonian,  Eigen::MatrixXcd & projNumMatrix,
-                                ImgFreqFtn & SE_out,      ImgFreqFtn & Gwimp_out,
-                                std::vector<Eigen::VectorXi> projUindex, std::vector<cmplx > projUtensor,  bool high_level_solver ,
-                                std::vector<Eigen::VectorXi> Uindex_stronglyCorr, std::vector<cmplx > Utensor_stronglyCorr, std::vector<int> strongCorr       ) ;
+void ctqmc_rutgers(  Eigen::MatrixXcd Local_Hamiltonian_ED, double muTB,  ImgFreqFtn & weiss_field, std::vector<cmplx > Utensor, std::vector<Eigen::VectorXi> Uindex, int solverDim  ) ;
+void ctqmc_rutgers_seg(  Eigen::MatrixXcd Local_Hamiltonian_ED, double muTB,  ImgFreqFtn & weiss_field, std::vector<cmplx > Utensor, std::vector<Eigen::VectorXi> Uindex) ;
 
 
 
 
 
 
-void SOLVER(std::string SOLVERtype, int solverDim, std::vector<int> strongCorr, bool high_level_solver,
-            ImgFreqFtn & SE_out,  ImgFreqFtn & Gwimp_temp,
-            ImgFreqFtn & weiss_field, int atom,
-            std::vector<Eigen::MatrixXcd>  impurity_site_Hamiltonian,std::vector<Eigen::MatrixXcd>  Sw_doublecounting,
-            double muTB, std::vector<Eigen::MatrixXcd> & SolverBasis,
-            std::vector<Eigen::VectorXi> projUindex, std::vector<cmplx > projUtensor  ,
-            std::vector<Eigen::VectorXi> Uindex_stronglyCorr, std::vector<cmplx > Utensor_stronglyCorr  ,
-            std::vector<Eigen::MatrixXcd >  dc_weakCorr, ImgFreqFtn & SE_strong       ) {
+void proj_to_site( int solverDim, int solver_block, std::vector<int> impurityOrbit,
+                   Eigen::MatrixXcd  impurity_site_Hamiltonian,  Eigen::MatrixXcd NumMatrix,  ImgFreqFtn & weiss_field,
+                   Eigen::MatrixXcd & projimpurity_site_Hamiltonian,Eigen::MatrixXcd & projSolverBasis,Eigen::MatrixXcd & projNumMatrix, ImgFreqFtn & projweiss_field,
+                   Eigen::MatrixXcd  Sw_doublecounting, std::vector<Eigen::MatrixXcd >  dc_weakCorr
+                 ) ;
 
 
 
+void weak_solver(
+    std::string SOLVERtype,
+    int solverDim,
+    ImgFreqFtn & SE_out,  ImgFreqFtn & Gwimp_in_out, ImgFreqFtn & GwHF,
+    std::vector<Eigen::VectorXi> projUindex, std::vector<cmplx > projUtensor
+)
+{
+    if(SOLVERtype == std::string("HF")) {
 
-    ImgFreqFtn projweiss_field(0);
-    projweiss_field.Initialize(beta     , N_freq, solverDim,1,0);
+        on_shot_HF( solverDim,
+                    SE_out, Gwimp_in_out,
+                    projUindex, projUtensor);
+
+    }//SCHF
+    else if(SOLVERtype == std::string("2PT")) {
+        ifroot std::cout << "\n2PT solver\n";
+        SC2PT_weak( solverDim,
+                    SE_out, Gwimp_in_out, GwHF, false,
+                    projUindex, projUtensor);
+    }//2PT
+    else if(SOLVERtype == std::string("SC2PT")   ) {
+        ifroot std::cout << "\nSC2PT solver\n";
+        SC2PT_weak( solverDim,
+                    SE_out, Gwimp_in_out, GwHF, true,
+                    projUindex, projUtensor);
+    }//SC2PT
+    else {
+        ifroot std::cout << "Please set  Lowlevel_SOLVERTYPE = HF or SC2PT\n";
+    }
+
+}
 
 
+void SOLVER(
+    std::string SOLVERtype,
+    int solverDim, int solver_block,  std::vector<int> impurityOrbit,
+    Eigen::MatrixXcd  impurity_site_Hamiltonian,  ImgFreqFtn & weiss_field,
+    ImgFreqFtn & SE_out,  ImgFreqFtn & Gwimp_in_out,
+    std::vector<Eigen::VectorXi> projUindex, std::vector<cmplx > projUtensor,
+    Eigen::MatrixXcd  Sw_doublecounting,            std::vector<Eigen::MatrixXcd >  dc_weakCorr,
+    double muTB
+)
+{
 
+
+    ifroot std::cout << "<SOLVER>\n";
 
 
     Eigen::MatrixXcd   projimpurity_site_Hamiltonian, projSolverBasis, projNumMatrix ;
+    ImgFreqFtn projweiss_field(0);
+    projweiss_field.Initialize(beta, N_freq, solverDim,1,0);
+
     projimpurity_site_Hamiltonian.setZero(solverDim, solverDim);
-    projSolverBasis.setZero(solverDim, solverDim);
     projNumMatrix.setZero(solverDim, solverDim);
-    std::vector<int> impurityOrbit(solverDim);
-    for(int h1=0; h1< solverDim; h1++) {
-        if(high_level_solver==false) {
-            impurityOrbit.at(h1) = h1 ;
-        }
-        else if (high_level_solver==true) {
-            impurityOrbit.at(h1)= strongCorr.at(h1) ;
-        }
-    } //  0<= impurityOrbit < N_peratom_HartrOrbit
+    projSolverBasis.setIdentity(solverDim, solverDim);
+
+    proj_to_site ( solverDim, solver_block, impurityOrbit,
+                   impurity_site_Hamiltonian, NumMatrix, weiss_field,
+                   projimpurity_site_Hamiltonian, projSolverBasis, projNumMatrix, projweiss_field,
+                   Sw_doublecounting, dc_weakCorr);
 
 
 
 
 
-    for(int h1=0; h1< solverDim; h1++) {
-        for(int h2=0; h2< solverDim; h2++) {
-            int h1F = impurityOrbit.at(h1) + atom * N_peratom_HartrOrbit ;
-            int h2F = impurityOrbit.at(h2) + atom * N_peratom_HartrOrbit ;
-            int h1g = impurityOrbit.at(h1) ;
-            int h2g = impurityOrbit.at(h2) ;
-
-            projimpurity_site_Hamiltonian(h1,h2) = impurity_site_Hamiltonian[atom](h1g,h2g) - Sw_doublecounting[atom](h1g,h2g) ;
-            projSolverBasis(h1,h2) = SolverBasis[atom](h1g,h2g);
-            projNumMatrix(h1,h2) = NumMatrix(h1F,h2F);
-
-
-        }
-    }
-
-
-    ifroot std::cout << "impurity site info\n";
-    for (int n=0; n<N_freq; n++) {
-        projweiss_field.setMatrix(n,  weiss_field.getMatrix(n,atom ) );
-    }
-
-    if(high_level_solver) {
-        projimpurity_site_Hamiltonian += dc_weakCorr.at(N_freq);
-        for (int n=0; n<N_freq; n++) {
-            projweiss_field.setMatrix(n,  projweiss_field.getMatrix(n) + dc_weakCorr.at(n));
-        }
-    }
-    ifroot std::cout << "hybridization info\n";
-    projweiss_field.dataOut(std::string("projdelta_w.dat"));
-
-
-
-
-
-    ifroot std::cout << "Imp H0:\n"  <<std::fixed << std::setprecision(6)<< projimpurity_site_Hamiltonian <<"\n";
-    std::cout << std::fixed << std::setprecision(4);
 
 
     if ( SOLVERtype.find(std::string("CT")) != std::string::npos ) {
@@ -126,7 +138,7 @@ void SOLVER(std::string SOLVERtype, int solverDim, std::vector<int> strongCorr, 
         if ( SOLVERtype.find(std::string("SEG")) != std::string::npos ) {
             projimpurity_site_Hamiltonian_diag.setZero(solverDim,solverDim);
             for(int h1=0; h1<solverDim; h1++) {
-                projimpurity_site_Hamiltonian_diag(h1,h1) = (projSolverBasis.adjoint() * projimpurity_site_Hamiltonian * projSolverBasis)(h1,h1);
+                projimpurity_site_Hamiltonian_diag(h1,h1) = ( projimpurity_site_Hamiltonian )(h1,h1);
             }
         }
 
@@ -146,13 +158,13 @@ void SOLVER(std::string SOLVERtype, int solverDim, std::vector<int> strongCorr, 
 
             if (mpi_rank==0) {
                 FILE *tempFile2;   //mu.dat
-                tempFile2 = fopen("mu_vector.alps.dat"       , "w");
+                tempFile2 = fopen("mu_vector.alps.dat", "w");
                 for(int h1=0; h1<solverDim; h1++) {
                     fprintf(tempFile2, " %0.8f ", mu_alps[h1]);
                 }
                 fclose(tempFile2);
 
-                FILE *datap4 = fopen("delta_t.dat"       , "w");
+                FILE *datap4 = fopen("delta_t.dat", "w");
                 Eigen::MatrixXcd    temp;
                 for(int tau=0; tau<=N_tau; tau++) {
                     fprintf(datap4, "%0.5f",tau*beta/N_tau);
@@ -178,7 +190,7 @@ void SOLVER(std::string SOLVERtype, int solverDim, std::vector<int> strongCorr, 
             std::strcpy(command_hyb,impSolver_hyb_comm.str().c_str());
 
             /*neglect possitive data*/
-            int t, CHECK , t1;
+            int t, CHECK, t1;
             ImgTimeFtn DeltDiag(beta,N_tau, solverDim);
             DeltDiag.update(std::string ("delta_t.dat"), 1);
 
@@ -215,26 +227,13 @@ void SOLVER(std::string SOLVERtype, int solverDim, std::vector<int> strongCorr, 
 
             Gt_imp.update(std::string("Gt.dat"), 1);
             SE_out.read_diag(std::string("Swl.dat"));
-            for(int n =0; n<N_freq; n++) {
-                SE_out.setMatrix(n,  projSolverBasis* SE_out.getMatrix(n) *(projSolverBasis).adjoint());
-            }
-            Gwimp_temp.read_diag(std::string("Gw.dat"));
-            for(int n =0; n<N_freq; n++) {
-                Gwimp_temp.setMatrix(n,   projSolverBasis* Gwimp_temp.getMatrix(n) *(projSolverBasis).adjoint());
-            }
+            Gwimp_in_out.read_diag(std::string("Gw.dat"));
 
             MPI_Barrier(MPI_COMM_WORLD);
             ifroot  std::cout << "Reading output data..\n";
 
-            for (int n=0; n<solverDim; n++) {
-                for (int m=0; m<solverDim; m++) {
-                    projNumMatrix(n,m) = 0;  // alps CT-SEG num matrix.
-                    cmplx temp =0;
-                    for (int l=0; l<solverDim; l++) {
-                        temp += (projSolverBasis)(n,l) * Gt_imp.getValue(N_tau,l) *(projSolverBasis).adjoint()(l,m) ;
-                    }
-                    projNumMatrix(n,m) = -temp;  // alps CT-SEG num matrix.
-                }
+            for (int l=0; l<solverDim; l++) {
+                projNumMatrix(l,l) = - Gt_imp.getValue(N_tau,l) ;
             }
 
             ifroot  std::cout << "Writing output data..\n";
@@ -248,7 +247,7 @@ void SOLVER(std::string SOLVERtype, int solverDim, std::vector<int> strongCorr, 
             write_hyb_t (projweiss_field, delta_t, 0);
             ifroot std::cout <<"FILE OUT: delta_t.dat\n";
             ifroot{
-                FILE *datap4 = fopen("delta_t.dat"       , "w");
+                FILE *datap4 = fopen("delta_t.dat", "w");
                 for(int tau=0; tau<=N_tau; tau++) {
                     fprintf(datap4, "%0.5f",tau*beta/N_tau);
                     for(int h1=0; h1<solverDim; h1++) {
@@ -261,7 +260,11 @@ void SOLVER(std::string SOLVERtype, int solverDim, std::vector<int> strongCorr, 
             sleep(2);
 
 
-            ctqmc_rutgers_seg(  projimpurity_site_Hamiltonian_diag,  muTB, projweiss_field);
+            std::vector<cmplx > rotUtensor;
+            std::vector<Eigen::VectorXi> rotUindex;
+            rot_Uijkl(projUtensor, projUindex, rotUtensor, rotUindex, projSolverBasis, solverDim);
+
+            ctqmc_rutgers_seg(  projimpurity_site_Hamiltonian_diag,  muTB, projweiss_field,rotUtensor, rotUindex   );
 
             /*set solver command*/
             MPI_Comm communication;
@@ -284,14 +287,7 @@ void SOLVER(std::string SOLVERtype, int solverDim, std::vector<int> strongCorr, 
 
             /*read output*/
             SE_out.read_diag(std::string("Sw.dat"));
-            for(int n =0; n<N_freq; n++) {
-                SE_out.setMatrix(n,  projSolverBasis* SE_out.getMatrix(n) *(projSolverBasis).adjoint());
-            }
-            Gwimp_temp.read_diag(std::string("Gw.dat"));
-            for(int n =0; n<N_freq; n++) {
-                Gwimp_temp.setMatrix(n,  projSolverBasis* Gwimp_temp.getMatrix(n) *(projSolverBasis).adjoint());
-            }
-
+            Gwimp_in_out.read_diag(std::string("Gw.dat"));
             MPI_Barrier(MPI_COMM_WORLD);
             ifroot  std::cout << "Reading output data..\n";
 
@@ -301,7 +297,7 @@ void SOLVER(std::string SOLVERtype, int solverDim, std::vector<int> strongCorr, 
                 Gwimp_EIG[n].setZero(NSpinOrbit_per_atom,NSpinOrbit_per_atom);
                 for(int h1=0; h1<NSpinOrbit_per_atom; h1++) {
                     for(int h2=0; h2<NSpinOrbit_per_atom; h2++) {
-                        Gwimp_EIG[n](h1,h2) = Gwimp_temp.getValue(n,h1,h2);
+                        Gwimp_EIG[n](h1,h2) = Gwimp_in_out.getValue(n,h1,h2);
                     }
                 }//h1
             }
@@ -310,115 +306,25 @@ void SOLVER(std::string SOLVERtype, int solverDim, std::vector<int> strongCorr, 
             std::string print_msg = std::string("Gwimp_EIG in SOLVER.cpp");
             FourierTransform (Gwimp_EIG, projNumMatrix, beta, Id) ;
             projNumMatrix = -projNumMatrix;
-//	    ifroot std::cout << "xx\n" << projNumMatrix <<"\n";
-
-
-
 
             ifroot  std::cout << "Writing output data..\n";
             std::stringstream ss;
-            ss << atom;
+            ss << solver_block;
             ifroot system(  (std::string("cp ")+"rutgers_input.cix  rutgers_input.cix" +ss.str()).c_str());
             delete[] command_hyb;
             delete [] delta_t;
         }//RUTGERS_CTSEG
-//        else if (SOLVERtype==std::string("ALPS_CTHYB")) {//ALPSCore;CT-HYB
-//            Eigen::MatrixXcd delta_t [N_tau+1];
-//            write_hyb_t (projweiss_field, delta_t, 0);
-//            if (mpi_rank==0) {
-//                FILE *tempFile2;   //mu.dat
-//                tempFile2 = fopen("hopping.dat"       , "w");
-//                for(int h1=0; h1<solverDim; h1++) {
-//                    for(int h2=0; h2<solverDim; h2++) {
-//                        cmplx  coeff = projimpurity_site_Hamiltonian(h1,h2);
-//                        if(h1==h2) coeff -= muTB;
-//                        fprintf(tempFile2, "%d %d %+0.8f %+0.8f\n",h1,h2, real(coeff), imag(coeff));
-//                    }
-//                }
-//                fclose(tempFile2);
-//            }
-//            if (mpi_rank==0) {
-//                FILE *datap4 = fopen("delta_t.dat"       , "w") ;   //delta_t.dat
-//                for(int tau=0; tau<=N_tau; tau++) {
-//                    for(int h1=0; h1<solverDim; h1++) {
-//                        for(int h2=0; h2<solverDim; h2++) {
-//                            fprintf(datap4,"%d %d %d %+.10f %+0.10f",
-//                                    tau, h1, h2, real(delta_t[tau](h1,h2)), imag(delta_t[tau](h1,h2)));
-//                            fprintf(datap4, "\n");
-//                        }
-//                    }
-//                }
-//                fclose(datap4);
-//            }//ifroot
-//            sleep(1);
-//            /*set solver command*/
-//            ifroot std::cout << "ALPSCore/CT-HYB solver\n";
-//            MPI_Comm communication;
-//
-//            /*run alps solver*/
-//            std::ostringstream impSolver_hyb_comm;
-////            impSolver_hyb_comm << "/home/users1/jhsim/bin/hybmat_brew";//   alps_input.h5 >> std.hyb.out"; C2
-//            impSolver_hyb_comm << (solver_bin_dir + std::string("hybmat")).c_str();   //   alps_input.h5 >> std.hyb.out"; C2
-//            char * command_hyb = new char[impSolver_hyb_comm.str().size()+1];
-//
-//            ifroot  std::cout << "****Solver type=ALPSCore/CT-HYB hybmat....***\n";
-//            ifroot  std::cout <<  impSolver_hyb_comm.str().c_str() <<"\n" ;
-//
-//            int errors[mpi_numprocs], checkTime=10;
-//            std::strcpy(command_hyb,impSolver_hyb_comm.str().c_str());
-//            char *hyb_In [] = {"input.solver2", NULL};
-//            MPI_Comm_spawn(command_hyb, hyb_In, mpi_numprocs, MPI_INFO_NULL, 0, MPI_COMM_WORLD, &communication, errors);
-//
-//            Wait_Run("input.out.h5", checkTime, mpi_rank,maxTime);
-//
-//            /*read Gwimp*/
-//            ifroot std::cout << "Solver finished, we read impurity green's ftn\n";
-//#ifdef READ_HDF5_dmft
-//            ifroot read_hdf5 (atom); //read hdf5 and write Gw_imp;
-//#endif
-//            MPI_Barrier(MPI_COMM_WORLD);
-//            Gwimp_temp.update_full(std::string("Gw_imp.full.dat"),1);
-//
-//            /*set Self-energy*/
-//            Eigen::MatrixXcd Gw0imp_inv, Gwimp_inv;
-//            for ( int w=0; w<N_freq; w++) {
-//                cmplx iw= I* (2*w+1)*pi / beta;
-//                Gw0imp_inv.setZero(solverDim, solverDim);
-//                Gwimp_inv.setZero(solverDim, solverDim);
-//                for (int n=0; n<solverDim; n++) {
-//                    for (int m=0; m<solverDim; m++) {
-//                        Gwimp_inv(n,m) = Gwimp_temp.getValue(w,n,m);
-//                        Gw0imp_inv(n,m) =  - projimpurity_site_Hamiltonian(n,m)  - projweiss_field.getValue(w,n,m);
-//                    }
-//                    Gw0imp_inv(n,n) +=  iw +muTB ;
-//                }
-//                Gwimp_inv = Gwimp_inv.inverse();
-//
-//                for (int n=0; n<solverDim; n++) {
-//                    for (int m=0; m<solverDim; m++) {
-//                        SE_out.setValue(w,n,m,  Gw0imp_inv(n,m) - Gwimp_inv(n,m) );
-//                        assert( not( std::isnan(std::abs( Gwimp_inv(n,m))) or   std::isinf(std::abs( Gwimp_inv(n,m))))  );
-//                        assert( not( std::isnan(std::abs(Gw0imp_inv(n,m))) or   std::isinf(std::abs(Gw0imp_inv(n,m))))  );
-//                    }
-//                }
-//            }//w
-//            delete[] command_hyb;
-//        }//SOLVER2
         else if (SOLVERtype==std::string("RUTGERS_CTHYB")) {//Rutgers
             /*diagonalize onsite-Hamiltonian*/
             //SOLVER basis transformation
 
-            Eigen::MatrixXcd  projimpurity_site_Hamiltonian_diag;
-            projimpurity_site_Hamiltonian_diag.setZero(solverDim,solverDim);
-            for(int h1=0; h1<solverDim; h1++) {
-                for(int h2=0; h2<solverDim; h2++) {
-                    projimpurity_site_Hamiltonian_diag(h1,h2) = (SolverBasis[atom].adjoint() * projimpurity_site_Hamiltonian* SolverBasis[atom])(h1,h2);
-                }
-            }
-            for(int n =0; n<N_freq; n++) {
-                projweiss_field.setMatrix(n,  (SolverBasis[atom]).adjoint()* projweiss_field.getMatrix(n) *(SolverBasis[atom]));
-            }
-            ctqmc_rutgers(  projimpurity_site_Hamiltonian_diag,  muTB, projweiss_field);
+            std::vector<cmplx > rotUtensor;
+            std::vector<Eigen::VectorXi> rotUindex;
+            rot_Uijkl(projUtensor, projUindex, rotUtensor, rotUindex, projSolverBasis, solverDim);
+
+
+            ifroot "write rutgers_input file\n";
+            ctqmc_rutgers(  projimpurity_site_Hamiltonian,  muTB, projweiss_field, rotUtensor, rotUindex, solverDim);
 
             /*set solver command*/
             ifroot std::cout << "Rutgers(K. Haule), CT-HYB solver\n";
@@ -427,7 +333,6 @@ void SOLVER(std::string SOLVERtype, int solverDim, std::vector<int> strongCorr, 
             MPI_Comm communication;
             std::ostringstream impSolver_hyb_comm;
             char *hyb_In [] = {"PARAMS", NULL};
-//            impSolver_hyb_comm << "/home/users1/jhsim/bin/ctqmc_rutgers";   //   alps_input.h5 >> std.hyb.out"; C2
             impSolver_hyb_comm << ( SOLVERdir + SOLVERexe).c_str();   //   alps_input.h5 >> std.hyb.out"; C2
             char * command_hyb = new char[impSolver_hyb_comm.str().size()+1];
             std::strcpy(command_hyb,impSolver_hyb_comm.str().c_str());
@@ -443,14 +348,11 @@ void SOLVER(std::string SOLVERtype, int solverDim, std::vector<int> strongCorr, 
 
             /*read output*/
 
-            SE_out.read_uppertrian(std::string("Sw.dat"));
-            for(int n =0; n<N_freq; n++) {
-                SE_out.setMatrix(n,  projSolverBasis* SE_out.getMatrix(n) *(projSolverBasis).adjoint());
-            }
-            Gwimp_temp.read_uppertrian(std::string("Gw.dat"));
-            for(int n =0; n<N_freq; n++) {
-                Gwimp_temp.setMatrix(n,  projSolverBasis* Gwimp_temp.getMatrix(n) *(projSolverBasis).adjoint());
-            }
+            int spindim=1;
+            if(magnetism==0 or magnetism==1) spindim=2;
+            SE_out.read_uppertrian(std::string("Sw.dat") , spindim   );
+            Gwimp_in_out.read_uppertrian(std::string("Gw.dat") , spindim );
+
 
             MPI_Barrier(MPI_COMM_WORLD);
             ifroot  std::cout << "Reading output data..\n";
@@ -462,7 +364,7 @@ void SOLVER(std::string SOLVERtype, int solverDim, std::vector<int> strongCorr, 
                 Gwimp_EIG[n].setZero(NSpinOrbit_per_atom,NSpinOrbit_per_atom);
                 for(int h1=0; h1<NSpinOrbit_per_atom; h1++) {
                     for(int h2=0; h2<NSpinOrbit_per_atom; h2++) {
-                        Gwimp_EIG[n](h1,h2) = Gwimp_temp.getValue(n,h1,h2);
+                        Gwimp_EIG[n](h1,h2) = Gwimp_in_out.getValue(n,h1,h2);
                     }
                 }//h1
             }
@@ -470,12 +372,13 @@ void SOLVER(std::string SOLVERtype, int solverDim, std::vector<int> strongCorr, 
             Id.setIdentity(solverDim,solverDim);
             std::string print_msg = std::string("Gwimp_EIG in SOLVER.cpp");
             FourierTransform (Gwimp_EIG, projNumMatrix, beta, Id) ;
+            projNumMatrix *= -1;
 
 
 
             ifroot  std::cout << "Writing output data..\n";
             std::stringstream ss;
-            ss << atom;
+            ss << solver_block;
             system(  (std::string("cp ")+"rutgers_input.cix  rutgers_input.cix" +ss.str()).c_str());
             delete[] command_hyb;
 
@@ -485,111 +388,45 @@ void SOLVER(std::string SOLVERtype, int solverDim, std::vector<int> strongCorr, 
     else if(SOLVERtype == std::string("SC2PT")) {
 
         SCGF2( solverDim,projimpurity_site_Hamiltonian, projNumMatrix,
-               SE_out, Gwimp_temp, projweiss_field, muTB,
-               projUindex, projUtensor, high_level_solver,
-               Uindex_stronglyCorr, Utensor_stronglyCorr,  strongCorr, SE_strong);
-
-
-
-        if(high_level_solver == true) {
-            Eigen::MatrixXcd * delta_t  =  new Eigen::MatrixXcd  [N_tau+1];
-            write_hyb_t (projweiss_field, delta_t, 0);
-            ifroot std::cout <<"FILE OUT: delta_t.dat\n";
-            ifroot{
-                FILE *datap4 = fopen("delta_t.dat"       , "w");
-                for(int tau=0; tau<=N_tau; tau++) {
-                    fprintf(datap4, "%0.5f",tau*beta/N_tau);
-                    for(int h1=0; h1<solverDim; h1++) {
-                        fprintf(datap4, "    %0.10f", real(  delta_t[tau](h1,h1)));
-                    }
-                    fprintf(datap4, "\n");
-                }
-                fclose(datap4);
-            }
-            delete [] delta_t;
-        }
+               SE_out, Gwimp_in_out, projweiss_field, muTB,
+               projUindex, projUtensor);
 
     }//SC2PT
     else if(SOLVERtype == std::string("SCHF")) {
 
         SCHF( solverDim,projimpurity_site_Hamiltonian, projNumMatrix,
-              SE_out, Gwimp_temp, projweiss_field, muTB,
-              projUindex, projUtensor, high_level_solver,
-              Uindex_stronglyCorr, Utensor_stronglyCorr,  strongCorr, SE_strong);
-
-
-
-        if(high_level_solver == true) {
-            Eigen::MatrixXcd * delta_t  =  new Eigen::MatrixXcd  [N_tau+1];
-            write_hyb_t (projweiss_field, delta_t, 0);
-            ifroot std::cout <<"FILE OUT: delta_t.dat\n";
-            ifroot{
-                FILE *datap4 = fopen("delta_t.dat"       , "w");
-                for(int tau=0; tau<=N_tau; tau++) {
-                    fprintf(datap4, "%0.5f",tau*beta/N_tau);
-                    for(int h1=0; h1<solverDim; h1++) {
-                        fprintf(datap4, "    %0.10f", real(  delta_t[tau](h1,h1)));
-                    }
-                    fprintf(datap4, "\n");
-                }
-                fclose(datap4);
-            }
-            delete [] delta_t;
-        }
+              SE_out, Gwimp_in_out, projweiss_field, muTB,
+              projUindex, projUtensor);
 
     }//SCHF
     else if(SOLVERtype == std::string("2PT")) {
         ifroot std::cout << "\n2PT solver\n";
-        SecondOrderPerturbation( solverDim, projimpurity_site_Hamiltonian,projNumMatrix,
-                                 SE_out, Gwimp_temp,
-                                 projUindex, projUtensor, high_level_solver,
-                                 Uindex_stronglyCorr, Utensor_stronglyCorr,strongCorr );
-
-        if(high_level_solver == true) {
-//            Eigen::MatrixXcd delta_t [N_tau+1];
-            Eigen::MatrixXcd * delta_t  =  new Eigen::MatrixXcd  [N_tau+1];
-            write_hyb_t (projweiss_field, delta_t, 0);
-            ifroot std::cout <<"FILE OUT: delta_t.dat\n";
-            ifroot{
-                FILE *datap4 = fopen("delta_t.dat"       , "w");
-                for(int tau=0; tau<=N_tau; tau++) {
-                    fprintf(datap4, "%0.5f",tau*beta/N_tau);
-                    for(int h1=0; h1<solverDim; h1++) {
-                        fprintf(datap4, "    %0.10f", real(  delta_t[tau](h1,h1)));
-                    }
-                    fprintf(datap4, "\n");
-                }
-                fclose(datap4);
-            }
-            delete [] delta_t;
-        }
-
-
+        SecondOrderPerturbation( solverDim, projimpurity_site_Hamiltonian, projweiss_field, projNumMatrix,SE_out, Gwimp_in_out, muTB, projUindex, projUtensor);
     }//2PT
-    else if(SOLVERtype == std::string("IPT")) {
-        ifroot std::cout << "\nIPT solver\n";
-        IPT( solverDim, projimpurity_site_Hamiltonian, projweiss_field, projNumMatrix ,SE_out, Gwimp_temp, muTB, projUindex, projUtensor);
+//    else if(SOLVERtype == std::string("IPT")) {
+//        ifroot std::cout << "\nIPT solver\n";
+//        IPT( solverDim, projimpurity_site_Hamiltonian, projweiss_field, projNumMatrix,SE_out, Gwimp_in_out, muTB, projUindex, projUtensor);
+//    }//IPT
+    else if(SOLVERtype == std::string("HF")) {
 
-        if(high_level_solver == true) {
-//            Eigen::MatrixXcd delta_t [N_tau+1];
-            Eigen::MatrixXcd * delta_t  =  new Eigen::MatrixXcd  [N_tau+1];
-            write_hyb_t (projweiss_field, delta_t, 0);
-            ifroot std::cout <<"FILE OUT: delta_t.dat\n";
-            ifroot{
-                FILE *datap4 = fopen("delta_t.dat"       , "w");
-                for(int tau=0; tau<=N_tau; tau++) {
-                    fprintf(datap4, "%0.5f",tau*beta/N_tau);
-                    for(int h1=0; h1<solverDim; h1++) {
-                        fprintf(datap4, "    %0.10f", real(  delta_t[tau](h1,h1)));
-                    }
-                    fprintf(datap4, "\n");
-                }
-                fclose(datap4);
-            }
-            delete [] delta_t;
-        }
+        on_shot_HF( solverDim,
+                    SE_out, Gwimp_in_out,
+                    projUindex, projUtensor);
+    }//HF
+    else {
+        std::cout << "Please check <SOLVER_TYPE> \n";
+        exit(1);
+    }
 
-    }//IPT
+    for(int n =0; n<N_freq; n++) {
+        SE_out.setMatrix(n,  projSolverBasis* SE_out.getMatrix(n) *(projSolverBasis).adjoint());
+    }
+
+    for(int n =0; n<N_freq; n++) {
+        Gwimp_in_out.setMatrix(n,  projSolverBasis* Gwimp_in_out.getMatrix(n) *(projSolverBasis).adjoint());
+    }
+
+    projNumMatrix = projSolverBasis * projNumMatrix * (projSolverBasis.adjoint());
 
 
 
@@ -605,30 +442,19 @@ void SOLVER(std::string SOLVERtype, int solverDim, std::vector<int> strongCorr, 
             projNumMatrix(dnH,upH) = 0;
             for ( int w=0; w<N_freq+5; w++) {
                 cmplx avgS = ( SE_out.getValue(w,n,n) + SE_out.getValue(w,n+1,n+1) ) /2.; //alps CT-SEG,
-                SE_out.setValue(w,n,n    ,avgS);
+                SE_out.setValue(w,n,n,avgS);
                 SE_out.setValue(w,n+1,n+1,avgS);
-                SE_out.setValue(w,n  ,n+1,0);
-                SE_out.setValue(w,n+1,n  ,0);
+                SE_out.setValue(w,n,n+1,0);
+                SE_out.setValue(w,n+1,n,0);
             }//w
         }//n
     }//magnetism
     for (int n=0; n<solverDim; n++) {
         for (int m=0; m<solverDim; m++) {
-            int n0 = impurityOrbit[n] + atom *N_peratom_HartrOrbit;
-            int m0 = impurityOrbit[m] + atom *N_peratom_HartrOrbit;
+            int n0 = impurityOrbit[n] ;
+            int m0 = impurityOrbit[m] ;
             NumMatrix(n0,m0) = projNumMatrix(n,m);  // alps CT-SEG num matrix.
         }
-    }
-    ifroot{
-        std::cout << "\nNum ele (decomp,solver), at" <<atom<<":";
-        double sum=0;
-        for(int n=0; n<N_peratom_HartrOrbit; n+=1) {
-            std::cout <<std::fixed << std::setprecision(4)<< std::fixed
-            <<  real(NumMatrix(atom*N_peratom_HartrOrbit+n,atom*N_peratom_HartrOrbit+n)) <<" " ;
-            sum+= real(NumMatrix( atom*N_peratom_HartrOrbit+n, atom*N_peratom_HartrOrbit+n));
-        }
-        std::cout << std::fixed << std::setprecision(4)<< std::fixed   << ";  (total)  = "<<  sum <<"\n" ;
-        std::cout << "\n\n";
     }
 
 
@@ -668,11 +494,108 @@ void SOLVER(std::string SOLVERtype, int solverDim, std::vector<int> strongCorr, 
     SE_out.setMatrix(N_freq+1, tail_coeff);
 
 
-
-
-
-
-
 }
 
 
+void proj_to_site( int solverDim, int solver_block, std::vector<int> impurityOrbit,
+                   Eigen::MatrixXcd  impurity_site_Hamiltonian,  Eigen::MatrixXcd NumMatrix,  ImgFreqFtn & weiss_field,
+                   Eigen::MatrixXcd & projimpurity_site_Hamiltonian,Eigen::MatrixXcd & projSolverBasis,Eigen::MatrixXcd & projNumMatrix, ImgFreqFtn & projweiss_field,
+                   Eigen::MatrixXcd  Sw_doublecounting, std::vector<Eigen::MatrixXcd >  dc_weakCorr
+                 ) {
+
+
+
+    ifroot std::cout << "proj_to_site\n";
+    for(int h1=0; h1< solverDim; h1++) {
+        for(int h2=0; h2< solverDim; h2++) {
+            int h1F = impurityOrbit.at(h1) ;
+            int h2F = impurityOrbit.at(h2) ;
+            projimpurity_site_Hamiltonian(h1,h2) = impurity_site_Hamiltonian(h1F,h2F) - Sw_doublecounting(h1F,h2F) +dc_weakCorr.at(N_freq)(h1,h2) ;
+            projNumMatrix(h1,h2) = NumMatrix(h1F,h2F);
+        }
+    }
+
+    ifroot std::cout << "impurity site info\n";
+    for (int n=0; n<N_freq; n++) {
+        projweiss_field.setMatrix(n,  weiss_field.getMatrix(n,solver_block, solverDim ) +dc_weakCorr.at(n)    );
+    }
+
+    ifroot std::cout << "Imp H0:\n"  << std::fixed << std::setprecision(6)<< projimpurity_site_Hamiltonian <<"\n";
+    ifroot std::cout << "Re[D([w=0)]:\n" << std::fixed << std::setprecision(6)<<( (projweiss_field.getMatrix(0)) + (projweiss_field.getMatrix(0)) ) /2 <<"\n";
+    std::cout << std::fixed << std::setprecision(4);
+
+
+
+
+    projSolverBasis.setIdentity(solverDim, solverDim);
+    if(impurityBasisSwitch) {
+
+
+
+
+
+        std::cout << std::fixed << std::setprecision(4);
+
+        if(  ((  projimpurity_site_Hamiltonian  ).imag()).norm()  <  1e-5 and (magnetism==0 or magnetism==1) ) {
+
+            Eigen::MatrixXcd weiss0_re(solverDim/2, solverDim/2);
+            for (int i=0; i<solverDim; i+=2) {
+                for (int j=0; j<solverDim; j+=2) {
+                    cmplx temp = ( (projweiss_field.getMatrix(0))(i,j)  + (projweiss_field.getMatrix(0))(i+1,j+1) ) /2;
+                    temp += (projimpurity_site_Hamiltonian(i,j) + projimpurity_site_Hamiltonian(i+1, j+1)) /2;
+                    weiss0_re( i/2, j/2   ) = temp;
+                }
+            }//n
+            weiss0_re  = (weiss0_re+weiss0_re.adjoint()).eval();
+            weiss0_re /= 2.0;
+
+
+
+            Eigen::MatrixXd temp =  ((weiss0_re).real());
+            Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd> ces( solverDim/2 );
+            ces.compute(    temp   );
+
+            for (int i=0; i<solverDim; i+=2) {
+                for (int j=0; j<solverDim; j+=2) {
+                    projSolverBasis(i ,j ) = (ces.eigenvectors())(i/2,j/2);
+                    projSolverBasis(i+1,j+1) = (ces.eigenvectors())(i/2,j/2);
+                }
+            }//n
+        }
+        else {
+            Eigen::MatrixXcd weiss0_reSOC =  projweiss_field.getMatrix(0) ;
+            weiss0_reSOC = (weiss0_reSOC + weiss0_reSOC.adjoint()).eval();
+            weiss0_reSOC /= 2.0;
+
+            Eigen::SelfAdjointEigenSolver<Eigen::MatrixXcd> ces( solverDim );
+            ces.compute(    projimpurity_site_Hamiltonian   );
+            projSolverBasis = ces.eigenvectors();
+
+
+
+            Eigen::MatrixXcd temp =  projSolverBasis.adjoint() * (projimpurity_site_Hamiltonian + weiss0_reSOC) * projSolverBasis;
+            Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd> ces2( solverDim );
+            ces2.compute(    temp.real()  );
+
+            projSolverBasis = (  projSolverBasis *  ces2.eigenvectors()  ).eval();
+
+        }
+    }
+
+
+
+    ifroot std::cout << "Solver:Basis:\n" << projSolverBasis<<"\n";
+    projimpurity_site_Hamiltonian = (projSolverBasis.adjoint() * projimpurity_site_Hamiltonian* projSolverBasis);
+    ifroot std::cout << "Imp H0:\n"  <<std::fixed << std::setprecision(6)<< projimpurity_site_Hamiltonian <<"\n";
+
+
+    for(int n =0; n<N_freq; n++) {
+        projweiss_field.setMatrix(n,  (projSolverBasis).adjoint()* projweiss_field.getMatrix(n) *(projSolverBasis));
+    }
+    Eigen::MatrixXcd weiss0_re =  projweiss_field.getMatrix(0) ;
+    ifroot std::cout <<  "D([w=0):\n"  <<std::fixed << std::setprecision(6)<<
+                     weiss0_re << "\n";
+
+    projNumMatrix = projSolverBasis.adjoint() * projNumMatrix * projSolverBasis ;
+
+}

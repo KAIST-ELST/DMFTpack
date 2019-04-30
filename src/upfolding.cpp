@@ -35,7 +35,7 @@ void upfolding_k(Eigen::MatrixXcd & densityMatDFT_k, Eigen::MatrixXcd & KS_eigen
 }
 
 
-void upfolding_density(std::vector<Eigen::MatrixXcd> &densityMatDFT, std::vector<Eigen::MatrixXcd> & KS_eigenVectors_orthoBasis ,Eigen::MatrixXi H_Rindex, double mu ,
+void upfolding_density(std::vector<Eigen::MatrixXcd> &densityMatDFT, std::vector<Eigen::MatrixXcd> & KS_eigenVectors_orthoBasis,Eigen::MatrixXi H_Rindex, double mu,
                        std::vector<Eigen::MatrixXcd> & S_overlap,
                        std::vector<Eigen::MatrixXcd> & transformMatrix_k) {
 
@@ -96,7 +96,7 @@ void upfolding_density(std::vector<Eigen::MatrixXcd> &densityMatDFT, std::vector
             int i0= H_Rindex(index,3) ;
             int m0= H_Rindex(index,4) ;
             fprintf(fp_jh3, " %+d %+d %+d %d %d %d %d      %e    %e  \n",
-            n,l,m   ,
+            n,l,m,
             FromOrbitalToAtom[i0]+1,             FromOrbitalToAtom[m0]+1,
             FromOrbitalToLocalOrbital_DFT[i0]+1, FromOrbitalToLocalOrbital_DFT[m0]+1,
             real(dual_DMR_dual(index)), imag(dual_DMR_dual(index)));  //Collinear.
@@ -113,7 +113,7 @@ void upfolding_density(std::vector<Eigen::MatrixXcd> &densityMatDFT, std::vector
             int i0= H_Rindex(index,3) ;
             int m0= H_Rindex(index,4) ;
             fprintf(fp_jh3, " %+d %+d %+d %d %d %d %d      %e    %e  \n",
-            n,l,m   ,
+            n,l,m,
             FromOrbitalToAtom[i0]+1,             FromOrbitalToAtom[m0]+1,
             FromOrbitalToLocalOrbital_DFT[i0]+1, FromOrbitalToLocalOrbital_DFT[m0]+1,
             real(dual_DM_direct_DFTR(index)), imag(dual_DM_direct_DFTR(index)));  //Collinear.
@@ -128,7 +128,7 @@ void upfolding_density(std::vector<Eigen::MatrixXcd> &densityMatDFT, std::vector
             int i0= H_Rindex(index,3) ;
             int m0= H_Rindex(index,4) ;
             fprintf(fp_jh3, " %+d %+d %+d %d %d %d %d      %e    %e  \n",
-            n,l,m   ,
+            n,l,m,
             FromOrbitalToAtom[i0]+1,             FromOrbitalToAtom[m0]+1,
             FromOrbitalToLocalOrbital_DFT[i0]+1, FromOrbitalToLocalOrbital_DFT[m0]+1,
             real(direct_DMR_direct(index)), imag(direct_DMR_direct(index)));  //Collinear.

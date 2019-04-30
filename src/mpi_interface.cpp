@@ -54,7 +54,7 @@ void para_range(int n1, int n2, int nprocs, int myrank, int *mystart, int * myen
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //
-void data_sync(cmplx *A , int startRow, int endRow,  int nprocs) {
+void data_sync(cmplx *A, int startRow, int endRow,  int nprocs) {
     int itsRank,istart,iend, myrank, row;
 
     int * start = new int [nprocs];
@@ -74,7 +74,7 @@ void data_sync(cmplx *A , int startRow, int endRow,  int nprocs) {
     delete [] start;
     delete [] end;
 }
-void data_sync(double *A , int startRow, int endRow,  int nprocs) {
+void data_sync(double *A, int startRow, int endRow,  int nprocs) {
     int itsRank,istart,iend, myrank, row;
 
     int * start = new int [nprocs];
@@ -91,7 +91,7 @@ void data_sync(double *A , int startRow, int endRow,  int nprocs) {
     delete [] start;
     delete [] end;
 }
-void data_sync(int  *A , int startRow, int endRow,  int nprocs) {
+void data_sync(int  *A, int startRow, int endRow,  int nprocs) {
     int itsRank,istart,iend, myrank, row;
 
     int * start = new int [nprocs];
@@ -108,7 +108,7 @@ void data_sync(int  *A , int startRow, int endRow,  int nprocs) {
     delete [] start;
     delete [] end;
 }
-void data_sync_EigenMat(Eigen::MatrixXcd *A , int startRow, int endRow, int matrix_dim,  int nprocs) {
+void data_sync_EigenMat(Eigen::MatrixXcd *A, int startRow, int endRow, int matrix_dim,  int nprocs) {
     int itsRank,istart,iend, myrank, row;
 
     int * start = new int [nprocs];
@@ -149,7 +149,7 @@ void data_sync_EigenMat(Eigen::MatrixXcd *A , int startRow, int endRow, int matr
 }
 
 
-void data_sync(cmplx **A , int startRow, int endRow, int lenColumn,  int nprocs) {
+void data_sync(cmplx **A, int startRow, int endRow, int lenColumn,  int nprocs) {
     int itsRank,istart,iend, myrank, row;
 
     int * start = new int [nprocs];
@@ -179,7 +179,7 @@ void data_sync(cmplx **A , int startRow, int endRow, int lenColumn,  int nprocs)
     delete [] end;
 }
 
-void data_sync(double **A , int startRow, int endRow, int lenColumn,  int nprocs) {
+void data_sync(double **A, int startRow, int endRow, int lenColumn,  int nprocs) {
     int itsRank,istart,iend, myrank, row;
     int * start = new int [nprocs];
     int * end = new int [nprocs];
@@ -209,7 +209,7 @@ void data_sync(double **A , int startRow, int endRow, int lenColumn,  int nprocs
     delete [] end;
 }
 
-void data_sync(int **A , int startRow, int endRow, int lenColumn,  int nprocs) {
+void data_sync(int **A, int startRow, int endRow, int lenColumn,  int nprocs) {
     int itsRank,istart,iend, myrank, row;
 
     int * start = new int [nprocs];
@@ -238,7 +238,7 @@ void data_sync(int **A , int startRow, int endRow, int lenColumn,  int nprocs) {
     delete [] end;
 }
 
-void data_sync(cmplx ***A , int startRow, int endRow, int lenColumn, int lenhight,  int nprocs) {
+void data_sync(cmplx ***A, int startRow, int endRow, int lenColumn, int lenhight,  int nprocs) {
     int itsRank,istart,iend, myrank, row;
 
     int * start = new int [nprocs];
