@@ -65,7 +65,7 @@ extern double beta, NumberOfElectron, EnergyUnit, doublecounting, Band_renorm,  
 extern std::string dctype, localOrbitalType, SOLVERtype, Lowlevel_SOLVERtype;
 extern Eigen::Matrix2cd * Zeeman_field_spin;
 extern int highFreq, N_freq, N_tau,  magnetism;
-extern unsigned long long  Num_MC_steps;
+extern unsigned long long  Num_MC_steps, THERMALIZATION;
 extern std::string mode;
 extern double infinitesimal ;
 extern int  maxDmftIt, maxDFTIt, maxTime,restart, NSpinOrbit_per_atom, N_peratom_HartrOrbit;

@@ -24,6 +24,7 @@
 
 
 int occupation_Bits(int i, unsigned long long alp) ;
+int Sz(unsigned  long long  n);
 int F_dagger_sign(int i, unsigned long long alp) ;
 int countSetBits(unsigned  long long  n);
 double getTotEng_seg( Eigen::MatrixXcd Local_Hamiltonian_ED, double muTB,  unsigned long long   alp);
@@ -215,26 +216,26 @@ void ctqmc_rutgers(  Eigen::MatrixXcd Local_Hamiltonian_ED, double muTB,
 } //ct_qmc_rut
 
 void ctqmc_rutgers_seg(  Eigen::MatrixXcd Local_Hamiltonian_ED, double muTB,
-                         ImgFreqFtn & weiss_field,  std::vector<cmplx > Utensor, std::vector<Eigen::VectorXi> Uindex) {
+                         ImgFreqFtn & weiss_field,  std::vector<cmplx > Utensor, std::vector<Eigen::VectorXi> Uindex, int solverDim) {
     ifroot{
 
         FILE * cix = fopen("rutgers_input.cix", "w");
         fprintf(cix, "# Cix file for cluster DMFT with CTQMC\n");
         fprintf(cix, "# cluster_size, number of states, number of baths, maximum matrix size\n");
-        fprintf(cix, "1 %d %d 1 \n",((int)std::pow(2,NSpinOrbit_per_atom)), NSpinOrbit_per_atom);
+        fprintf(cix, "1 %d %d 1 \n",((int)std::pow(2,solverDim)), solverDim);
         fprintf(cix, "# baths, dimension, symmetry, global flip\n");
-        for(int alp=0; alp<NSpinOrbit_per_atom; alp++) { //0,2,4...NSpinOrbit_per_atom-2
+        for(int alp=0; alp<solverDim; alp++) { //0,2,4...NSpinOrbit_per_atom-2
             fprintf(cix, "%d 1 %d %d\n",alp, alp, alp/2);
         }
         fprintf(cix, "# cluster energies for unique baths, eps[k]\n");
-        for(int i=0; i<NSpinOrbit_per_atom; i++) {
+        for(int i=0; i<solverDim; i++) {
             fprintf(cix, " 0");
         }
         fprintf(cix, "\n#   N   K   Sz size F^{+,0}, F^{+,1}, F^{+,2}, F^{+,3}, F^{+,4}, F^{+,5}, {Ea,Eb..} ;  {Sa, Sb..}\n");
-        for(int alp=0; alp<std::pow(2,NSpinOrbit_per_atom); alp++) {
-            fprintf(cix,      "%d  %d   0  0  1  ",
-            alp+1, countSetBits(alp));
-            for(int i=0; i<NSpinOrbit_per_atom; i++) {   //alp = \sum_i  n_i * 2^i; i=0,1,... NSpinOrbit_per_atom-1 <=> |n_{NSpinOrbit_per_atom-1}, .., n_1, n_0>
+        for(int alp=0; alp<std::pow(2,solverDim); alp++) {
+            fprintf(cix,      "%d  %d   0  %d  1  ",
+            alp+1, countSetBits(alp) , Sz(alp)  );
+            for(int i=0; i<solverDim; i++) {   //alp = \sum_i  n_i * 2^i; i=0,1,... NSpinOrbit_per_atom-1 <=> |n_{NSpinOrbit_per_atom-1}, .., n_1, n_0>
                 int operationState = std::pow(2,i);   // (0,0,...,0,1,0,...0)
                 fprintf(cix,      "%d ", (1-occupation_Bits(i,alp))*(alp+1+operationState));
             }
@@ -246,8 +247,8 @@ void ctqmc_rutgers_seg(  Eigen::MatrixXcd Local_Hamiltonian_ED, double muTB,
 
 
         fprintf(cix, "# matrix elements\n");
-        for(int alp=0; alp<std::pow(2,NSpinOrbit_per_atom); alp++) {
-            for(int i=0; i<NSpinOrbit_per_atom; i++) {
+        for(int alp=0; alp<std::pow(2,solverDim); alp++) {
+            for(int i=0; i<solverDim; i++) {
                 int operationState = std::pow(2,i);   // (0,0,...,0,1,0,...0)
                 fprintf(cix,      "%d  %d   1  %d  ",
                         alp+1, (1-occupation_Bits(i,alp))*(alp+1+operationState), (1-occupation_Bits(i,alp))  );
@@ -289,26 +290,27 @@ void ctqmc_rutgers_seg(  Eigen::MatrixXcd Local_Hamiltonian_ED, double muTB,
 
 void write_PARMS() {
     FILE *fp;
-    if ((fp = fopen("PARAMS","r")) == NULL) {
-        FILE * PARMS_file = fopen("PARAMS", "w");
-        fprintf(PARMS_file, "nom %d  # number of Matsubara frequencies\n", N_freq                 );
-        fprintf(PARMS_file, "svd_lmax 30 # number of SVD functions to project the solution\n"                 );
-        fprintf(PARMS_file, "svd_L 15 # To compute the SVD decomposition of the kernel for analytic continuation, we need to choose the cutoff on the real axis.(default: 10).\n"                 );
-        fprintf(PARMS_file, "tsample  50     # how often to record the measurements\n"                        );
-        fprintf(PARMS_file, "aom      1      # number of frequency points to determin high frequency tail\n"  );
-        fprintf(PARMS_file, "M %llu     # Number of Monte Carlo steps\n", Num_MC_steps                                       );
-        fprintf(PARMS_file, "beta %0.5f        # Inverse temperature\n", beta                                 );
-        fprintf(PARMS_file, "U 0        # Coulomb repulsion (F0), This information is wrtten in cix file\n"   );
-        fprintf(PARMS_file, "GlobalFlip 500000  # how often to perform global flip\n"                         );
-        fprintf(PARMS_file, "exe %s  # Path to executable\n", SOLVERexe.c_str()                 );
-        fprintf(PARMS_file, "mu  0   # Chemical potential\n"                                                  );
-        fprintf(PARMS_file, "mode SM   # S stands for self-energy sampling, M stands for high frequency moment tail\n");
-        fprintf(PARMS_file, "Delta delta_w_rutgers.dat  # Input bath function hybridization\n");
-        fprintf(PARMS_file,  "cix rutgers_input.cix # Input file with atomic state\n"                          );
-        fclose(PARMS_file);
-        sleep(3);
-        std::cout <<"Write ct-qmc input, PARMS\n";
-    }
+//    if ((fp = fopen("PARAMS","r")) == NULL) {
+    FILE * PARMS_file = fopen("PARAMS", "w");
+    fprintf(PARMS_file, "nom %d  # number of Matsubara frequencies\n", N_freq                 );
+    fprintf(PARMS_file, "svd_lmax 30 # number of SVD functions to project the solution\n"                 );
+    fprintf(PARMS_file, "svd_L 15 # To compute the SVD decomposition of the kernel for analytic continuation, we need to choose the cutoff on the real axis.(default: 10).\n"                 );
+    fprintf(PARMS_file, "tsample  50     # how often to record the measurements\n"                        );
+    fprintf(PARMS_file, "aom      1      # number of frequency points to determin high frequency tail\n"  );
+    fprintf(PARMS_file, "M      %llu     # Number of Monte Carlo steps\n", Num_MC_steps                                       );
+    fprintf(PARMS_file, "warmup %llu     # Number of Monte Carlo steps\n", THERMALIZATION                                       );
+    fprintf(PARMS_file, "beta %0.5f        # Inverse temperature\n", beta                                 );
+    fprintf(PARMS_file, "U 0        # Coulomb repulsion (F0), This information is wrtten in cix file\n"   );
+    fprintf(PARMS_file, "GlobalFlip 500000  # how often to perform global flip\n"                         );
+    fprintf(PARMS_file, "exe %s  # Path to executable\n", SOLVERexe.c_str()                 );
+    fprintf(PARMS_file, "mu  0   # Chemical potential\n"                                                  );
+    fprintf(PARMS_file, "mode SM   # S stands for self-energy sampling, M stands for high frequency moment tail\n");
+    fprintf(PARMS_file, "Delta delta_w_rutgers.dat  # Input bath function hybridization\n");
+    fprintf(PARMS_file,  "cix rutgers_input.cix # Input file with atomic state\n"                          );
+    fclose(PARMS_file);
+    sleep(3);
+    std::cout <<"Write ct-qmc input, PARMS\n";
+//    }
 }
 
 
@@ -693,6 +695,18 @@ int countSetBits(unsigned  long long  n)
     while (n)
     {
         count += n & 1;
+        n >>= 1;
+    }
+    return count;
+}
+int Sz(unsigned  long long  n)
+{
+    int count = 0;
+    int s_z = 1;
+    while (n)
+    {
+        count += s_z*(n & 1);
+        s_z = -1*s_z;
         n >>= 1;
     }
     return count;

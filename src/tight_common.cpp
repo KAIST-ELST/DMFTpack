@@ -67,6 +67,7 @@ double beta,  EnergyUnit, doublecounting, NumberOfElectron, Band_renorm, TotalCo
 Eigen::Matrix2cd * Zeeman_field_spin;
 int  N_freq, N_tau,  magnetism;
 unsigned long long Num_MC_steps;
+unsigned long long THERMALIZATION;
 std::string mode;
 std::string solver_bin;
 double infinitesimal; // EWIN;
@@ -74,7 +75,7 @@ double nominal_charge;
 //std::string delta_file;
 std::string system_name;
 std::string SOLVERexe, SOLVERdir;
-std::string dctype, localOrbitalType, SOLVERtype, Lowlevel_SOLVERtype;
+std::string dctype, localOrbitalType, SOLVERtype, Lowlevel_SOLVERtype, Coulombtype;
 //int * LongRangeOrder
 //int * LongRangeOrder_Hart, *LongRangeOrder_DFT;
 //int *accumulated_Num_SpinOrbital ;
@@ -164,8 +165,8 @@ void read_inputFile(const std::string &hamiltonian) {
     N_tau =        read_int(std::string("input.solver"),std::string("input.solver1"), std::string("N_TAU"),-1)  ;
     double tempD = read_double(std::string("input.solver"), std::string("SWEEPS"),  true, 1e9);
     Num_MC_steps = (unsigned long long) tempD;
-//    std::cout <<tempD<<"\n";
-//    std::cout <<Num_MC_steps<<"\n";
+    tempD = read_double(std::string("input.solver"), std::string("THERMALIZATION"),  true, 1e6);
+    THERMALIZATION = (unsigned long long) tempD;
     maxTime =     60;
 
 //
@@ -194,8 +195,9 @@ void read_inputFile(const std::string &hamiltonian) {
 
 //Impurity information
     UHubb =                   read_double(std::string("input.solver"), std::string("U"), true, -2)    ;
-    Uprime =                  read_double(std::string("input.solver"), std::string("U'"),true, -2)    ;
+    Uprime =                  read_double(std::string("input.solver"), std::string("U'"),true, UHubb)    ;
     JHund =                   read_double(std::string("input.solver"), std::string("J"), true, -2)    ;
+    Coulombtype =             read_string(std::string("input.solver"), std::string("COULOMB_TYPE"), true, "dd")    ; //, dd (density-density) k(Kanamori), r (read Uijkl_Hart.dat)
     beta                    = read_double(std::string("input.solver"), std::string("BETA"), false, -1) ;
     NSpinOrbit_per_atom     =    read_int(std::string("input.solver"), std::string("N_ORBITALS"),-1)  ; //correlated orbital per Correlated atom
     N_peratom_HartrOrbit    =    read_int(std::string("input.solver"), std::string("N_HARTREE_ORBITALS"),NSpinOrbit_per_atom)   ; //Hartree orbital per correlated atom
@@ -213,7 +215,6 @@ void read_inputFile(const std::string &hamiltonian) {
     }
     else {
         doublecounting =     1;
-//        if(dctype == std::string("nominal")) {}
         if ( dctype.find(std::string("nominal")) != std::string::npos      ) {
             nominal_charge   =   read_double(std::string("input.parm"), std::string("N_d"), false,  -1);
         }
@@ -414,25 +415,21 @@ void read_inputFile(const std::string &hamiltonian) {
             HartrIndex_inDFT[at*N_peratom_HartrOrbit + i] = HartrIndex[at * N_peratom_HartrOrbit +i];
         }
     }
-//    for(int i=0; i<NumCorrAtom; i++) {
-//        HartrRange_DFT[i][0] = HartrRange[i][0];
-//        HartrRange_DFT[i][1] = HartrRange[i][1];
-//    }
 
     /*Construct Utensor */
     std::vector<Eigen::VectorXi> Uindex_atom;
     std::vector<cmplx > Utensor_atom;
-    if (UHubb == -2 and Uprime ==-2 and JHund ==-2) {
+    if (Coulombtype == std::string("r")     ) {
         read_Uijkl(   Utensor_atom,  Uindex_atom) ;
     }
-    else {
-        if ( SOLVERtype.find(std::string("SEG")) != std::string::npos ) {
-            ifroot std::cout << "gen_Uijkl_dd\n";
-            gen_Uijkl_density_density(N_peratom_HartrOrbit, UHubb, Uprime, JHund, Utensor_atom, Uindex_atom);
-        }
-        else gen_Uijkl(N_peratom_HartrOrbit, UHubb, Uprime, JHund, Utensor_atom, Uindex_atom);
-//        else  gen_Uijkl_density_density(N_peratom_HartrOrbit, UHubb, Uprime, JHund, Utensor_atom, Uindex_atom);
+//    else {}
+//        if ( SOLVERtype.find(std::string("SEG")) != std::string::npos ) {}
+    else if ( Coulombtype == "dd" ) {
+        ifroot std::cout << "gen_Uijkl_dd\n";
+        gen_Uijkl_density_density(N_peratom_HartrOrbit, UHubb, Uprime, JHund, Utensor_atom, Uindex_atom);
     }
+    else if (Coulombtype =="k")  gen_Uijkl(N_peratom_HartrOrbit, UHubb, Uprime, JHund, Utensor_atom, Uindex_atom);
+//    {}
 
 
     for(int  cl =0; cl < NumAtom_per_cluster; cl++) {

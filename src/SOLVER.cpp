@@ -49,7 +49,7 @@ void SCGF2 (int solverDim, Eigen::MatrixXcd projimpurity_site_Hamiltonian, Eigen
 
 
 void ctqmc_rutgers(  Eigen::MatrixXcd Local_Hamiltonian_ED, double muTB,  ImgFreqFtn & weiss_field, std::vector<cmplx > Utensor, std::vector<Eigen::VectorXi> Uindex, int solverDim  ) ;
-void ctqmc_rutgers_seg(  Eigen::MatrixXcd Local_Hamiltonian_ED, double muTB,  ImgFreqFtn & weiss_field, std::vector<cmplx > Utensor, std::vector<Eigen::VectorXi> Uindex) ;
+void ctqmc_rutgers_seg(  Eigen::MatrixXcd Local_Hamiltonian_ED, double muTB,  ImgFreqFtn & weiss_field, std::vector<cmplx > Utensor, std::vector<Eigen::VectorXi> Uindex, int solverDim) ;
 
 
 
@@ -264,7 +264,7 @@ void SOLVER(
             std::vector<Eigen::VectorXi> rotUindex;
             rot_Uijkl(projUtensor, projUindex, rotUtensor, rotUindex, projSolverBasis, solverDim);
 
-            ctqmc_rutgers_seg(  projimpurity_site_Hamiltonian_diag,  muTB, projweiss_field,rotUtensor, rotUindex   );
+            ctqmc_rutgers_seg(  projimpurity_site_Hamiltonian_diag,  muTB, projweiss_field,rotUtensor, rotUindex, solverDim   );
 
             /*set solver command*/
             MPI_Comm communication;

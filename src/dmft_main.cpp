@@ -16,7 +16,7 @@
 
 //#define debug_jhs 1
 
-bool dmft_scf_check( Eigen::MatrixXcd NumMatrixLatt, Eigen::MatrixXcd NumMatrixImp, Eigen::MatrixXcd NumMatrix, time_t timeStartIt, time_t timeEndIt, int currentIt ) ;
+bool dmft_scf_check ( Eigen::MatrixXcd NumMatrixLatt, Eigen::MatrixXcd NumMatrixImp, time_t timeStartIt, time_t timeEndIt, int currentIt ) ;
 
 double  TightBinding(double mu, const std::string &hamiltonian, ImgFreqFtn & SelfE_w,
                      ImgFreqFtn & weiss_fieldTB, ImgFreqFtn & weiss_fieldTBCorr,
@@ -568,7 +568,7 @@ int main(int argc, char *argv[]) {
         /***********************************************************
         //print and convergence check
         ***********************************************************/
-        bool converg = dmft_scf_check( NumMatrixLatt, NumMatrixImp, NumMatrix, timeStartIt, timeEndIt, currentIt );
+        bool converg = dmft_scf_check( NumMatrixLatt, NumMatrixImp, timeStartIt, timeEndIt, currentIt );
         if (converg) {
             std::cout << "DMFT: The DMFT calculation has reached convergence." << mpi_rank <<"\n" ;
             break;
@@ -907,7 +907,7 @@ void write_results(int DFTIt, int currentIt, std::string system_name, int NumCor
 
 
 
-bool dmft_scf_check( Eigen::MatrixXcd NumMatrixLatt, Eigen::MatrixXcd NumMatrixImp, Eigen::MatrixXcd NumMatrix, time_t timeStartIt, time_t timeEndIt, int currentIt ) {
+bool dmft_scf_check( Eigen::MatrixXcd NumMatrixLatt, Eigen::MatrixXcd NumMatrixImp, time_t timeStartIt, time_t timeEndIt, int currentIt ) {
 
 
     ifroot {
@@ -946,7 +946,7 @@ bool dmft_scf_check( Eigen::MatrixXcd NumMatrixLatt, Eigen::MatrixXcd NumMatrixI
             Eigen::MatrixXcd NumMat_atom1(N_peratom_HartrOrbit, N_peratom_HartrOrbit);
             for(int n=0; n<N_peratom_HartrOrbit; n+=1) {
                 for(int m=0; m<N_peratom_HartrOrbit; m+=1) {
-                    NumMat_atom1(n,m) = NumMatrix(at*N_peratom_HartrOrbit+n, at*N_peratom_HartrOrbit+m);
+                    NumMat_atom1(n,m) = NumMatrixLatt(at*N_peratom_HartrOrbit+n, at*N_peratom_HartrOrbit+m);
                 }
             }
             ces.compute(NumMat_atom1);

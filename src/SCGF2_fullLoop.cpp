@@ -481,7 +481,6 @@ void SCGF2 (int solverDim, Eigen::MatrixXcd projimpurity_site_Hamiltonian, Eigen
         /*and HF*/
         getoccMat(Gwimp, occMat, solverDim);
         getFockOperator( Fock, occMat, solverDim, projUindex, projUtensor) ;
-//        ifroot std::cout << "fock:\n" << Fock <<"\n";
 
         //        /*get  Sigma_w,  */
         Gwimp[N_freq].setIdentity(solverDim, solverDim);
