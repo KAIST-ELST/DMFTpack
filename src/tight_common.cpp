@@ -67,7 +67,6 @@ double beta,  EnergyUnit, doublecounting, NumberOfElectron, Band_renorm, TotalCo
 Eigen::Matrix2cd * Zeeman_field_spin;
 int  N_freq, N_tau,  magnetism;
 unsigned long long Num_MC_steps;
-unsigned long long THERMALIZATION;
 std::string mode;
 std::string solver_bin;
 double infinitesimal; // EWIN;
@@ -138,12 +137,12 @@ void read_inputFile(const std::string &hamiltonian) {
 
 //Computational options
     system_name=  read_string(std::string("input.parm"), std::string("SYSTEM_NAME"), false)   ;
-    mu_adjust =   read_int(std::string("input.parm"), std::string("mu_adjust"),1)           ;   //0=fixed mu, 1=Adjusting mu to Filling Factor
-    maxDFTIt    =read_int(std::string("input.parm"), std::string("MAX_DFT_ITER"),1);
-    maxDmftIt    =read_int(std::string("input.parm"), std::string("MAX_DMFT_ITER"),20);
-    restart =     read_int(std::string("input.parm"), std::string("RESTART"),-1)  ;
+    mu_adjust =   read_int(std::string("input.parm"), std::string("mu_adjust"), true, 1)           ;   //0=fixed mu, 1=Adjusting mu to Filling Factor
+    maxDFTIt    =read_int(std::string("input.parm"), std::string("MAX_DFT_ITER"),true, 1);
+    maxDmftIt    =read_int(std::string("input.parm"), std::string("MAX_DMFT_ITER"),true, 20);
+    restart =     read_int(std::string("input.parm"), std::string("RESTART"), false)  ;
     mixing =      read_double(std::string("input.parm"), std::string("MIXING"), true, 0.8 )  ;
-    mixingFtn =  read_int(std::string("input.parm"), std::string("MIXING_FUNCTION"),1)  ;    //0=hybridization,  [1=self-energy]
+    mixingFtn =  read_int(std::string("input.parm"), std::string("MIXING_FUNCTION"), true ,1)  ;    //0=hybridization,  [1=self-energy]
 
 
     /*solver option*/
@@ -161,26 +160,22 @@ void read_inputFile(const std::string &hamiltonian) {
     Lowlevel_SOLVERtype  = read_string(std::string("input.parm"), std::string("Lowlevel_SOLVERTYPE"),true, std::string("HF"));  //HF, 2PT
 
 
-    N_freq    =    read_int(std::string("input.solver"),std::string("input.solver1"), std::string("N_MATSUBARA"),-1);
-    N_tau =        read_int(std::string("input.solver"),std::string("input.solver1"), std::string("N_TAU"),-1)  ;
-    double tempD = read_double(std::string("input.solver"), std::string("SWEEPS"),  true, 1e9);
-    Num_MC_steps = (unsigned long long) tempD;
-    tempD = read_double(std::string("input.solver"), std::string("THERMALIZATION"),  true, 1e6);
-    THERMALIZATION = (unsigned long long) tempD;
+    N_freq    =    read_int(std::string("input.solver"),std::string("input.solver1"), std::string("N_MATSUBARA"),false);
+    N_tau =        read_int(std::string("input.solver"),std::string("input.solver1"), std::string("N_TAU"),false)  ;
     maxTime =     60;
 
 //
 //Lattice information
 //
-    H0_from_OpenMX =   read_int(std::string("input.parm"), std::string("H0_FROM_OPENMX"), 0);
+    H0_from_OpenMX =   read_int(std::string("input.parm"), std::string("H0_FROM_OPENMX"),true, 0);
     if(H0_from_OpenMX!=0  ) {
         ifroot analysis_example(system_name+std::string(".scfout"));
         MPI_Barrier(MPI_COMM_WORLD);
         sleep(5);
     }
-    NumAtom_per_cluster    =   read_int(std::string("input.parm"), std::string("N_ATOMS_CLUSTER"),1)   ;   //num atoms for each cluster. Thus, num cluster = NumAtom/NumAtom_per_cluster
-    NumAtom          =   read_int(std::string("input.parm"), std::string("N_ATOMS"),-1)   ;   //total Num of atoms
-    NumCorrAtom      =   read_int(std::string("input.parm"), std::string("N_CORRELATED_ATOMS"),-1) ; //Num of atoms, which inlude correlated and/or HF orbitals
+    NumAtom_per_cluster    =   read_int(std::string("input.parm"), std::string("N_ATOMS_CLUSTER"), true , 1)   ;   //num atoms for each cluster. Thus, num cluster = NumAtom/NumAtom_per_cluster
+    NumAtom          =   read_int(std::string("input.parm"), std::string("N_ATOMS"), false )   ;   //total Num of atoms
+    NumCorrAtom      =   read_int(std::string("input.parm"), std::string("N_CORRELATED_ATOMS"), false) ; //Num of atoms, which inlude correlated and/or HF orbitals
     NumberOfElectron = read_double(std::string("input.parm"), std::string("N_ELECTRONS"), false, -1) ;    // Number of electron per unit cell = NumOrbit * FillingFactor
     EnergyUnit =    read_double(std::string("input.parm"), std::string("EnergyUnit"), true, 1)    ;    //Input (Hopping Hamiltonian) -> eV
 
@@ -190,7 +185,7 @@ void read_inputFile(const std::string &hamiltonian) {
     k_pointy = k_point[1];
     k_pointz = k_point[2];
 
-    magnetism   =         read_int(std::string("input.parm"), std::string("MAGNETISM"),   2)    ; //0=para, 1=col, 2=noncol
+    magnetism   =         read_int(std::string("input.parm"), std::string("MAGNETISM"),true,   2)    ; //0=para, 1=col, 2=noncol
 
 
 //Impurity information
@@ -199,10 +194,10 @@ void read_inputFile(const std::string &hamiltonian) {
     JHund =                   read_double(std::string("input.solver"), std::string("J"), true, -2)    ;
     Coulombtype =             read_string(std::string("input.solver"), std::string("COULOMB_TYPE"), true, "dd")    ; //, dd (density-density) k(Kanamori), r (read Uijkl_Hart.dat)
     beta                    = read_double(std::string("input.solver"), std::string("BETA"), false, -1) ;
-    NSpinOrbit_per_atom     =    read_int(std::string("input.solver"), std::string("N_ORBITALS"),-1)  ; //correlated orbital per Correlated atom
-    N_peratom_HartrOrbit    =    read_int(std::string("input.solver"), std::string("N_HARTREE_ORBITALS"),NSpinOrbit_per_atom)   ; //Hartree orbital per correlated atom
+    NSpinOrbit_per_atom     =    read_int(std::string("input.solver"), std::string("N_ORBITALS"),false)  ; //correlated orbital per Correlated atom
+    N_peratom_HartrOrbit    =    read_int(std::string("input.solver"), std::string("N_HARTREE_ORBITALS"), true, NSpinOrbit_per_atom)   ; //Hartree orbital per correlated atom
     N_peratom_HartrOrbit += NSpinOrbit_per_atom;
-    impurityBasisSwitch  =       read_int(std::string("input.solver"), std::string("impurityBasisSwitch"),0);
+    impurityBasisSwitch  =       read_int(std::string("input.solver"), std::string("impurityBasisSwitch"), true , 0);
 
 //etc..
     Band_renorm =         read_double(std::string("input.parm"), std::string("BAND_RENORM"), true,  1)    ;
@@ -464,7 +459,7 @@ void read_inputFile(const std::string &hamiltonian) {
     if (SOLVERtype==std::string("TB")) {
         mode =      read_string(std::string("input.parm"), std::string("MODE"),false)  ; //dos, qsdos, band, qsband
         if(mode.find(std::string("band")) != std::string::npos) {
-            Nkpath =   read_int   (std::string("input.parm"), std::string("N_K_PATH"),-1)   ;
+            Nkpath =   read_int   (std::string("input.parm"), std::string("N_K_PATH"),false)   ;
             assert(Nkpath<9);
             std::vector<double> KpathPoint_vec((Nkpath+1)*3);
             read_double_array (std::string("input.parm"), std::string("K_PATH"),KpathPoint_vec, (Nkpath+1)*3,  true   ) ;
@@ -596,10 +591,10 @@ void setCorrelatedSpaceIndex( std::vector<int> HartreeOrbital_idx, int NumCorrAt
 
 
 void on_the_fly_control() {
-    mixing = read_double(std::string("input.parm"), std::string("MIXING"), true, 0.5)  ;
+    mixing = read_double(std::string("input.parm"), std::string("MIXING"), true, 0.8)  ;
     maxTime =     60;
-    maxDmftIt    =   read_int(std::string("input.parm"), std::string("MAX_DMFT_ITER"),-1);
-    maxDFTIt    =read_int(std::string("input.parm"), std::string("MAX_DFT_ITER"),5);
+    maxDmftIt    =   read_int(std::string("input.parm"), std::string("MAX_DMFT_ITER"),true, 20);
+    maxDFTIt    =read_int(std::string("input.parm"), std::string("MAX_DFT_ITER"),true,1);
 }
 
 int isSameAtom(int o1, int o2, int model) {

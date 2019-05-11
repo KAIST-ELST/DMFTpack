@@ -45,7 +45,8 @@ void write_PARMS() ;
 
 void write_cix_file (int NSector, int maxDim, int Nstate, Eigen::VectorXi dim_for_sector,  std::vector<std::vector<double> > & ImpTotalEnergy, Eigen::MatrixXcd ** f_annMat,
                      std::vector<cmplx > Utensor, std::vector<Eigen::VectorXi> Uindex,
-                     Eigen::MatrixXi  SuperState_quantumNum, Eigen::MatrixXi f_dagger_ann_SuperState   ) ;
+                     Eigen::MatrixXi  SuperState_quantumNum, Eigen::MatrixXi f_dagger_ann_SuperState,
+                     Eigen::MatrixXcd Local_Hamiltonian_ED);
 
 
 void write_Delta(   ImgFreqFtn & weiss_field );
@@ -56,6 +57,8 @@ void write_Delta_diag(   ImgFreqFtn & weiss_field_diag) ;
 
 void ctqmc_rutgers(  Eigen::MatrixXcd Local_Hamiltonian_ED, double muTB,
                      ImgFreqFtn & weiss_field, std::vector<cmplx > Utensor, std::vector<Eigen::VectorXi> Uindex, int solverDim  ) {
+
+
     ifroot "write rutgers_input file\n";
     int   Nstate = solverDim;
 
@@ -203,7 +206,8 @@ void ctqmc_rutgers(  Eigen::MatrixXcd Local_Hamiltonian_ED, double muTB,
     ifroot std::cout << "\nwrite_cix_file\n";
     ifroot     write_cix_file (NSector,  maxDim, Nstate, dim_for_sector, ImpTotalEnergy, f_annMat,
                                Utensor, Uindex,
-                               SuperState_quantumNum, f_dagger_ann_SuperState);
+                               SuperState_quantumNum, f_dagger_ann_SuperState,
+                               Local_Hamiltonian_ED  );
     write_Delta(    weiss_field);
     ifroot write_PARMS();
 
@@ -215,7 +219,7 @@ void ctqmc_rutgers(  Eigen::MatrixXcd Local_Hamiltonian_ED, double muTB,
     delete [] f_annMat;
 } //ct_qmc_rut
 
-void ctqmc_rutgers_seg(  Eigen::MatrixXcd Local_Hamiltonian_ED, double muTB,
+void ctqmc_rutgers_seg(  Eigen::MatrixXcd Local_Hamiltonian, double muTB,
                          ImgFreqFtn & weiss_field,  std::vector<cmplx > Utensor, std::vector<Eigen::VectorXi> Uindex, int solverDim) {
     ifroot{
 
@@ -229,7 +233,7 @@ void ctqmc_rutgers_seg(  Eigen::MatrixXcd Local_Hamiltonian_ED, double muTB,
         }
         fprintf(cix, "# cluster energies for unique baths, eps[k]\n");
         for(int i=0; i<solverDim; i++) {
-            fprintf(cix, " 0");
+            fprintf(cix, "%+0.8f ", real(Local_Hamiltonian(i,i)) - muTB );
         }
         fprintf(cix, "\n#   N   K   Sz size F^{+,0}, F^{+,1}, F^{+,2}, F^{+,3}, F^{+,4}, F^{+,5}, {Ea,Eb..} ;  {Sa, Sb..}\n");
         for(int alp=0; alp<std::pow(2,solverDim); alp++) {
@@ -240,7 +244,7 @@ void ctqmc_rutgers_seg(  Eigen::MatrixXcd Local_Hamiltonian_ED, double muTB,
                 fprintf(cix,      "%d ", (1-occupation_Bits(i,alp))*(alp+1+operationState));
             }
 
-            fprintf(cix,      "%+0.8f", getTotEng_seg(Local_Hamiltonian_ED, muTB,alp));
+            fprintf(cix,      "%+0.8f", getTotEng_seg(Local_Hamiltonian, muTB,alp));
             fprintf(cix,      " 0 \n");
         }//alp
 
@@ -289,6 +293,14 @@ void ctqmc_rutgers_seg(  Eigen::MatrixXcd Local_Hamiltonian_ED, double muTB,
 }//ctqmc_rutgers_seg
 
 void write_PARMS() {
+
+    int tsample = read_int(std::string("input.solver"), std::string("tsample"),  true, 50);
+    double tempD = read_double(std::string("input.solver"), std::string("SWEEPS"),  true, 1e9);
+    Num_MC_steps = (unsigned long long) tempD;
+    unsigned long long THERMALIZATION;
+    tempD = read_double(std::string("input.solver"), std::string("THERMALIZATION"),  true, 1e6);
+    THERMALIZATION = (unsigned long long) tempD;
+
     FILE *fp;
 //    if ((fp = fopen("PARAMS","r")) == NULL) {
     FILE * PARMS_file = fopen("PARAMS", "w");
@@ -319,14 +331,15 @@ void write_Delta(   ImgFreqFtn & weiss_field) {
     int spindim=1;
     if(magnetism==0 or magnetism==1) spindim=2;
 
+    int solverDim = (weiss_field.getMatrix(0)).rows();
     if(mpi_rank==0) {
         std::string filename = std::string("delta_w_rutgers.dat");
         FILE *datap4 = fopen(filename.c_str(), "w");
         for(int w=0; w< weiss_field.getNFreq(); w++) {
             fprintf(datap4, "%0.8f", weiss_field.getValue(w) );
             for(int spin = 0 ; spin< spindim; spin++) {
-                for(int n=spin; n< NSpinOrbit_per_atom; n+=spindim) {
-                    for(int m=n; m< NSpinOrbit_per_atom; m+=spindim) {
+                for(int n=spin; n< solverDim; n+=spindim) {
+                    for(int m=n;    m< solverDim; m+=spindim) {
                         fprintf(datap4, "     %0.10f  %0.10f", real( weiss_field.getValue(w, n,m)  ),
                                 imag( weiss_field.getValue(w, n,m)));
                     }
@@ -340,12 +353,13 @@ void write_Delta(   ImgFreqFtn & weiss_field) {
 }
 
 void write_Delta_diag(   ImgFreqFtn & weiss_field) {
+    int solverDim = (weiss_field.getMatrix(0)).rows();
     if(mpi_rank==0) {
         std::string filename = std::string("delta_w_rutgers.dat");
         FILE *datap4 = fopen(filename.c_str(), "w");
         for(int w=0; w< weiss_field.getNFreq(); w++) {
             fprintf(datap4, "%0.8f", weiss_field.getValue(w) );
-            for(int n=0; n< NSpinOrbit_per_atom; n++) {
+            for(int n=0; n< solverDim; n++) {
                 fprintf(datap4, "     %0.10f  %0.10f", real( weiss_field.getValue(w, n, n)  ),
                         imag( weiss_field.getValue(w,  n, n)));
             }
@@ -359,7 +373,8 @@ void write_Delta_diag(   ImgFreqFtn & weiss_field) {
 
 void write_cix_file (int NSector, int maxDim, int Nstate, Eigen::VectorXi dim_for_sector,  std::vector<std::vector<double> > & ImpTotalEnergy, Eigen::MatrixXcd ** f_annMat,
                      std::vector<cmplx > Utensor, std::vector<Eigen::VectorXi> Uindex,
-                     Eigen::MatrixXi  SuperState_quantumNum, Eigen::MatrixXi f_dagger_ann_SuperState   ) {
+                     Eigen::MatrixXi  SuperState_quantumNum, Eigen::MatrixXi f_dagger_ann_SuperState ,
+                     Eigen::MatrixXcd Local_Hamiltonian_ED) {
 
 
     int spindim=1;
@@ -373,8 +388,8 @@ void write_cix_file (int NSector, int maxDim, int Nstate, Eigen::VectorXi dim_fo
     int upper_triangle=0;
     int deltaForRutgersCTQMS[Nstate][Nstate];
     for(int spin = 0 ; spin< spindim; spin++) {
-        for(int n=spin; n< NSpinOrbit_per_atom; n+=spindim) {
-            for(int m=n; m< NSpinOrbit_per_atom; m+=spindim) {
+        for(int n=spin;  n< Nstate; n+=spindim) {
+            for(int m=n; m< Nstate; m+=spindim) {
                 deltaForRutgersCTQMS[n][m] = upper_triangle;
                 upper_triangle++;
             }
@@ -416,9 +431,19 @@ void write_cix_file (int NSector, int maxDim, int Nstate, Eigen::VectorXi dim_fo
 
 
     fprintf(cix, "# cluster energies for unique baths, eps[k]\n");
-    for(int alp=0; alp<Nstate; alp++) {
-        fprintf(cix, " 0");
+//    for(int alp=0; alp<Nstate; alp++) {
+//        fprintf(cix, " 0");
+//    }
+
+
+    for(int spin = 0 ; spin< spindim; spin++) {
+        for(int alp=spin; alp<Nstate; alp+=spindim) {
+            for(int bet=alp; bet<Nstate; bet+=spindim) {
+                fprintf(cix, " %+0.8f", real(Local_Hamiltonian_ED(alp,bet) )  );
+            }
+        }
     }
+
     fprintf(cix, "\n");
 
 
@@ -754,10 +779,11 @@ int F_element(int alpha, unsigned long long state1) {
 double getTotEng_seg( Eigen::MatrixXcd Local_Hamiltonian_ED, double muTB,  unsigned long long   alp) {
 
     double TotEng=0;
-    for(int i=0; i<NSpinOrbit_per_atom; i++) {
+    int solverDim =  Local_Hamiltonian_ED.rows();
+    for(int i=0; i<solverDim; i++) {
         TotEng +=  ( real(Local_Hamiltonian_ED(i,i))-muTB) *  occupation_Bits(i,alp);
     }//alp
-    for(int i=0; i<NSpinOrbit_per_atom; i+=2) { //0,2,4...NSpinOrbit_per_atom-2
+    for(int i=0; i<solverDim; i+=2) { //0,2,4...NSpinOrbit_per_atom-2
         TotEng += UHubb   * occupation_Bits(i,alp) *occupation_Bits(i+1,alp) ;
         for(int j=0; j<i; j+=2) {
             TotEng +=  Uprime         *  occupation_Bits(i,alp)  * occupation_Bits(j+1,alp);   //H_interaction

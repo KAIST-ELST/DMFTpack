@@ -51,7 +51,7 @@ double read_double(const std::string &Inputfile, const std::string &keyword, boo
 //    return  result;
 //}
 
-int read_int(const std::string &Inputfile, const std::string &keyword, int dft) {
+int read_int(const std::string &Inputfile, const std::string &keyword, bool defaultBool, int dft) {
     std::string IsitKeyword;
     std::ifstream input(Inputfile.c_str());
     int result;
@@ -68,7 +68,7 @@ int read_int(const std::string &Inputfile, const std::string &keyword, int dft) 
             return result;
         }
     }
-    if(read==0 and dft == -1) {
+    if(read==0 and defaultBool==false) {
         std::cout <<"InputFileError\n********************\n"<< keyword << "\n********************\n";
         assert(0);
     }

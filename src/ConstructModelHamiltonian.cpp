@@ -41,10 +41,7 @@ int Construct_Hk_Sk(
     std::vector<Eigen::MatrixXcd> & H_k_inModelSpace,  std::vector<Eigen::MatrixXcd> & S_overlap,
     std::vector<Eigen::MatrixXcd> & KS_eigenVectors_orthoBasis, Eigen::VectorXd  * KS_eigenEnergy
 
-)
-{
-
-
+) {
     int temp;
     /*Read Overlap matrix*/
     Eigen::MatrixXi S_overlap_Rindex    ;
@@ -304,17 +301,6 @@ void  ConstructModelHamiltonian
         }
 //        SpreadFtn( knum,  S_overlap, transformMatrix_k, accumulated_Num_SpinOrbital);
     }//overlap
-//    else {
-//        for(int k = 0;  k < knum; k++) {
-//            /* eigen problem  For DFT Hamiltonian,   */
-//            Eigen::SelfAdjointEigenSolver<Eigen::MatrixXcd> ces(NumOrbit);
-//            ces.compute(H_k_inModelSpace[k]);
-//            KS_eigenVectors_orthoBasis[k] = ces.eigenvectors();
-//            for(int i =0; i<NumOrbit; i++) {
-//                KS_eigenEnergy[k][i] = (ces.eigenvalues()[i]) ;  //(V[0][0], V[1][0], V[2][0],..V[n][0]) = 0th eigenvector
-//            }
-//        }
-//    }
     /*info:spread function*/
     ifroot    std::cout << "Hk was constructed..\n"  ;
 
@@ -358,6 +344,25 @@ void  ConstructModelHamiltonian
 
 
 
+//int Construct_HR_orthoa(
+//    int knum, int knum_mpiGlobal,   Eigen::MatrixXi  H_Rindex, Eigen::VectorXcd H_RMatrix, double ** kmesh, std::vector<int> & accumulated_Num_SpinOrbital,
+//    std::vector<Eigen::MatrixXcd> & H_k_inModelSpace,  std::vector<Eigen::MatrixXcd> & S_overlap,
+//    std::vector<Eigen::MatrixXcd> & KS_eigenVectors_orthoBasis, Eigen::VectorXd  * KS_eigenEnergy
+//
+//){
+//
+//
+//
+//    FromValToKS.resize(knum);
+//    for(int k = 0;  k < knum; k++) {
+//        H_k_inModelSpace[k].setZero(NumOrbit, NumOrbit);
+//        for(int indx=0; indx<H_RMatrix.size(); indx++) {
+//            H_k_inModelSpace[k](H_Rindex(indx,3),H_Rindex(indx,4))
+//            += H_RMatrix(indx)* exp ( -I*( (kmesh[k][0]*ax*H_Rindex(indx,0))+(kmesh[k][1]*ay*H_Rindex(indx,1))+(kmesh[k][2]*az*H_Rindex(indx,2))) )  ;
+//        }
+//    }//k
+//    if(mpi_rank==0 )   std::cout << "<TB> Construct Hk from HR :\n";
+//}
 
 
 

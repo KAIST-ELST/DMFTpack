@@ -65,7 +65,8 @@ extern double beta, NumberOfElectron, EnergyUnit, doublecounting, Band_renorm,  
 extern std::string dctype, localOrbitalType, SOLVERtype, Lowlevel_SOLVERtype;
 extern Eigen::Matrix2cd * Zeeman_field_spin;
 extern int highFreq, N_freq, N_tau,  magnetism;
-extern unsigned long long  Num_MC_steps, THERMALIZATION;
+extern unsigned long long  Num_MC_steps;
+//extern unsigned long long  THERMALIZATION;
 extern std::string mode;
 extern double infinitesimal ;
 extern int  maxDmftIt, maxDFTIt, maxTime,restart, NSpinOrbit_per_atom, N_peratom_HartrOrbit;
@@ -149,7 +150,7 @@ void dos(Eigen::VectorXd * KS_eigenEnergy,std::vector<Eigen::MatrixXcd> & KS_eig
 
 double read_double(const std::string &Inputfile, const std::string &keyword, bool defalutBool, double dft);
 double read_double(const std::string &Inputfile1,const std::string &Inputfile2, const std::string &keyword, double dft) ;
-int read_int(const std::string &Inputfile, const std::string &keyword, int dft);
+int read_int(const std::string &Inputfile, const std::string &keyword, bool defalutBool, int dft = 0);
 int read_int(const std::string &Inputfile1,const std::string &Inputfile2, const std::string &keyword, int dft) ;
 void read_int_array(const std::string &Inputfile, const std::string &keyword,    std::vector<int>  & var,  int length, bool defalutBool, int dft);
 void read_double_array(const std::string &Inputfile, const std::string &keyword, std::vector<double>  & var,  int length, bool required, double dft=0);
