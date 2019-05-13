@@ -521,7 +521,7 @@ void proj_to_site( int solverDim, int solver_block, std::vector<int> impurityOrb
     }
 
     ifroot std::cout << "Imp H0:\n"  << std::fixed << std::setprecision(6)<< projimpurity_site_Hamiltonian <<"\n";
-    ifroot std::cout << "Re[D([w=0)]:\n" << std::fixed << std::setprecision(6)<<( (projweiss_field.getMatrix(0)) + (projweiss_field.getMatrix(0)) ) /2 <<"\n";
+    ifroot std::cout << "Re[D([w=0)]:\n" << std::fixed << std::setprecision(6)<<( (projweiss_field.getMatrix(0)) + (projweiss_field.getMatrix(0)).adjoint() ) /2 <<"\n";
     std::cout << std::fixed << std::setprecision(4);
 
 
@@ -589,7 +589,7 @@ void proj_to_site( int solverDim, int solver_block, std::vector<int> impurityOrb
     }
 
     ifroot std::cout << "Imp H0:\n"  << std::fixed << std::setprecision(6)<< projimpurity_site_Hamiltonian <<"\n";
-    ifroot std::cout << "Re[D([w=0)]:\n" << std::fixed << std::setprecision(6)<<( (projweiss_field.getMatrix(0)) + (projweiss_field.getMatrix(0)) ) /2 <<"\n";
+    ifroot std::cout << "Re[D([w=0)]:\n" << std::fixed << std::setprecision(6)<<( (projweiss_field.getMatrix(0)) + (projweiss_field.getMatrix(0)).adjoint() ) /2 <<"\n";
     projimp_off  =   projimpurity_site_Hamiltonian.diagonal().asDiagonal();
     weiss_off  =  (projweiss_field.getMatrix(0)).diagonal().asDiagonal();
     double projimp_off_norm2 =  (projimpurity_site_Hamiltonian - projimp_off).norm();
