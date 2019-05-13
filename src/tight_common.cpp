@@ -341,13 +341,13 @@ void read_inputFile(const std::string &hamiltonian) {
 //Initial occupation & UMatrix
     /*set Hartree space index*/
     std::vector<int>  HartreeAtom_idx(NumCorrAtom);
-    read_int_array(std::string("input.parm"), std::string("HARTREE_ATOMS"),     HartreeAtom_idx,     NumCorrAtom, false,-1) ;
+    read_int_array(std::string("input.parm"), std::string("HARTREE_ATOMS"),     HartreeAtom_idx,     NumCorrAtom, false) ;
     for(int i=0; i<NumCorrAtom; i++) {
         HartreeAtom_idx[i]-=1;   //[0,1,2,...NumCorrAtom-1]   // number of element = NumCorrAtom
     }
 
     std::vector<int>HTO_idx_temp(2);
-    read_int_array(std::string("input.parm"), std::string("HARTREE_ORBITALS_RANGE"),  HTO_idx_temp,  2, false, -1) ;
+    read_int_array(std::string("input.parm"), std::string("HARTREE_ORBITALS_RANGE"),  HTO_idx_temp,  2, false) ;
     HTO_idx_temp[0]-=1;   //[0,N_peratom_HartrOrbit]   //used in for..   i=HTO_idx[0];i<HTO_idx[1];i++
 
     std::vector<int>HartreeOrbital_idx(NumCorrAtom * 2);
@@ -371,11 +371,12 @@ void read_inputFile(const std::string &hamiltonian) {
     sigmaz << 1.,0.,0.,-1.;
     for(int at=0; at<NumCorrAtom; at++) {
         double unitVectorNorm = std::sqrt( std::pow(Zeeman_spin_read[at*4+1],2) +   std::pow(Zeeman_spin_read[at*4+2],2) + std::pow(Zeeman_spin_read[at*4+3],2) );
-        Zeeman_spin_read[at*4+1] /= (unitVectorNorm +1e20);
-        Zeeman_spin_read[at*4+2] /= (unitVectorNorm +1e20);
-        Zeeman_spin_read[at*4+3] /= (unitVectorNorm +1e20);
+        Zeeman_spin_read[at*4+1] /= (unitVectorNorm +1e-20);
+        Zeeman_spin_read[at*4+2] /= (unitVectorNorm +1e-20);
+        Zeeman_spin_read[at*4+3] /= (unitVectorNorm +1e-20);
         Zeeman_field_spin[HartreeAtom_idx[at]] =
             Zeeman_spin_read[at*4+0]/2* ( Zeeman_spin_read[at*4+1] * sigmax + Zeeman_spin_read[at*4+2] * sigmay + Zeeman_spin_read[at*4+3] * sigmaz);
+//        ifroot std::cout << Zeeman_field_spin[HartreeAtom_idx[at]] <<"\n";
     }
 
 

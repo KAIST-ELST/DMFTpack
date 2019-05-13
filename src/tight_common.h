@@ -152,7 +152,7 @@ double read_double(const std::string &Inputfile, const std::string &keyword, boo
 double read_double(const std::string &Inputfile1,const std::string &Inputfile2, const std::string &keyword, double dft) ;
 int read_int(const std::string &Inputfile, const std::string &keyword, bool defalutBool, int dft = 0);
 int read_int(const std::string &Inputfile1,const std::string &Inputfile2, const std::string &keyword, int dft) ;
-void read_int_array(const std::string &Inputfile, const std::string &keyword,    std::vector<int>  & var,  int length, bool defalutBool, int dft);
+void read_int_array(const std::string &Inputfile, const std::string &keyword,    std::vector<int>  & var,  int length, bool defalutBool, int dft=-1);
 void read_double_array(const std::string &Inputfile, const std::string &keyword, std::vector<double>  & var,  int length, bool required, double dft=0);
 //std::string read_string(const std::string &Inputfile, const std::string &keyword) ;
 std::string read_string(const std::string &Inputfile, const std::string &keyword, bool defalutBool= false, std::string defalutVal = std::string("no def") ) ;

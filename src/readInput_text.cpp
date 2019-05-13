@@ -143,14 +143,16 @@ void read_double_array(const std::string &Inputfile, const std::string &keyword,
 
         if( iequals(IsitKeyword,keyword) ) {
             input >> IsitKeyword; // read "="
+            if(mpi_rank==0) std::cout<<"Reading "<<keyword<<": ";
             for (int i =0; i<length; i++) {
                 input >>  var[i];
+                if(mpi_rank==0) std::cout<< var[i] <<" ";
                 if(input.eof()) {
                     std::cout <<"Please check input "<<keyword<<std::endl;
                     exit(1);
                 }
             }
-            if(mpi_rank==0) std::cout<<"Reading "<<keyword<<std::endl;
+            if(mpi_rank==0) std::cout <<"\n";
             read=1;
         }
     }
