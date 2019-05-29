@@ -9,8 +9,8 @@
 void  sort_eigen_vectors( Eigen::MatrixXcd & evec, Eigen::VectorXd & eval, int dim ) ;
 
 
-void get_preNAOs(Eigen::MatrixXcd weightMatrix,
-                 Eigen::MatrixXcd & principal_number_tfm, Eigen::MatrixXcd & weightMatrix_preNAOs) {
+void get_preNAOs (Eigen::MatrixXcd weightMatrix,
+                  Eigen::MatrixXcd & principal_number_tfm, Eigen::MatrixXcd & weightMatrix_preNAOs) {
 
 //The principal quantum number is redefined to diagonalize the local density matrix.
 

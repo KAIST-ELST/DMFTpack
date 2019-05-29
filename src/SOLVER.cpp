@@ -219,7 +219,7 @@ void SOLVER(
 
             int errors[mpi_numprocs], checkTime=10;
             MPI_Comm_spawn(command_hyb, hyb_In, mpi_numprocs,MPI_INFO_NULL, 0, MPI_COMM_WORLD, &communication, errors);
-            Wait_Run("IMP_HYB_FINISH", checkTime, mpi_rank, maxTime);
+            Wait_Run("Sw.dat", checkTime, mpi_rank, maxTime);
 
 
             /*read output*/

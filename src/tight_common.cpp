@@ -196,7 +196,7 @@ void read_inputFile(const std::string &hamiltonian) {
     beta                    = read_double(std::string("input.solver"), std::string("BETA"), false, -1) ;
     NSpinOrbit_per_atom     =    read_int(std::string("input.solver"), std::string("N_ORBITALS"),false)  ; //correlated orbital per Correlated atom
     N_peratom_HartrOrbit    =    read_int(std::string("input.solver"), std::string("N_HARTREE_ORBITALS"), true, NSpinOrbit_per_atom)   ; //Hartree orbital per correlated atom
-    N_peratom_HartrOrbit += NSpinOrbit_per_atom;
+//    N_peratom_HartrOrbit += NSpinOrbit_per_atom;
     impurityBasisSwitch  =       read_int(std::string("input.solver"), std::string("impurityBasisSwitch"), true , 0);
 
 //etc..
@@ -359,24 +359,37 @@ void read_inputFile(const std::string &hamiltonian) {
     //1p= 5:10 2p=11:16
     //1d=17:26
 
-    std::vector<double>  Zeeman_spin_read(NumCorrAtom * 4);
     Zeeman_field_spin = new Eigen::Matrix2cd [NumAtom];
     for(int at=0; at<NumAtom; at++) {
         Zeeman_field_spin[at].setZero(2,2);
     }
-    read_double_array(std::string("input.parm"), std::string("Zeeman_spin"), Zeeman_spin_read, NumCorrAtom * 4, false, 0.0);
     Eigen::Matrix2cd  sigmax, sigmay, sigmaz;
     sigmax << 0.,1.,1.,0.;
     sigmay << 0.,-1*I,I,0.;
     sigmaz << 1.,0.,0.,-1.;
+
+    std::vector<double>  Zeeman_spin_global_read( 4);
+    read_double_array(std::string("input.parm"), std::string("Zeeman_spin_global"), Zeeman_spin_global_read,  4, false, 0.0);
+    for(int at=0; at<NumAtom; at++) {
+        double unitVectorNorm = std::sqrt( std::pow(Zeeman_spin_global_read[1],2) +
+                                           std::pow(Zeeman_spin_global_read[2],2) +
+                                           std::pow(Zeeman_spin_global_read[3],2) );
+        Zeeman_spin_global_read[1] /= (unitVectorNorm +1e-20);
+        Zeeman_spin_global_read[2] /= (unitVectorNorm +1e-20);
+        Zeeman_spin_global_read[3] /= (unitVectorNorm +1e-20);
+        Zeeman_field_spin[at] =
+            Zeeman_spin_global_read[0]/2.0* ( Zeeman_spin_global_read[1] * sigmax + Zeeman_spin_global_read[2] * sigmay + Zeeman_spin_global_read[3] * sigmaz);
+    }
+
+    std::vector<double>  Zeeman_spin_read(NumCorrAtom * 4);
+    read_double_array(std::string("input.parm"), std::string("Zeeman_spin"), Zeeman_spin_read, NumCorrAtom * 4, false, 0.0);
     for(int at=0; at<NumCorrAtom; at++) {
         double unitVectorNorm = std::sqrt( std::pow(Zeeman_spin_read[at*4+1],2) +   std::pow(Zeeman_spin_read[at*4+2],2) + std::pow(Zeeman_spin_read[at*4+3],2) );
         Zeeman_spin_read[at*4+1] /= (unitVectorNorm +1e-20);
         Zeeman_spin_read[at*4+2] /= (unitVectorNorm +1e-20);
         Zeeman_spin_read[at*4+3] /= (unitVectorNorm +1e-20);
         Zeeman_field_spin[HartreeAtom_idx[at]] =
-            Zeeman_spin_read[at*4+0]/2* ( Zeeman_spin_read[at*4+1] * sigmax + Zeeman_spin_read[at*4+2] * sigmay + Zeeman_spin_read[at*4+3] * sigmaz);
-//        ifroot std::cout << Zeeman_field_spin[HartreeAtom_idx[at]] <<"\n";
+            Zeeman_spin_read[at*4+0]/2.0* ( Zeeman_spin_read[at*4+1] * sigmax + Zeeman_spin_read[at*4+2] * sigmay + Zeeman_spin_read[at*4+3] * sigmaz);
     }
 
 

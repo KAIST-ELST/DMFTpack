@@ -294,7 +294,7 @@ void ctqmc_rutgers_seg(  Eigen::MatrixXcd Local_Hamiltonian, double muTB,
 
 void write_PARMS() {
 
-    int tsample = read_int(std::string("input.solver"), std::string("tsample"),  true, 50);
+    int tsample = read_int(std::string("input.solver"), std::string("N_MEAS"),  true, 50);
     double tempD = read_double(std::string("input.solver"), std::string("SWEEPS"),  true, 1e9);
     Num_MC_steps = (unsigned long long) tempD;
     unsigned long long THERMALIZATION;
@@ -307,7 +307,7 @@ void write_PARMS() {
     fprintf(PARMS_file, "nom %d  # number of Matsubara frequencies\n", N_freq                 );
     fprintf(PARMS_file, "svd_lmax 30 # number of SVD functions to project the solution\n"                 );
     fprintf(PARMS_file, "svd_L 15 # To compute the SVD decomposition of the kernel for analytic continuation, we need to choose the cutoff on the real axis.(default: 10).\n"                 );
-    fprintf(PARMS_file, "tsample  50     # how often to record the measurements\n"                        );
+    fprintf(PARMS_file, "tsample  %d     # how often to record the measurements\n" , tsample                        );
     fprintf(PARMS_file, "aom      1      # number of frequency points to determin high frequency tail\n"  );
     fprintf(PARMS_file, "M      %llu     # Number of Monte Carlo steps\n", Num_MC_steps                                       );
     fprintf(PARMS_file, "warmup %llu     # Number of Monte Carlo steps\n", THERMALIZATION                                       );
