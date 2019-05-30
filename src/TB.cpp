@@ -82,11 +82,11 @@ void  ConstructModelHamiltonian
 );
 
 
-void SpreadFtn_PWF( int knum,
-                    std::vector<Eigen::MatrixXcd> S_overlap, std::vector<Eigen::MatrixXcd> &  transformMatrix_k,std::vector<Eigen::MatrixXcd>  KS_eigenVectors_orthoBasis
-                    , std::vector<int> & accumulated_Num_SpinOrbital
-                  ) ;
-
+//void SpreadFtn_PWF( int knum,
+//                    std::vector<Eigen::MatrixXcd> S_overlap, std::vector<Eigen::MatrixXcd> &  transformMatrix_k,std::vector<Eigen::MatrixXcd>  KS_eigenVectors_orthoBasis
+//                    , std::vector<int> & accumulated_Num_SpinOrbital
+//                  ) ;
+//
 
 
 double Nele_non_Inter(

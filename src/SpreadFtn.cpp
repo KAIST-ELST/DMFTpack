@@ -1,3 +1,4 @@
+/*
 #include "mpi.h"
 #include <fstream>
 #include "ImgTimeFtn.h"
@@ -29,10 +30,10 @@ void SpreadFtn( int knum,
     Eigen::MatrixXcd y_overlap[knum];
     Eigen::MatrixXcd z_overlap[knum];
 
-    /*DFT_KS hamiltonian in k-space*/
+    //DFT_KS hamiltonian in k-space
     for(int k = 0;  k < knum; k++) {
 
-        /*S(k),   H*S |\psi> = E |\psi>      */
+        // S(k),   H*S |\psi> = E |\psi>
         x_overlap[k].setZero(NumOrbit,NumOrbit);
         y_overlap[k].setZero(NumOrbit,NumOrbit);
         z_overlap[k].setZero(NumOrbit,NumOrbit);
@@ -240,7 +241,7 @@ void SpreadFtn_PWF( int knum,
     Eigen::MatrixXcd Bra_ProjOrbitals_Ket_KSenergy;
 
     for(int k = 0;  k < knum; k++) {
-        /*S(k),   H*S |\psi> = E |\psi>      */
+        //S(k),   H*S |\psi> = E |\psi>
         x_overlap_k.setZero(NumOrbit,NumOrbit);
         y_overlap_k.setZero(NumOrbit,NumOrbit);
         z_overlap_k.setZero(NumOrbit,NumOrbit);
@@ -331,3 +332,7 @@ void SpreadFtn_PWF( int knum,
         ifroot std::cout << h1F << ": " <<std::sqrt(Dx) <<" " <<   std::sqrt(Dy) <<" " << std::sqrt(Dz) <<" : "   << std::sqrt(Dx+Dy+Dz)<<"\n" ;
     }
 }
+
+
+
+*/

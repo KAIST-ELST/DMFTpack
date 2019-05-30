@@ -12,9 +12,9 @@
 
 void get_preNAOs(Eigen::MatrixXcd weightMatrix,
                  Eigen::MatrixXcd & principal_number_tfm, Eigen::MatrixXcd & weightMatrix_preNAOs);
-void SpreadFtn( int knum,
-                std::vector<Eigen::MatrixXcd> S_overlap, std::vector<Eigen::MatrixXcd> &  transformMatrix_k, std::vector<int> & accumulated_Num_SpinOrbital   );
-
+//void SpreadFtn( int knum,
+//                std::vector<Eigen::MatrixXcd> S_overlap, std::vector<Eigen::MatrixXcd> &  transformMatrix_k, std::vector<int> & accumulated_Num_SpinOrbital   );
+//
 void direct_projection( Eigen::MatrixXcd & Hk, Eigen::MatrixXcd & Sk, Eigen::MatrixXcd  & evec,  Eigen::VectorXd & eval  ) ;
 void lowdin_symmetric_orthogonalization( Eigen::MatrixXcd & Hk, Eigen::MatrixXcd & Sk, Eigen::MatrixXcd  & evec,  Eigen::VectorXd & eval, Eigen::MatrixXcd & transformMatrix    );
 //void naturalAtomicOrbitals_population_weighted_symmetric_orthogonalization_k(Eigen::MatrixXcd & Hk, Eigen::MatrixXcd & Sk, Eigen::MatrixXcd  & evec,  Eigen::VectorXd & eval,int NumOrbit, double muDFT, Eigen::MatrixXcd & transformMatrix) ;
@@ -303,6 +303,27 @@ void  ConstructModelHamiltonian
     }//overlap
     /*info:spread function*/
     ifroot    std::cout << "Hk was constructed..\n"  ;
+
+
+//Zeeman
+    for(int k = 0;  k < knum; k++) {
+        for(int at=0; at<NumAtom; at++) {
+            for(int i0 = accumulated_Num_SpinOrbital[at];  i0 < accumulated_Num_SpinOrbital[at+1] ; i0+=2) {
+                H_k_inModelSpace[k](i0+0, i0+0) += Zeeman_field_spin[at](0,0);
+                H_k_inModelSpace[k](i0+0, i0+1) += Zeeman_field_spin[at](0,1);
+                H_k_inModelSpace[k](i0+1, i0+0) += Zeeman_field_spin[at](1,0);
+                H_k_inModelSpace[k](i0+1, i0+1) += Zeeman_field_spin[at](1,1);
+            }
+        }
+    }
+    if (magnetism <2 ) {
+        for(int k = 0;  k < knum; k++) {
+            for(int i0 = 0;  i0 < NumOrbit; i0+=2) {
+                H_k_inModelSpace[k](i0+0, i0+1) = 0;
+                H_k_inModelSpace[k](i0+1, i0+0) = 0;
+            }
+        }
+    }
 
 
 

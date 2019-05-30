@@ -16,9 +16,9 @@ void rot_Uijkl(
     Eigen::MatrixXcd & SolverBasis, int n_spinorb
 ) ;
 
-//void IPT( int solverDim,Eigen::MatrixXcd projimpurity_site_Hamiltonian,  ImgFreqFtn & weiss_field, Eigen::MatrixXcd & projNumMatrix,
-//          ImgFreqFtn & SE_out,      ImgFreqFtn & Gwimp_out, double muTB,
-//          std::vector<Eigen::VectorXi> projUindex, std::vector<cmplx > projUtensor        ) ;
+void IPT( int solverDim,Eigen::MatrixXcd projimpurity_site_Hamiltonian,  ImgFreqFtn & weiss_field, Eigen::MatrixXcd & projNumMatrix,
+          ImgFreqFtn & SE_out,      ImgFreqFtn & Gwimp_out, double muTB,
+          std::vector<Eigen::VectorXi> projUindex, std::vector<cmplx > projUtensor        ) ;
 //
 
 void on_shot_HF (int solverDim,
@@ -403,10 +403,10 @@ void SOLVER(
         ifroot std::cout << "\n2PT solver\n";
         SecondOrderPerturbation( solverDim, projimpurity_site_Hamiltonian, projweiss_field, projNumMatrix,SE_out, Gwimp_in_out, muTB, projUindex, projUtensor);
     }//2PT
-//    else if(SOLVERtype == std::string("IPT")) {
-//        ifroot std::cout << "\nIPT solver\n";
-//        IPT( solverDim, projimpurity_site_Hamiltonian, projweiss_field, projNumMatrix,SE_out, Gwimp_in_out, muTB, projUindex, projUtensor);
-//    }//IPT
+    else if(SOLVERtype == std::string("IPT")) {
+        ifroot std::cout << "\nIPT solver\n";
+        IPT( solverDim, projimpurity_site_Hamiltonian, projweiss_field, projNumMatrix,SE_out, Gwimp_in_out, muTB, projUindex, projUtensor);
+    }//IPT
     else if(SOLVERtype == std::string("HF")) {
 
         on_shot_HF( solverDim,

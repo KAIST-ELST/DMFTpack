@@ -46,11 +46,10 @@ void read_HR(Eigen::MatrixXi &H_Rindex, Eigen::VectorXcd  &H_RMatrix, const std:
 
 
 
-        if(n==0 and l==0 and m==0 and Atom1==Atom2 and  i0/2==m0/2 ) {
-            H_RMatrix(index) += Zeeman_field_spin[Atom1-1](i0%2, m0%2);
-//            std::cout << Atom1 <<" " << Atom2 << " " << i <<" " << j << " " << H_RMatrix(index) <<"\n";
-        }
-        if ( magnetism<2  and i0%2 != m0%2)  H_RMatrix(index) =0;
+//        if(n==0 and l==0 and m==0 and Atom1==Atom2 and  i0/2==m0/2 ) {
+//            H_RMatrix(index) += Zeeman_field_spin[Atom1-1](i0%2, m0%2);
+//        }
+//        if ( magnetism<2  and i0%2 != m0%2)  H_RMatrix(index) =0;
 
 
 //        if( ( std::isnan(std::abs(H_RMatrix(index)) ) or   std::isinf(std::abs(H_RMatrix(index)))      ))   {
@@ -63,7 +62,7 @@ void read_HR(Eigen::MatrixXi &H_Rindex, Eigen::VectorXcd  &H_RMatrix, const std:
         if(i0 > NumOrbit or m0>NumOrbit) {
             printf("%d %d %d   %d %d    %d %d     %lf  %lf\n",n,l,m,  Atom1, Atom2,    i,j,   HopRe,  HopIm);
             fflush(stdout);
-            assert(i0 < NumOrbit and m0<NumOrbit);
+//            assert(i0 < NumOrbit and m0<NumOrbit);
         }
 //
 //

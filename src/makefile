@@ -1,9 +1,3 @@
-#//Here $@ means  target i.e. $(TARGET) at this rule
-#See http://developinghappiness.com/?p=28
-##http://developinghappiness.com/?p=174
-#see icc warning : http://stackoverflow.com/questions/27343360/how-to-turn-on-icc-icpc-warnings
-
-
 TARGET_dmft=dmft
 DEPFILE = dependency
 
@@ -11,15 +5,13 @@ DEPFILE = dependency
 ##osx
 #################################
 #
-#CC=mpic++
+##CC=/Users/jae-hoonsim/local/bin/mpic++
 ##CCFLAGS=   -stdlib=libc++
 #
 #
-##CC=/Users/jae-hoonsim/local/bin/mpic++
 #CCFLAGS=   -std=c++11  
 #
 #
-##OFLAGS = -O3      
 #OFLAGS = -O3      # -g  -ggdb  
 #
 #DEFINES= -DMPI_ENABLED   \
@@ -32,14 +24,14 @@ DEPFILE = dependency
 ###gcc
 ##########################
 #
-##CCFLAGS=   -std=c++11     -fstack-protector-all
-##OFLAGS = -O0      -g  -ggdb    
 #CC=mpigxx
-##CC=mpicxx
-#
-#CCFLAGS=   -std=c++11  
-##OFLAGS = -O3      
 #OFLAGS = -O0       -g  -ggdb  
+#CCFLAGS=   -std=c++11  
+
+##CC=mpicxx
+##CCFLAGS=   -std=c++11     -fstack-protector-all
+##OFLAGS = -O3      
+##OFLAGS = -O0      -g  -ggdb    
 #
 #DEFINES= -DMPI_ENABLED   \
 #         -DEIGEN_INITIALIZE_MATRICES_BY_ZERO  
@@ -51,10 +43,6 @@ DEPFILE = dependency
 
 CC = mpiicpc
 INTEL = /home/users1/jhsim/intel_2019/
-
-
-
-
 
 MKL = ${INTEL}/mkl
 
@@ -68,14 +56,13 @@ DEFINES= -DMPI_ENABLED   \
 
 
 
+
+
+
+#######################
 #EIGEN
+#######################
 EIGEN_INC = -I$(CURDIR)/../../eigen-git-mirror/
-
-
-
-
-
-
 
 SOURCE =    band.cpp   FourierTransform.cpp  tight_common.cpp Construct_hyb_delta.cpp GreenFtn.cpp  \
             dos.cpp  readInput_text.cpp mpi_interface.cpp dmft_main.cpp  ImgTimeFtn.cpp   SOLVER.cpp  \

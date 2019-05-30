@@ -125,9 +125,6 @@ void  downfolding_ftn
                          (impurity_site_Hamiltonian.block(cl*NumHartrOrbit_per_cluster,cl*NumHartrOrbit_per_cluster,
                                  NumHartrOrbit_per_cluster, NumHartrOrbit_per_cluster) )  <<"\n";
     }
-
-
-
 }
 
 

@@ -870,202 +870,201 @@ double MatsubaraFtnnorm(Eigen::MatrixXcd * Ftn1, Eigen::MatrixXcd * Ftn2, int N_
 //
 //         ///*
 //
-//         void IPT( int solverDim,  Eigen::MatrixXcd projimpurity_site_Hamiltonian,  ImgFreqFtn & weiss_field, Eigen::MatrixXcd & projNumMatrix,
-//                   ImgFreqFtn & SE_out,      ImgFreqFtn & Gwimp_out, double muTB,
-//                   std::vector<Eigen::VectorXi> projUindex, std::vector<cmplx > projUtensor        ) {
-//
-//         //See M. Ptthoff, T. Wegner, and W. Nolting, PRB, 16132 (1997)
-//         //For more information,
-//         //Georges and Kotliar PRB 45, 6479 (1992); (HF+2PT)
-//         //H. Kajueter and G. Kotliar, PRL 77, 131 (1996); modification
-//             Eigen::SelfAdjointEigenSolver<Eigen::MatrixXcd> ces(solverDim);
-//             ifroot std::cout <<"Himp (diag):";
-//             ces.compute(projimpurity_site_Hamiltonian);
-//             for(int n=0; n<solverDim; n+=1) {
-//                 ifroot std::cout <<std::fixed << std::setprecision(3)<< std::fixed   <<  ( ces.eigenvalues()[n]  ) <<" " ;
-//             }
-//             ifroot std::cout <<"\n";
-//
-//             //initial Setting
-//             Eigen::MatrixXcd Fock_in(solverDim, solverDim);
-//             Eigen::MatrixXcd Fock(solverDim, solverDim);
-//             Eigen::MatrixXcd occMat(solverDim, solverDim);
-//             Eigen::MatrixXcd occMatHF(solverDim, solverDim);
-//             Eigen::MatrixXcd delta_w[N_freq+2];
-//             Eigen::MatrixXcd Swimp_secondOrder[N_freq+3];
-//
-//             Eigen::MatrixXcd Gwimp[N_freq+4];
-//             Eigen::MatrixXcd Gw0[N_freq+4];
-//             Eigen::MatrixXcd Gt0[N_tau+1];
-//
-//             Eigen::MatrixXcd Stimp[N_tau+1];
-//
-//
-//             Fock_in.setZero(solverDim,solverDim);
-//             Fock.setZero(solverDim,solverDim);
-//             for(int t =0 ; t<N_tau+1; t++) {
-//                 Gt0[t].setZero(solverDim, solverDim);
-//                 Stimp[t].setZero(solverDim,solverDim);
-//             }
-//             for (int n=0; n<N_freq; n++) {
-//                 Gwimp[n] = Gwimp_out.getMatrix(n);
-//                 Gw0[n] =Gwimp_out.getMatrix(n);
-//         //        Gw0[n].setZero(solverDim, solverDim);
-//                 Swimp_secondOrder[n].setZero(solverDim, solverDim);
-//                 delta_w[n] = weiss_field.getMatrix(n);
-//             }
-//             Swimp_secondOrder[N_freq].setZero(solverDim, solverDim);
-//             Swimp_secondOrder[N_freq+1].setZero(solverDim, solverDim);
-//             Swimp_secondOrder[N_freq+2].setZero(solverDim, solverDim);
-//             delta_w[N_freq]   = weiss_field.getMatrix(N_freq+1);
-//             delta_w[N_freq+1] = weiss_field.getMatrix(N_freq+2);
-//
-//             Gwimp[N_freq].setIdentity(solverDim, solverDim);
-//             Gwimp[N_freq+1].setZero(solverDim, solverDim);
-//             Gwimp[N_freq+2].setZero(solverDim, solverDim);
-//             Gwimp[N_freq+3].setZero(solverDim, solverDim);
-//
-//             Gw0[N_freq].setIdentity(solverDim, solverDim);
-//             Gw0[N_freq+1].setZero(solverDim, solverDim);
-//             Gw0[N_freq+2].setZero(solverDim, solverDim);
-//             Gw0[N_freq+3].setZero(solverDim, solverDim);
-//
-//             for(int i = 0 ; i<  solverDim ; i++) {
-//                 for(int j = 0 ; j<  solverDim ; j++) {
-//                     occMat(i,j)= projNumMatrix(i,j);
-//                 }
-//             }
-//             occMatHF = occMat;
-//             //
-//             //Initial condition: non-interacting (or HF with n>=2 loop) initial  Greens Ftn
-//         //    double NumTotInitial = real(occMat.trace());
-//         //    double muHF = real(projimpurity_site_Hamiltonian.trace())/ solverDim;
-//         //    non_interacting_Gw(Gw0, solverDim,projimpurity_site_Hamiltonian, muHF, NumTotInitial, delta_w);
-//
-//             double muHF = muTB;
-//             getFockOperator( Fock, occMatHF, solverDim, projUindex, projUtensor) ;
-//             getGwimp( Gw0, projimpurity_site_Hamiltonian, Fock, Swimp_secondOrder, delta_w, muHF, solverDim) ;
-//
-//         // HF
-//
-//             pulayMixing Mixing_HF(3, 10, 1, solverDim, solverDim );
-//             double HFloop=0;
-//             double HFmixing=0.01;
-//             Fock_in=Fock;
-//         //    do {
-//         //        HFloop++;
-//         //        //mixing, Gwimp is used in the next iteration
-//         //        if(HFloop < 1500) Mixing_HF.mixing( &Fock_in, &Fock, HFmixing, HFloop, 1);
-//         //        else {
-//         //            Fock =  (1-HFmixing) * Fock_in + HFmixing * Fock;
-//         //        }
-//         //        Fock_in = Fock;
-//         //        getGwimp( Gw0, projimpurity_site_Hamiltonian,Fock, Swimp_secondOrder, delta_w, muTB, solverDim) ; //non-interacting (or HF with n>=2 loop)  Greens Ftn
-//         //        getoccMat(Gw0, occMatHF, solverDim);
-//         //        if(magnetism==0) {
-//         //            for (int n=0; n<solverDim; n+=2) {
-//         //                int up = n, dn =n+1;
-//         //                cmplx avgN = (occMatHF(up,up)+occMatHF(dn,dn))/2.0;
-//         //                occMatHF(up,up)=avgN;
-//         //                occMatHF(dn,dn)=avgN;
-//         //                occMatHF(dn,up)=0.0;
-//         //                occMatHF(up,dn)=0.0;
-//         //
-//         //            }
-//         //        }
-//         //
-//         //        /*
-//         //        ///////////////////////////////////////////////////////////////////////////////////////////////
-//         //        ///Adjust Chem.Pot
-//         //                double Nele[history];
-//         //                for (int i=0; i<history; i++)  Nele[i]=-1;
-//         //                Nele[0] = real(occMatHF.trace());
-//         //                double muRD;
-//         //                double mu_next;
-//         //                double muUB=0, muLB=0;
-//         //                int nearAns=0;
-//         //                double dmu=1;
-//         //                muHF-=dmu;
-//         //                int step=0;
-//         //                while (  std::abs(Nele[0] - NumTotInitial) > std::min(1e-5, 1e-5/((Fock.norm())+1e-5)  )  ) { //   and  std::abs(dmu)>1e-5 ) {}
-//         //                    muHF += dmu;
-//         //
-//         //                    getGwimp( Gw0,projimpurity_site_Hamiltonian,Fock, Swimp_secondOrder, delta_w,  muHF, solverDim) ;
-//         //                    estimate_asymto(Gw0,2);
-//         //                    estimate_asymto(Gw0,3);
-//         //                    getoccMat(Gw0, occMatHF,solverDim);
-//         //
-//         //                    for(int i=history-1; i>0 ; i--) Nele[i]=Nele[i-1];
-//         //                    Nele[0] = real(occMatHF.trace());
-//         //
-//         //                    if (nearAns ==0) {
-//         //                        if ( Nele[0] < NumTotInitial) {
-//         //                            muLB = muHF;
-//         //                            if (Nele[1]>NumTotInitial && Nele[1] >0 ) nearAns = 1;
-//         //                            else dmu = fabs(dmu);
-//         //                        }
-//         //                        if ( Nele[0] > NumTotInitial) {
-//         //                            muUB = muHF;
-//         //                            if (Nele[1] < NumTotInitial && Nele[1] > 0)  nearAns =1;
-//         //                            else dmu = -1*fabs(dmu);
-//         //                        }
-//         //                        if ( Nele[0] == NumTotInitial) break;
-//         //        //                assert( std::abs(muHF) <  100)   ;
-//         //                    }
-//         //                    else if (nearAns ==1) {
-//         //                        if (Nele[0] > NumTotInitial) muUB = muHF;
-//         //                        else if(Nele[0] < NumTotInitial) muLB =muHF;
-//         //                        mu_next = (muUB+muLB)/2.;
-//         //                        dmu = mu_next - muHF;
-//         //                    }
-//         //                }//while
-//         //        ////////////////////////////////////////////////////////////////////////////////////////////////////////
-//         //        //// */
-//         //        getFockOperator( Fock, occMatHF, solverDim, projUindex, projUtensor) ;
-//         //        ifroot std::cout << "HF_iter: "<<HFloop<<"\n occMatHF:\n " << occMatHF << "\n Fock_RD:\n" << (Fock_in-Fock).norm() << "\n\n";
-//         //    } while ( (Fock_in-Fock).norm() > 1e-4   ) ;
-//         //    getFockOperator( Fock, occMatHF, solverDim, projUindex, projUtensor) ;
-//
-//             FourierTransform( Gw0, Gt0, Gw0[N_freq]);
-//             getStimp ( Stimp, Gt0, false, solverDim, projUindex, projUtensor);
-//             FT_t_to_w(Swimp_secondOrder, Stimp, N_freq);
-//
-//
-//             double a[2];
-//             double b[2];
-//             double c[2];
-//             a[0] = real((UHubb*UHubb*occMat(1,1) *(1.0-occMat(1,1))) );
-//             a[1] = real((UHubb*UHubb*occMat(0,0) *(1.0-occMat(0,0))) );
-//             b[0] = real( (muHF- muTB +UHubb*(1.0-2.0*occMat(1,1))))  ;
-//             b[1] = real( (muHF- muTB +UHubb*(1.0-2.0*occMat(0,0))))  ;
-//             c[0] = real((UHubb*UHubb*occMatHF(1,1) *(1.0-occMatHF(1,1))) );
-//             c[1] = real((UHubb*UHubb*occMatHF(0,0) *(1.0-occMatHF(0,0))) );
-//             ifroot std::cout <<"b:" << b[0] <<" " << b[1] <<"\n";
-//             for (int n=0; n<N_freq; n++) {
-//                 Swimp_secondOrder[n](0,0) = a[0]*Swimp_secondOrder[n](0,0) / (c[0]- b[0]*Swimp_secondOrder[n](0,0) );
-//                 Swimp_secondOrder[n](1,1) = a[1]*Swimp_secondOrder[n](1,1) / (c[1]- b[1]*Swimp_secondOrder[n](1,1) );
-//             }
-//
-//             getGwimp( Gwimp, projimpurity_site_Hamiltonian, Fock, Swimp_secondOrder, delta_w, muTB, solverDim) ;
-//             estimate_asymto(Gwimp,2);
-//             estimate_asymto(Gwimp,3);
-//
-//
-//             getoccMat(Gwimp, occMat, solverDim);
-//             for(int i = 0 ; i<  solverDim ; i++) {
-//                 for(int j = 0 ; j<  solverDim ; j++) {
-//                     projNumMatrix(i,j) = occMat(i,j);
-//                 }
-//             }
-//
-//
-//
-//             //write result to NumMatrix and Sw
-//             writeResults( Swimp_secondOrder, Fock, Gwimp,  SE_out, Gwimp_out, solverDim);
-//             MPI_Barrier(MPI_COMM_WORLD);
-//         }//IPT
-//         // */
-//
-//
-//
-//
+void IPT( int solverDim,  Eigen::MatrixXcd projimpurity_site_Hamiltonian,  ImgFreqFtn & weiss_field, Eigen::MatrixXcd & projNumMatrix,
+          ImgFreqFtn & SE_out,      ImgFreqFtn & Gwimp_out, double muTB,
+          std::vector<Eigen::VectorXi> projUindex, std::vector<cmplx > projUtensor        ) {
+
+    //See M. Ptthoff, T. Wegner, and W. Nolting, PRB, 16132 (1997)
+    //For more information,
+    //Georges and Kotliar PRB 45, 6479 (1992); (HF+2PT)
+    //H. Kajueter and G. Kotliar, PRL 77, 131 (1996); modification
+    Eigen::SelfAdjointEigenSolver<Eigen::MatrixXcd> ces(solverDim);
+    ifroot std::cout <<"Himp (diag):";
+    ces.compute(projimpurity_site_Hamiltonian);
+    for(int n=0; n<solverDim; n+=1) {
+        ifroot std::cout <<std::fixed << std::setprecision(3)<< std::fixed   <<  ( ces.eigenvalues()[n]  ) <<" " ;
+    }
+    ifroot std::cout <<"\n";
+
+    //initial Setting
+    Eigen::MatrixXcd Fock_in(solverDim, solverDim);
+    Eigen::MatrixXcd Fock(solverDim, solverDim);
+    Eigen::MatrixXcd occMat(solverDim, solverDim);
+    Eigen::MatrixXcd occMatHF(solverDim, solverDim);
+    Eigen::MatrixXcd delta_w[N_freq+2];
+    Eigen::MatrixXcd Swimp_secondOrder[N_freq+3];
+
+    Eigen::MatrixXcd Gwimp[N_freq+4];
+    Eigen::MatrixXcd Gw0[N_freq+4];
+    Eigen::MatrixXcd Gt0[N_tau+1];
+
+    Eigen::MatrixXcd Stimp[N_tau+1];
+
+
+    Fock_in.setZero(solverDim,solverDim);
+    Fock.setZero(solverDim,solverDim);
+    for(int t =0 ; t<N_tau+1; t++) {
+        Gt0[t].setZero(solverDim, solverDim);
+        Stimp[t].setZero(solverDim,solverDim);
+    }
+    for (int n=0; n<N_freq; n++) {
+        Gwimp[n] = Gwimp_out.getMatrix(n);
+        Gw0[n] =Gwimp_out.getMatrix(n);
+        Swimp_secondOrder[n].setZero(solverDim, solverDim);
+        delta_w[n] = weiss_field.getMatrix(n);
+    }
+    Swimp_secondOrder[N_freq].setZero(solverDim, solverDim);
+    Swimp_secondOrder[N_freq+1].setZero(solverDim, solverDim);
+    Swimp_secondOrder[N_freq+2].setZero(solverDim, solverDim);
+    delta_w[N_freq]   = weiss_field.getMatrix(N_freq+1);
+    delta_w[N_freq+1] = weiss_field.getMatrix(N_freq+2);
+
+    Gwimp[N_freq].setIdentity(solverDim, solverDim);
+    Gwimp[N_freq+1].setZero(solverDim, solverDim);
+    Gwimp[N_freq+2].setZero(solverDim, solverDim);
+    Gwimp[N_freq+3].setZero(solverDim, solverDim);
+
+    Gw0[N_freq].setIdentity(solverDim, solverDim);
+    Gw0[N_freq+1].setZero(solverDim, solverDim);
+    Gw0[N_freq+2].setZero(solverDim, solverDim);
+    Gw0[N_freq+3].setZero(solverDim, solverDim);
+
+    for(int i = 0 ; i<  solverDim ; i++) {
+        for(int j = 0 ; j<  solverDim ; j++) {
+            occMat(i,j)= projNumMatrix(i,j);
+        }
+    }
+    occMatHF = occMat;
+    //
+    //Initial condition: non-interacting (or HF with n>=2 loop) initial  Greens Ftn
+    //    double NumTotInitial = real(occMat.trace());
+    //    double muHF = real(projimpurity_site_Hamiltonian.trace())/ solverDim;
+    //    non_interacting_Gw(Gw0, solverDim,projimpurity_site_Hamiltonian, muHF, NumTotInitial, delta_w);
+
+    double muHF = muTB;
+    getFockOperator( Fock, occMatHF, solverDim, projUindex, projUtensor) ;
+    getGwimp( Gw0, projimpurity_site_Hamiltonian, Fock, Swimp_secondOrder, delta_w, muHF, solverDim) ;
+
+    // HF
+
+    //    pulayMixing Mixing_HF(3, 10, 1, solverDim, solverDim );
+    //    double HFloop=0;
+    //    double HFmixing=0.01;
+    //    Fock_in=Fock;
+    //    do {
+    //        HFloop++;
+    //        //mixing, Gwimp is used in the next iteration
+    //        if(HFloop < 1500) Mixing_HF.mixing( &Fock_in, &Fock, HFmixing, HFloop, 1);
+    //        else {
+    //            Fock =  (1-HFmixing) * Fock_in + HFmixing * Fock;
+    //        }
+    //        Fock_in = Fock;
+    //        getGwimp( Gw0, projimpurity_site_Hamiltonian,Fock, Swimp_secondOrder, delta_w, muTB, solverDim) ; //non-interacting (or HF with n>=2 loop)  Greens Ftn
+    //        getoccMat(Gw0, occMatHF, solverDim);
+    //        if(magnetism==0) {
+    //            for (int n=0; n<solverDim; n+=2) {
+    //                int up = n, dn =n+1;
+    //                cmplx avgN = (occMatHF(up,up)+occMatHF(dn,dn))/2.0;
+    //                occMatHF(up,up)=avgN;
+    //                occMatHF(dn,dn)=avgN;
+    //                occMatHF(dn,up)=0.0;
+    //                occMatHF(up,dn)=0.0;
+    //
+    //            }
+    //        }
+    //
+    //        /*
+    //        ///////////////////////////////////////////////////////////////////////////////////////////////
+    //        ///Adjust Chem.Pot
+    //                double Nele[history];
+    //                for (int i=0; i<history; i++)  Nele[i]=-1;
+    //                Nele[0] = real(occMatHF.trace());
+    //                double muRD;
+    //                double mu_next;
+    //                double muUB=0, muLB=0;
+    //                int nearAns=0;
+    //                double dmu=1;
+    //                muHF-=dmu;
+    //                int step=0;
+    //                while (  std::abs(Nele[0] - NumTotInitial) > std::min(1e-5, 1e-5/((Fock.norm())+1e-5)  )  ) { //   and  std::abs(dmu)>1e-5 ) {}
+    //                    muHF += dmu;
+    //
+    //                    getGwimp( Gw0,projimpurity_site_Hamiltonian,Fock, Swimp_secondOrder, delta_w,  muHF, solverDim) ;
+    //                    estimate_asymto(Gw0,2);
+    //                    estimate_asymto(Gw0,3);
+    //                    getoccMat(Gw0, occMatHF,solverDim);
+    //
+    //                    for(int i=history-1; i>0 ; i--) Nele[i]=Nele[i-1];
+    //                    Nele[0] = real(occMatHF.trace());
+    //
+    //                    if (nearAns ==0) {
+    //                        if ( Nele[0] < NumTotInitial) {
+    //                            muLB = muHF;
+    //                            if (Nele[1]>NumTotInitial && Nele[1] >0 ) nearAns = 1;
+    //                            else dmu = fabs(dmu);
+    //                        }
+    //                        if ( Nele[0] > NumTotInitial) {
+    //                            muUB = muHF;
+    //                            if (Nele[1] < NumTotInitial && Nele[1] > 0)  nearAns =1;
+    //                            else dmu = -1*fabs(dmu);
+    //                        }
+    //                        if ( Nele[0] == NumTotInitial) break;
+    //        //                assert( std::abs(muHF) <  100)   ;
+    //                    }
+    //                    else if (nearAns ==1) {
+    //                        if (Nele[0] > NumTotInitial) muUB = muHF;
+    //                        else if(Nele[0] < NumTotInitial) muLB =muHF;
+    //                        mu_next = (muUB+muLB)/2.;
+    //                        dmu = mu_next - muHF;
+    //                    }
+    //                }//while
+    //        ////////////////////////////////////////////////////////////////////////////////////////////////////////
+    //        //// */
+    //        getFockOperator( Fock, occMatHF, solverDim, projUindex, projUtensor) ;
+    //        ifroot std::cout << "HF_iter: "<<HFloop<<"\n occMatHF:\n " << occMatHF << "\n Fock_RD:\n" << (Fock_in-Fock).norm() << "\n\n";
+    //    } while ( (Fock_in-Fock).norm() > 1e-4   ) ;
+    //    getFockOperator( Fock, occMatHF, solverDim, projUindex, projUtensor) ;
+
+    FourierTransform( Gw0, Gt0, Gw0[N_freq]);
+    getStimp ( Stimp, Gt0, false, solverDim, projUindex, projUtensor);
+    FT_t_to_w(Swimp_secondOrder, Stimp, N_freq);
+
+
+    double a[2];
+    double b[2];
+    double c[2];
+    a[0] = real((UHubb*UHubb*occMat(1,1) *(1.0-occMat(1,1))) );
+    a[1] = real((UHubb*UHubb*occMat(0,0) *(1.0-occMat(0,0))) );
+    b[0] = real( (muHF- muTB +UHubb*(1.0-2.0*occMat(1,1))))  ;
+    b[1] = real( (muHF- muTB +UHubb*(1.0-2.0*occMat(0,0))))  ;
+    c[0] = real((UHubb*UHubb*occMatHF(1,1) *(1.0-occMatHF(1,1))) );
+    c[1] = real((UHubb*UHubb*occMatHF(0,0) *(1.0-occMatHF(0,0))) );
+    ifroot std::cout <<"b:" << b[0] <<" " << b[1] <<"\n";
+    for (int n=0; n<N_freq; n++) {
+        Swimp_secondOrder[n](0,0) = a[0]*Swimp_secondOrder[n](0,0) / (c[0]- b[0]*Swimp_secondOrder[n](0,0) );
+        Swimp_secondOrder[n](1,1) = a[1]*Swimp_secondOrder[n](1,1) / (c[1]- b[1]*Swimp_secondOrder[n](1,1) );
+    }
+
+    getGwimp( Gwimp, projimpurity_site_Hamiltonian, Fock, Swimp_secondOrder, delta_w, muTB, solverDim) ;
+    estimate_asymto(Gwimp,2);
+    estimate_asymto(Gwimp,3);
+
+
+    getoccMat(Gwimp, occMat, solverDim);
+    for(int i = 0 ; i<  solverDim ; i++) {
+        for(int j = 0 ; j<  solverDim ; j++) {
+            projNumMatrix(i,j) = occMat(i,j);
+        }
+    }
+
+
+
+    //write result to NumMatrix and Sw
+    writeResults( Swimp_secondOrder, Fock, Gwimp,  SE_out, Gwimp_out, solverDim);
+    MPI_Barrier(MPI_COMM_WORLD);
+}//IPT
+// */
+
+
+
+
