@@ -69,7 +69,7 @@ DMFTpack is the software for DFT+DMFT calculation. Various projection methods an
 
 * Now, one may want to do analytic continuation from the Matsubara Green's function (or the Self-energy) to the real-frequency spectral function.
  
- ```ShellSession
+  ```ShellSession
   $ mkdir realFreqSpectrum; cd realFreqSpectrum
   $ mkdir continuation; cd continuation
   ```
@@ -78,12 +78,12 @@ DMFTpack is the software for DFT+DMFT calculation. Various projection methods an
     $ cp ../../Sw_SOLVER.full.dat  ./
     $ julia $(MQEM_dir)/src/mem.jl Sw_SOLVER.full.dat ../../input.solver | tee "std.out"
     ```
-  or [ΩMaxent](https://www.physique.usherbrooke.ca/MaxEnt/index.php/Main_Page) ([PRE 94, 023303 (2016)](https://journals.aps.org/pre/abstract/10.1103/PhysRevE.94.023303)).
+    or [ΩMaxent](https://www.physique.usherbrooke.ca/MaxEnt/index.php/Main_Page) ([PRE 94, 023303 (2016)](https://journals.aps.org/pre/abstract/10.1103/PhysRevE.94.023303)).
     ```ShellSession
     $ cp ../../Sw_SOLVER.dat  ./
     $ ~/bin/OmegaMaxEnt | tee "std.out"
     ```
-  * For the case of self-energy continuation, one may want to generate "realFreq_Sw.dat_i_j" file, using the Kramers-Kronig relation. Here i and j are orbital indices. Each file contains omega for the first column and real and imaginary part of the self-energy for the second and third column, respectively.
+  * For the case of self-energy continuation, one may want to generate "realFreq_Sw.dat_i_j" files, using the Kramers-Kronig relation. Here i and j are orbital indices. Each file contains omega for the first column and real and imaginary part of the self-energy for the second and third column, respectively.
   * (optional) For the system with large spin-orbit coupling, we recommend MQEM method developed by J.-H. Sim. The source code will be available soon via GitHub (update: 2018-10-19).
 
 
