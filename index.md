@@ -67,17 +67,26 @@ DMFTpack is the software for DFT+DMFT calculation. Various projection methods an
   $ gnuplot sw_Im.gnuplot
   ```
 
-* Now, one may want to do analytic continuation from the imaginary Green's function to the real-frequency spectral function.
-  * Any continuation method can be used to obtain the density of states from the Green's function, e.g., MQEM ([PRB 98, 205102 (2018)](https://journals.aps.org/prb/abstract/10.1103/PhysRevB.98.205102)) or [ΩMaxent](https://www.physique.usherbrooke.ca/MaxEnt/index.php/Main_Page) ([PRE 94, 023303 (2016)](https://journals.aps.org/pre/abstract/10.1103/PhysRevE.94.023303))
-  * For the case of self-energy continuation, one may generate "realFreq_Sw.dat_i_j" file. Here i and j are orbital indices. Each file contains omega for the first column and real and imaginary part of the self-energy for the second and third column, respectively.
+* Now, one may want to do analytic continuation from the Matsubara Green's function (or the Self-energy) to the real-frequency spectral function.
+ 
+ ```ShellSession
+  $ mkdir realFreqSpectrum; cd realFreqSpectrum
+  $ mkdir continuation; cd continuation
+  ```
+  * Any continuation method can be used to obtain the density of states from the Green's function, e.g., MQEM ([PRB 98, 205102 (2018)](https://journals.aps.org/prb/abstract/10.1103/PhysRevB.98.205102))
+    ```ShellSession
+    $ cp ../../Sw_SOLVER.full.dat  ./
+    $ julia $(MQEM_dir)/src/mem.jl Sw_SOLVER.full.dat ../../input.solver | tee "std.out"
+    ```
+  or [ΩMaxent](https://www.physique.usherbrooke.ca/MaxEnt/index.php/Main_Page) ([PRE 94, 023303 (2016)](https://journals.aps.org/pre/abstract/10.1103/PhysRevE.94.023303)).
+    ```ShellSession
+    $ cp ../../Sw_SOLVER.dat  ./
+    $ ~/bin/OmegaMaxEnt | tee "std.out"
+    ```
+  * For the case of self-energy continuation, one may want to generate "realFreq_Sw.dat_i_j" file, using the Kramers-Kronig relation. Here i and j are orbital indices. Each file contains omega for the first column and real and imaginary part of the self-energy for the second and third column, respectively.
   * (optional) For the system with large spin-orbit coupling, we recommend MQEM method developed by J.-H. Sim. The source code will be available soon via GitHub (update: 2018-10-19).
 
-    ```ShellSession
-    $ mkdir realFreqSpectrum; cd realFreqSpectrum
-    $ mkdir continuation; cd continuation
-    $ cp ../../Sw_SOLVER.full.dat  ./
-    $ julia $(MQEM_dir)/src/mem.jl Sw_SOLVER.full.dat | tee "std.out"
-    ```
+
 
     * mqem.input.toml file is generated, one can control parameters for MQEM continuation method as following (See https://github.com/KAIST-ELST/MQEM.jl for more details):
 
