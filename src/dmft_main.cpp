@@ -211,16 +211,9 @@ int main(int argc, char *argv[]) {
     fprintf(tempFile, "%0.20f\n", muDFT);
     fclose(tempFile) ;
 
-
-
-
-
-
-
-
-    /*****************************************
-    Initial Self energy, double counting,  and Sw_inf and muTB
-    *******************************************/
+/////////////////////////////////////////////////////
+//  Initial Self energy, double counting,  and Sw_inf and muTB 
+////////////////////////////////////////////////////
     /*retarded self-energy, S_E, for quasi-ptl calculation */
     if(SOLVERtype !=std::string("TB")) {
         SelfEnergy_w.Initialize(         beta, N_freq,  NumHartrOrbit_per_cluster, NumCluster, mixingType);
@@ -307,7 +300,6 @@ int main(int argc, char *argv[]) {
     muTB = TightBinding (muTB, std::string("Hk.HWR"), SelfEnergy_w,  weiss_fieldTB_weakCorr, weiss_fieldTB_strongCorr, 1, SolverBasis);
     dc_for_dmft( Sw_doublecounting,  Uindex,  Utensor, NumMatrix, NumCorrAtom, 0, SelfEnergy_w);
 
-
     ifroot {
         for(int at=0; at<NumCorrAtom; at++) {
             std::cout << "Num ele (decomp, Initial) atom"<<at<<" = ";
@@ -317,14 +309,14 @@ int main(int argc, char *argv[]) {
             }
             std::cout <<"\n";
         }
-        for(int at=0; at<NumCorrAtom; at++) {
-            Eigen::MatrixXcd NumMat_atom1(N_peratom_HartrOrbit, N_peratom_HartrOrbit);
-            for(int n=0; n<N_peratom_HartrOrbit; n+=1) {
-                for(int m=0; m<N_peratom_HartrOrbit; m+=1) {
-                    NumMat_atom1(n,m) = NumMatrix(at*N_peratom_HartrOrbit+n, at*N_peratom_HartrOrbit+m);
-                }
-            }
-        }
+//        for(int at=0; at<NumCorrAtom; at++) {
+//            Eigen::MatrixXcd NumMat_atom1(N_peratom_HartrOrbit, N_peratom_HartrOrbit);
+//            for(int n=0; n<N_peratom_HartrOrbit; n+=1) {
+//                for(int m=0; m<N_peratom_HartrOrbit; m+=1) {
+//                    NumMat_atom1(n,m) = NumMatrix(at*N_peratom_HartrOrbit+n, at*N_peratom_HartrOrbit+m);
+//                }
+//            }
+//        }
         for(int at=0; at<NumCorrAtom; at++) {
             Eigen::SelfAdjointEigenSolver<Eigen::MatrixXcd> ces(N_peratom_HartrOrbit);
             Eigen::MatrixXcd NumMat_atom1(N_peratom_HartrOrbit, N_peratom_HartrOrbit);

@@ -461,37 +461,37 @@ void SOLVER(
 
 
 
-
-    //Asymto, S0 + S1/iw + ...
-    //
-    //S0 part
-    Eigen::MatrixXcd tail [3];
-    Eigen::MatrixXcd tail_coeff;
-    Eigen::MatrixXcd temp_eig [3];
-    double w0,w1,w2;
-    tail[0] = SE_out.getMatrix(N_freq-3);
-    tail[1] = SE_out.getMatrix(N_freq-2);
-    tail[2] = SE_out.getMatrix(N_freq-1);
-    for(int w=0; w<3; w++) {
-        tail[w] = (tail[w]+tail[w].adjoint()).eval()/2.;
-    }
-    tail_coeff = ( tail[0] + tail[1] + tail[2]) /3.;
-    SE_out.setMatrix(N_freq, tail_coeff);
-
-
-    //S1,
-    w0 = 1./std::pow(SE_out.getValue(N_freq-3),2);
-    w1 = 1./std::pow(SE_out.getValue(N_freq-2),2);
-    w2 = 1./std::pow(SE_out.getValue(N_freq-1),2);
-    tail[0] = SE_out.getMatrix(N_freq-3);
-    tail[1] = SE_out.getMatrix(N_freq-2);
-    tail[2] = SE_out.getMatrix(N_freq-1);
-    for(int w=0; w<3; w++) {
-        tail[w] = (tail[w]-tail[w].adjoint()).eval()/2.;
-        tail[w] = tail[w] / (I*SE_out.getValue(N_freq-3+w));
-    }
-    tail_coeff = -( tail[0] + tail[1] + tail[2]) / (w0+w1+w2);
-    SE_out.setMatrix(N_freq+1, tail_coeff);
+//
+//    //Asymto, S0 + S1/iw + ...
+//    //
+//    //S0 part
+//    Eigen::MatrixXcd tail [3];
+//    Eigen::MatrixXcd tail_coeff;
+//    Eigen::MatrixXcd temp_eig [3];
+//    double w0,w1,w2;
+//    tail[0] = SE_out.getMatrix(N_freq-3);
+//    tail[1] = SE_out.getMatrix(N_freq-2);
+//    tail[2] = SE_out.getMatrix(N_freq-1);
+//    for(int w=0; w<3; w++) {
+//        tail[w] = (tail[w]+tail[w].adjoint()).eval()/2.;
+//    }
+//    tail_coeff = ( tail[0] + tail[1] + tail[2]) /3.;
+//    SE_out.setMatrix(N_freq, tail_coeff);
+//
+//
+//    //S1,
+//    w0 = 1./std::pow(SE_out.getValue(N_freq-3),2);
+//    w1 = 1./std::pow(SE_out.getValue(N_freq-2),2);
+//    w2 = 1./std::pow(SE_out.getValue(N_freq-1),2);
+//    tail[0] = SE_out.getMatrix(N_freq-3);
+//    tail[1] = SE_out.getMatrix(N_freq-2);
+//    tail[2] = SE_out.getMatrix(N_freq-1);
+//    for(int w=0; w<3; w++) {
+//        tail[w] = (tail[w]-tail[w].adjoint()).eval()/2.;
+//        tail[w] = tail[w] / (I*SE_out.getValue(N_freq-3+w));
+//    }
+//    tail_coeff = -( tail[0] + tail[1] + tail[2]) / (w0+w1+w2);
+//    SE_out.setMatrix(N_freq+1, tail_coeff);
 
 
 }

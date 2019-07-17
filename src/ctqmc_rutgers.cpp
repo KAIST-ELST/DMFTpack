@@ -300,12 +300,13 @@ void write_PARMS() {
     unsigned long long THERMALIZATION;
     tempD = read_double(std::string("input.solver"), std::string("THERMALIZATION"),  true, 1e6);
     THERMALIZATION = (unsigned long long) tempD;
+    int svd_lmax = read_int(std::string("input.solver"), std::string("svd_lmax"),  true, 30);
 
     FILE *fp;
 //    if ((fp = fopen("PARAMS","r")) == NULL) {
     FILE * PARMS_file = fopen("PARAMS", "w");
     fprintf(PARMS_file, "nom %d  # number of Matsubara frequencies\n", N_freq                 );
-    fprintf(PARMS_file, "svd_lmax 30 # number of SVD functions to project the solution\n"                 );
+    fprintf(PARMS_file, "svd_lmax %d # number of SVD functions to project the solution\n", svd_lmax                 );
     fprintf(PARMS_file, "svd_L 15 # To compute the SVD decomposition of the kernel for analytic continuation, we need to choose the cutoff on the real axis.(default: 10).\n"                 );
     fprintf(PARMS_file, "tsample  %d     # how often to record the measurements\n" , tsample                        );
     fprintf(PARMS_file, "aom      1      # number of frequency points to determin high frequency tail\n"  );

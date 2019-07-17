@@ -146,7 +146,7 @@ void read_inputFile(const std::string &hamiltonian) {
 
 
     /*solver option*/
-    SOLVERtype  = read_string(std::string("input.parm"), std::string("SOLVER_TYPE"), false);//TB, ALPS_CTSEG, ALPS_CTHYB, RUTGERS_CTSEG, RUTGERS_CTHYB, SC2PT, IPT, 2PT
+    SOLVERtype  = read_string(std::string("input.parm"), std::string("SOLVER_TYPE"), false);//TB, ALPS_CTSEG, ALPS_CTHYB, RUTGERS_CTSEG, RUTGERS_CTHYB, SC2PT,2PT
     std::string solverexe_default, solverdir_default;
     if(SOLVERtype.find(std::string("ALPS"))  != std::string::npos  ) {
         solverexe_default = std::string("hybridization");

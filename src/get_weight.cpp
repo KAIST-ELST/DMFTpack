@@ -34,7 +34,7 @@ void get_preNAOs (Eigen::MatrixXcd weightMatrix,
         }
     }
 //            */
-//N, diagonalize Al subspace.
+//N, diagonalize Al subspace. We now redefine principal quantum number!.
 // /*
     Eigen::MatrixXcd densityMat_Al_block;
     densityMat_Al_block.setZero(num_subshell, num_subshell);
