@@ -1,6 +1,6 @@
 ##### The software will be released soon. (Updated: 2018-10-19)
 # DMFTpack
-DMFTpack is the software for DFT+DMFT calculation. Various projection methods and the impurity solvers are available, e.g., iterative perturbation theory (IPT), self-consistent second-order perturbation theory (SC2PT), and CT-QMC. The interface connecting DFT package, e.g., OpenMX and impurity solvers is also provided.
+DMFTpack is the software for DFT+DMFT calculation. Various projection methods [1] and the impurity solvers are available, e.g., iterative perturbation theory (IPT), self-consistent second-order perturbation theory (SC2PT). The interface connecting DFT package, e.g., [OpenMX](http://www.openmx-square.org) and impurity solvers (CT-QMC) is also provided.
 ##### Developer: [Jae-Hoon Sim](https://sites.google.com/site/jhsim4279/) (email: jh_sim@kaist.ac.kr , jhsim4279@gmail.com)
 
 
@@ -68,7 +68,7 @@ DMFTpack is the software for DFT+DMFT calculation. Various projection methods an
   ```
 
 * Now, one may want to do analytic continuation from the Matsubara Green's function (or the Self-energy) to the real-frequency spectral function.
- 
+
   ```ShellSession
   $ mkdir realFreqSpectrum; cd realFreqSpectrum
   $ mkdir continuation; cd continuation
@@ -84,12 +84,12 @@ DMFTpack is the software for DFT+DMFT calculation. Various projection methods an
     $ ~/bin/OmegaMaxEnt | tee "std.out"
     ```
   * For the case of self-energy continuation, one may want to generate "realFreq_Sw.dat_i_j" files, using the Kramers-Kronig relation. Here i and j are orbital indices. Each file contains omega for the first column and real and imaginary part of the self-energy for the second and third column, respectively.
-  * (optional) For the system with large spin-orbit coupling, we recommend MQEM method developed by J.-H. Sim. The source code will be available soon via GitHub (update: 2018-10-19).
+  * (optional) For the system with large spin-orbit coupling, we recommend MQEM method developed by J.-H. Sim [2]. The source code will be available soon via GitHub (update: 2018-10-19).
 
 
 
     * mqem.input.toml file is generated, one can control parameters for MQEM continuation method as following (See https://github.com/KAIST-ELST/MQEM.jl for more details):
-
+    
     * (key) = (variable)
 
 * band structure: To do calculate band structure, SOLVER_TYPE=TB and RESTART>1 in input.pam is required, providing "realFreq_Sw.dat_i_j".
@@ -152,6 +152,7 @@ After running OpenMX with option " HS.fileout   on", two additional input files 
     * subshell = dimension of the subshell.
     * Rydberg_set = 0 for nominally occupied orbitals, 1 for empty
   * Projection method
+    We provide a method to obtain projective Wannier functions based on the natural atomic orbitals. The basic idea of the method is introduced in Ref. 1.
     * MODEL_WINDOW_U = upper bound of the energy window for the correlated subspace. The correlated orbitals are projected into the model window (default: 10).
     * MODEL_WINDOW_D = lower bound of the energy window for the correlated subspace (default: -10)
     * DC_TYPE = {nominal, [fll]}, double counting method (default: fll)
@@ -163,8 +164,8 @@ After running OpenMX with option " HS.fileout   on", two additional input files 
     * K_GRID_BAND = (default: 40)
     * SPECTRAL_ENERGY_GRID = (default: 1000)
     * N_K_PATH = the number of paths for the band calculation
-    * K_PATH = this keword specifies the paths of the band dispersion
-
+  * K_PATH = this keword specifies the paths of the band dispersion
+  
 * input.solver
   * impurity_information
     * N_ORBITALS = the number of orbitals in impurity site
@@ -187,9 +188,21 @@ After running OpenMX with option " HS.fileout   on", two additional input files 
 
 - Gw_loc.full.dat[N]:
   Local Green's function G<sub>αβ</sub>(iω<sub>n</sub>) for N-th correlated atom. For each line, five numbers represent the n, α, β, real and imaginary part of the Green's function, respectively.
+  
 - Gw_imp.full.dat[N]:
   Same for impurity Green's function.
+  
 - Sw_SOLVER.full.dat:
   Self-energy calculated from the impurity solver.
+  
 - Numele.dat:
   Number matrix n<sub>αβ</sub> calculated by -G<sub>αβ</sub>(τ=β<sup>-</sup>).
+
+## References
+1. DFT+DMFT with natural atomic orbital projectors
+  Jae-Hoon Sim and Myung Joon Han, (Submitted)
+2. [Maximum Quantum Entropy Method](https://journals.aps.org/prb/abstract/10.1103/PhysRevB.98.205102)
+  Jae-Hoon Sim and Myung Joon Han, Phys. Rev. B 98, 205102 (2018)
+
+
+
