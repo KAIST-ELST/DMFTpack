@@ -15,6 +15,11 @@ void rot_Uijkl(
     std::vector<cmplx > & rotUtensor, std::vector<Eigen::VectorXi>  & rotUindex,
     Eigen::MatrixXcd & SolverBasis, int n_spinorb
 ) ;
+void rot_Uijkl_dd(
+    std::vector<cmplx > & Utensor, std::vector<Eigen::VectorXi>  & Uindex,
+    std::vector<cmplx > & rotUtensor, std::vector<Eigen::VectorXi>  & rotUindex,
+    Eigen::MatrixXcd & SolverBasis, int n_spinorb
+) ;
 
 void IPT( int solverDim,Eigen::MatrixXcd projimpurity_site_Hamiltonian,  ImgFreqFtn & weiss_field, Eigen::MatrixXcd & projNumMatrix,
           ImgFreqFtn & SE_out,      ImgFreqFtn & Gwimp_out, double muTB,
@@ -262,7 +267,7 @@ void SOLVER(
 
             std::vector<cmplx > rotUtensor;
             std::vector<Eigen::VectorXi> rotUindex;
-            rot_Uijkl(projUtensor, projUindex, rotUtensor, rotUindex, projSolverBasis, solverDim);
+            rot_Uijkl_dd(projUtensor, projUindex, rotUtensor, rotUindex, projSolverBasis, solverDim);
 
             ctqmc_rutgers_seg(  projimpurity_site_Hamiltonian_diag,  muTB, projweiss_field, rotUtensor, rotUindex, solverDim   );
 
@@ -320,7 +325,7 @@ void SOLVER(
 
             std::vector<cmplx > rotUtensor;
             std::vector<Eigen::VectorXi> rotUindex;
-            rot_Uijkl(projUtensor, projUindex, rotUtensor, rotUindex, projSolverBasis, solverDim);
+            rot_Uijkl_dd(projUtensor, projUindex, rotUtensor, rotUindex, projSolverBasis, solverDim);
 
 
             ifroot "write rutgers_input file\n";

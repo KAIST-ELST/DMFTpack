@@ -212,7 +212,7 @@ int main(int argc, char *argv[]) {
     fclose(tempFile) ;
 
 /////////////////////////////////////////////////////
-//  Initial Self energy, double counting,  and Sw_inf and muTB 
+//  Initial Self energy, double counting,  and Sw_inf and muTB
 ////////////////////////////////////////////////////
     /*retarded self-energy, S_E, for quasi-ptl calculation */
     if(SOLVERtype !=std::string("TB")) {
@@ -781,47 +781,47 @@ void write_gnuplot(int writingFile) {
 
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
-void set_Hartree_self_energy( Eigen::MatrixXcd & NumMatrix, std::vector<Eigen::VectorXi > Uindex, std::vector<cmplx >  Utensor, ImgFreqFtn & SelfEnergy_w   ) {
-
-    for(int b=0; b<NumCorrAtom*N_peratom_HartrOrbit; b++) {
-        for(int d=0; d<NumCorrAtom*N_peratom_HartrOrbit; d++) {
-            SelfEnergy_w.setValue(N_freq, b,d, 0);
-        }
-    }
-
-    for(int at=0; at<NumCorrAtom; at++) {
-        for(int idx=0;  idx <  Utensor.size(); idx++) {
-            int aH = at* N_peratom_HartrOrbit + Uindex[idx](0);
-            int bH = at* N_peratom_HartrOrbit + Uindex[idx](1);
-            int cH = at* N_peratom_HartrOrbit + Uindex[idx](2);
-            int dH = at* N_peratom_HartrOrbit + Uindex[idx](3);
-            if (not( isOrbitalCorrinHart[aH] and
-                     isOrbitalCorrinHart[bH] and
-                     isOrbitalCorrinHart[cH] and
-                     isOrbitalCorrinHart[dH] ) ) {
-                SelfEnergy_w.setValue(N_freq, bH,dH, SelfEnergy_w.getValue(N_freq,bH,dH) + Utensor[idx] * NumMatrix(cH,aH)   );
-                SelfEnergy_w.setValue(N_freq, bH,cH, SelfEnergy_w.getValue(N_freq,bH,cH) - Utensor[idx] * NumMatrix(dH,aH)   );
-            }
-        }
-    }
-    for(int n=0; n<N_freq; n++) {
-        for(int b=0; b<NumCorrAtom*N_peratom_HartrOrbit; b++) {
-            for(int d=0; d<NumCorrAtom*N_peratom_HartrOrbit; d++) {
-                SelfEnergy_w.setValue(n, b,d, SelfEnergy_w.getValue(N_freq,b,d));
-            }
-        }
-
-    }
-    FILE * DC = fopen("SwHartree.dat","w");
-    for (int orb1=0; orb1<N_peratom_HartrOrbit*NumCorrAtom; orb1++) {
-        for (int orb2=0; orb2<N_peratom_HartrOrbit*NumCorrAtom; orb2++) {
-            fprintf(DC, "     %0.5f %0.5f",real(SelfEnergy_w.getValue(N_freq,orb1,orb2)), imag(SelfEnergy_w.getValue(N_freq,orb1,orb2)));
-        }
-        fprintf(DC, "\n");
-    }
-    fclose(DC);
-    sleep(1);
-}
+//void set_Hartree_self_energy( Eigen::MatrixXcd & NumMatrix, std::vector<Eigen::VectorXi > Uindex, std::vector<cmplx >  Utensor, ImgFreqFtn & SelfEnergy_w   ) {
+//
+//    for(int b=0; b<NumCorrAtom*N_peratom_HartrOrbit; b++) {
+//        for(int d=0; d<NumCorrAtom*N_peratom_HartrOrbit; d++) {
+//            SelfEnergy_w.setValue(N_freq, b,d, 0);
+//        }
+//    }
+//
+//    for(int at=0; at<NumCorrAtom; at++) {
+//        for(int idx=0;  idx <  Utensor.size(); idx++) {
+//            int aH = at* N_peratom_HartrOrbit + Uindex[idx](0);
+//            int bH = at* N_peratom_HartrOrbit + Uindex[idx](1);
+//            int cH = at* N_peratom_HartrOrbit + Uindex[idx](2);
+//            int dH = at* N_peratom_HartrOrbit + Uindex[idx](3);
+//            if (not( isOrbitalCorrinHart[aH] and
+//                     isOrbitalCorrinHart[bH] and
+//                     isOrbitalCorrinHart[cH] and
+//                     isOrbitalCorrinHart[dH] ) ) {
+//                SelfEnergy_w.setValue(N_freq, bH,dH, SelfEnergy_w.getValue(N_freq,bH,dH) + Utensor[idx] * NumMatrix(cH,aH)   );
+//                SelfEnergy_w.setValue(N_freq, bH,cH, SelfEnergy_w.getValue(N_freq,bH,cH) - Utensor[idx] * NumMatrix(dH,aH)   );
+//            }
+//        }
+//    }
+//    for(int n=0; n<N_freq; n++) {
+//        for(int b=0; b<NumCorrAtom*N_peratom_HartrOrbit; b++) {
+//            for(int d=0; d<NumCorrAtom*N_peratom_HartrOrbit; d++) {
+//                SelfEnergy_w.setValue(n, b,d, SelfEnergy_w.getValue(N_freq,b,d));
+//            }
+//        }
+//
+//    }
+//    FILE * DC = fopen("SwHartree.dat","w");
+//    for (int orb1=0; orb1<N_peratom_HartrOrbit*NumCorrAtom; orb1++) {
+//        for (int orb2=0; orb2<N_peratom_HartrOrbit*NumCorrAtom; orb2++) {
+//            fprintf(DC, "     %0.5f %0.5f",real(SelfEnergy_w.getValue(N_freq,orb1,orb2)), imag(SelfEnergy_w.getValue(N_freq,orb1,orb2)));
+//        }
+//        fprintf(DC, "\n");
+//    }
+//    fclose(DC);
+//    sleep(1);
+//}
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
 
 

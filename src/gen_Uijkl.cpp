@@ -222,6 +222,48 @@ void rot_Uijkl(
             }//k
         }//j
     }///i
-    //    write_Uijkl(index, Utensor, Uindex, indexC);
+}
 
+void rot_Uijkl_dd(
+    std::vector<cmplx > & Utensor, std::vector<Eigen::VectorXi>  & Uindex,
+    std::vector<cmplx > & rotUtensor, std::vector<Eigen::VectorXi>  & rotUindex,
+    Eigen::MatrixXcd & SolverBasis, int n_spinorb
+) {
+
+
+    ifroot std::cout << "original U matrix\n";
+    Eigen::MatrixXcd SolverBasis_adj = SolverBasis.adjoint();
+    int length = (int) Utensor.size();
+    int nH=0;
+    while(nH < length) {
+        ifroot std::cout << Uindex[nH](0) <<" " <<Uindex[nH](1)<<" " <<Uindex[nH](2)<<" " <<Uindex[nH](3) <<" : " << Utensor[nH]<<"\n";
+        nH++;
+    }
+    ifroot std::cout << "\n";
+
+
+    ifroot std::cout << "rot U matrix\n";
+    ifroot std::cout << SolverBasis <<"\n";
+    for(int n=0; n<n_spinorb; n++) {
+        for(int m=0; m<n_spinorb; m++) {
+            //                    if(i!=j and k!=l and i/2==k/2 and j/2==l/2) {
+            Eigen::VectorXi temp(4);
+            temp(0)=n;
+            temp(1)=m;
+            temp(2)=n;
+            temp(3)=m;
+            int nH=0;
+            cmplx  interaction=0;
+            while(nH < length) {
+                interaction +=  SolverBasis_adj(n, Uindex[nH](0)) * SolverBasis_adj(m, Uindex[nH](1)) *
+                                Utensor[nH] *
+                                SolverBasis(Uindex[nH](2), n) *  SolverBasis(Uindex[nH](3),m);
+                nH++;
+            }
+            ifroot std::cout << n <<" " <<m<<" " <<n<<" " <<m <<" : " << interaction<<"\n";
+
+            rotUindex.push_back(temp);
+            rotUtensor.push_back(interaction);
+        }//m
+    }///n
 }

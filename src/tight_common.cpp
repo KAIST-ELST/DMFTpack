@@ -579,7 +579,8 @@ void setCorrelatedSpaceIndex( std::vector<int> HartreeOrbital_idx, int NumCorrAt
     }
     if(not( test2 == NumCorrAtom*NSpinOrbit_per_atom)) {
         ifroot std::cout
-                << "Please check input,  total number of Correlated orbital !=  NumCorrAtom*NSpinOrbit_per_atom\n"
+                << "Please check input (HARTREE_ORBITALS_RANGE,DYNAMIC_ORBITALS , N_CORRELATED_ATOMS, and N_ORBITALS).\n"
+                <<  "total number of Correlated orbital !=  N_CORRELATED_ATOMS*N_ORBITALS\n"
                 << test2<<", " <<NumCorrAtom*NSpinOrbit_per_atom ;
         MPI_Barrier(MPI_COMM_WORLD);
         exit(1);
