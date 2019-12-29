@@ -184,7 +184,7 @@ void SOLVER(
             MPI_Barrier(MPI_COMM_WORLD);
 
             /*set solver command*/
-            ifroot std::cout << "ALPS, CT-HYB solver\n";
+            ifroot std::cout << "ALPS, CT-SEG solver\n";
             MPI_Comm communication;
 
             std::ostringstream impSolver_hyb_comm;

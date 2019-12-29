@@ -3,7 +3,46 @@
 #include "TB.h"
 #include <Eigen/Dense>
 
-void Construct_H0_local(Eigen::MatrixXcd * Heff_loc, double mu, ImgFreqFtn & SelfE_w, int atom);
+//void Construct_H0_local(Eigen::MatrixXcd * Heff_loc, double mu, ImgFreqFtn & SelfE_w, int atom);
+
+void Construct_Gloc(int impurityDim, std::vector<int> impurityOrbit,
+                    ImgFreqFtn & SelfE_w, std::vector<Eigen::MatrixXcd>   Gw, double mu,
+                    ImgFreqFtn &  weiss_fieldTB, int atom,     Eigen::MatrixXcd & SolverBasis  ) {
+
+
+
+    int   h2, h1F, h2F, h1H,h2H;
+    cmplx iw;
+
+    std::vector<Eigen::MatrixXcd>     projGw(N_freq);
+    for(int n=0; n<N_freq; n++) {
+        projGw[n].setZero(impurityDim, impurityDim);
+    }
+
+    for(int h1=0; h1< impurityDim; h1++) {
+        for(int h2=0; h2< impurityDim; h2++) {
+            int h1F = impurityOrbit.at(h1);
+            int h2F = impurityOrbit.at(h2);
+            for(int n=0; n<N_freq; n++) {
+                projGw[n](h1,h2) =  Gw[n](h1F,h2F);
+            }
+        }
+    }
+
+
+
+    for(int n=0; n<N_freq; n++) {
+        iw=I*pi*(2.*n+1.)/beta;
+        for(int h1=0; h1< impurityDim ; h1++) {
+            for(int h2=0; h2< impurityDim ; h2++) {
+                weiss_fieldTB.setValueSubMat(n, atom,  h1, h2,
+                                             projGw[n](h1,h2) )  ;
+            }//h2
+        }//h1
+    }//n
+
+}
+
 
 void Construct_hyb_delta(int impurityDim, std::vector<int> impurityOrbit,
                          ImgFreqFtn & SelfE_w, std::vector<Eigen::MatrixXcd>   Gw, double mu,

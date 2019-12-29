@@ -365,9 +365,9 @@ int main(int argc, char *argv[]) {
         }
 
 
-        weiss_field_strongCorr.dataOut(std::string("delta_w.dat"));
-        weiss_field_strongCorr.dataOut_full(std::string("delta_w.full.dat"));
-        ifroot std::cout << "FILEOUT:delta_w.dat\n" ;
+//        weiss_field_strongCorr.dataOut(std::string("delta_w.dat"));
+//        weiss_field_strongCorr.dataOut_full(std::string("delta_w.full.dat"));
+//        ifroot std::cout << "FILEOUT:delta_w.dat\n" ;
 
 
         /***********************************************************
@@ -853,8 +853,8 @@ void write_results(int DFTIt, int currentIt, std::string system_name, int NumCor
         cp_comm = std::string("cp ctqmc.log  ./") +system_name+ "/" + chr + "ctqmc.log";
         system(cp_comm.c_str());
 
-        cp_comm = std::string("cp delta_w.dat  ./") +system_name+ "/" + chr + "delta_w.dat";
-        system(cp_comm.c_str());
+//        cp_comm = std::string("cp delta_w.dat  ./") +system_name+ "/" + chr + "delta_w.dat";
+//        system(cp_comm.c_str());
         cp_comm = std::string("cp Numele.dat  ./") +system_name+ "/" + chr + "Numele.dat";
         system(cp_comm.c_str());
         cp_comm = std::string("cp ctqmc.log  ./") +system_name+ "/" + chr + "ctqmc.log";

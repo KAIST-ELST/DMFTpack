@@ -119,17 +119,18 @@ void data_sync_EigenMat(Eigen::MatrixXcd *A, int startRow, int endRow, int matri
         end[itsRank]=iend;
     }
     int lenRow = endRow-startRow+1;
-    cmplx AA[lenRow][matrix_dim*matrix_dim];
+    int mat_size= matrix_dim*matrix_dim;
+    cmplx * AA = new cmplx [lenRow * mat_size ];
     for(row=0; row <lenRow ; row++ ) {
         for(int i=0; i<matrix_dim; i++) {
             for(int j=0; j<matrix_dim; j++) {
-                AA[row][i*matrix_dim + j] = A[row+startRow](i,j);
+                AA[row*mat_size + i*matrix_dim + j] = A[row+startRow](i,j);
             }
         }
     }
 
     for(myrank=0; myrank<nprocs; myrank++) {
-        MPI_Bcast(&(AA[start[myrank]-startRow][0]), (end[myrank]-start[myrank]+1)*(matrix_dim*matrix_dim), MPI_DOUBLE_COMPLEX, myrank, MPI_COMM_WORLD);
+        MPI_Bcast(&(AA[(start[myrank]-startRow)*mat_size]), (end[myrank]-start[myrank]+1)*(matrix_dim*matrix_dim), MPI_DOUBLE_COMPLEX, myrank, MPI_COMM_WORLD);
         //for(row=start[myrank]; row <=end[myrank] ; row++ ) {
         //    MPI_Bcast(A[row].data(), A[row].size(), MPI_DOUBLE_COMPLEX, myrank, MPI_COMM_WORLD);
         //}
@@ -139,11 +140,12 @@ void data_sync_EigenMat(Eigen::MatrixXcd *A, int startRow, int endRow, int matri
     for(row=0; row <lenRow ; row++ ) {
         for(int i=0; i<matrix_dim; i++) {
             for(int j=0; j<matrix_dim; j++) {
-                A[row+startRow](i,j) = AA[row][i*matrix_dim + j] ;
+                A[row+startRow](i,j) = AA[row*mat_size+i*matrix_dim + j] ;
             }
         }
     }
 
+    delete [] AA;
     delete [] start;
     delete [] end;
 }
@@ -160,21 +162,22 @@ void data_sync(cmplx **A, int startRow, int endRow, int lenColumn,  int nprocs) 
         end[itsRank]=iend;
     }
     int lenRow = endRow-startRow+1;
-    cmplx AA[lenRow][lenColumn];
+    cmplx * AA = new cmplx [lenRow * lenColumn];
     for(int i=0; i<lenRow; i++) {
         for(int j=0; j<lenColumn; j++) {
-            AA[i][j] = A[i+startRow][j];
+            AA[i*lenColumn + j] = A[i+startRow][j];
         }
     }
 
     for(myrank=0; myrank<nprocs; myrank++) {
-        MPI_Bcast(&(AA[start[myrank]-startRow][0]), (end[myrank]-start[myrank]+1)*lenColumn, MPI_DOUBLE_COMPLEX, myrank, MPI_COMM_WORLD);
+        MPI_Bcast(&(AA[ (start[myrank]-startRow)*lenColumn]), (end[myrank]-start[myrank]+1)*lenColumn, MPI_DOUBLE_COMPLEX, myrank, MPI_COMM_WORLD);
     }
     for(int i=0; i<lenRow; i++) {
         for(int j=0; j<lenColumn; j++) {
-            A[i+startRow][j]=AA[i][j];
+            A[i+startRow][j]=AA[i*lenColumn+j];
         }
     }
+    delete [] AA;
     delete [] start;
     delete [] end;
 }
@@ -190,21 +193,22 @@ void data_sync(double **A, int startRow, int endRow, int lenColumn,  int nprocs)
         end[itsRank]=iend;
     }
     int lenRow = endRow-startRow+1;
-    double AA[lenRow][lenColumn];
+    double * AA = new double [lenRow * lenColumn];
     for(int i=0; i<lenRow; i++) {
         for(int j=0; j<lenColumn; j++) {
-            AA[i][j] = A[i+startRow][j];
+            AA[i*lenColumn+j] = A[i+startRow][j];
         }
     }
     for(myrank=0; myrank<nprocs; myrank++) {
-        MPI_Bcast(&(AA[start[myrank]-startRow][0]), (end[myrank]-start[myrank]+1)*lenColumn, MPI_DOUBLE, myrank, MPI_COMM_WORLD);
+        MPI_Bcast(&(AA[(start[myrank]-startRow) * lenColumn]), (end[myrank]-start[myrank]+1)*lenColumn, MPI_DOUBLE, myrank, MPI_COMM_WORLD);
     }
     for(int i=0; i<lenRow; i++) {
         for(int j=0; j<lenColumn; j++) {
-            A[i+startRow][j]=AA[i][j];
+            A[i+startRow][j]=AA[i*lenColumn+j];
         }
     }
 
+    delete [] AA;
     delete [] start;
     delete [] end;
 }
@@ -220,20 +224,21 @@ void data_sync(int **A, int startRow, int endRow, int lenColumn,  int nprocs) {
         end[itsRank]=iend;
     }
     int lenRow = endRow-startRow+1;
-    int AA[lenRow][lenColumn];
+    int * AA = new int [lenRow * lenColumn];
     for(int i=0; i<lenRow; i++) {
         for(int j=0; j<lenColumn; j++) {
-            AA[i][j] = A[i+startRow][j];
+            AA[i*lenColumn +j] = A[i+startRow][j];
         }
     }
     for(myrank=0; myrank<nprocs; myrank++) {
-        MPI_Bcast(&(AA[start[myrank]-startRow][0]), (end[myrank]-start[myrank]+1)*lenColumn, MPI_INT, myrank, MPI_COMM_WORLD);
+        MPI_Bcast(&(AA[(start[myrank]-startRow)*lenColumn]), (end[myrank]-start[myrank]+1)*lenColumn, MPI_INT, myrank, MPI_COMM_WORLD);
     }
     for(int i=0; i<lenRow; i++) {
         for(int j=0; j<lenColumn; j++) {
-            A[i+startRow][j]=AA[i][j];
+            A[i+startRow][j]=AA[i*lenColumn +j];
         }
     }
+    delete [] AA;
     delete [] start;
     delete [] end;
 }
@@ -249,16 +254,17 @@ void data_sync(cmplx ***A, int startRow, int endRow, int lenColumn, int lenhight
         end[itsRank]=iend;
     }
     int lenRow = endRow-startRow+1;
-    cmplx AA[lenRow][lenColumn*lenhight];
+    int mat_size= lenColumn*lenhight;
+    cmplx * AA = new cmplx [lenRow * mat_size ];
     for(int i=0; i<lenRow; i++) {
         for(int j=0; j<lenColumn; j++) {
             for(int k=0; k<lenhight; k++) {
-                AA[i][j*lenhight+k] = A[i+startRow][j][k];
+                AA[i*mat_size+ j*lenhight+k] = A[i+startRow][j][k];
             }
         }
     }
     for(myrank=0; myrank<nprocs; myrank++) {
-        MPI_Bcast(&(AA[start[myrank]-startRow][0]), (end[myrank]-start[myrank]+1)*(lenColumn*lenhight), MPI_DOUBLE_COMPLEX, myrank, MPI_COMM_WORLD);
+        MPI_Bcast(&(AA[(start[myrank]-startRow)*mat_size]), (end[myrank]-start[myrank]+1)*(lenColumn*lenhight), MPI_DOUBLE_COMPLEX, myrank, MPI_COMM_WORLD);
 //        for(row=start[myrank]; row <=end[myrank] ; row++ ) {
 //            MPI_Bcast(&A[row][0][0], lenColumn*lenhight, MPI_DOUBLE_COMPLEX, myrank, MPI_COMM_WORLD);
 //        }
@@ -266,10 +272,11 @@ void data_sync(cmplx ***A, int startRow, int endRow, int lenColumn, int lenhight
     for(int i=0; i<lenRow; i++) {
         for(int j=0; j<lenColumn; j++) {
             for(int k=0; k<lenhight; k++) {
-                A[i+startRow][j][k] = AA[i][j*lenhight+k] ;
+                A[i+startRow][j][k] = AA[i*mat_size +j*lenhight+k] ;
             }
         }
     }
+    delete [] AA;
     delete [] start;
     delete [] end;
 }
