@@ -74,31 +74,24 @@ void SC2PT_weak  ( int solverDim,
         Gwimp[n] = Gw_weak.getMatrix(n);
         if (SC == true ) {
             GwHFimp[n] = Gw_weak.getMatrix(n);
-////            ifroot std::cout << "2PTsolver from Gw\n";
         }
         else {
             GwHFimp[n] = GwHF.getMatrix(n);
-////            ifroot std::cout << "2PTsolver from GwHF\n";
         }
         Swimp_secondOrder[n].setZero(solverDim, solverDim);
     }
     Swimp_secondOrder[N_freq+0].setZero(solverDim, solverDim);
     Swimp_secondOrder[N_freq+1].setZero(solverDim, solverDim);
     Swimp_secondOrder[N_freq+2].setZero(solverDim, solverDim);
-//Swimp_secondOrder[N_freq+3].setZero(solverDim, solverDim);
 
 
     Gwimp[N_freq+0].setIdentity(solverDim, solverDim);
-//    estimate_asymto(Gwimp,2);
-//    estimate_asymto(Gwimp,3);
     Gwimp[N_freq+1].setZero(solverDim, solverDim);
     Gwimp[N_freq+2].setZero(solverDim, solverDim);
     Gwimp[N_freq+3].setZero(solverDim, solverDim);
 
 
     GwHFimp[N_freq+0].setIdentity(solverDim, solverDim);
-//    estimate_asymto(GwHFimp,2);
-//    estimate_asymto(GwHFimp,3);
     GwHFimp[N_freq+1].setZero(solverDim, solverDim);
     GwHFimp[N_freq+2].setZero(solverDim, solverDim);
     GwHFimp[N_freq+3].setZero(solverDim, solverDim);
@@ -215,10 +208,10 @@ void SecondOrderPerturbation  ( int solverDim,   Eigen::MatrixXcd projimpurity_s
 
 
 
-void on_shot_HF (int solverDim,
-                 ImgFreqFtn & SE_out,      ImgFreqFtn & Gwimp_out,
-                 std::vector<Eigen::VectorXi> projUindex, std::vector<cmplx > projUtensor
-                ) {
+void one_shot_HF (int solverDim,
+                  ImgFreqFtn & SE_out,      ImgFreqFtn & Gwimp_out,
+                  std::vector<Eigen::VectorXi> projUindex, std::vector<cmplx > projUtensor
+                 ) {
     /*Initial Setting*/
     Eigen::MatrixXcd Fock(solverDim, solverDim);
     Eigen::MatrixXcd  occMat(solverDim, solverDim);
@@ -247,6 +240,7 @@ void on_shot_HF (int solverDim,
 
     MPI_Barrier(MPI_COMM_WORLD);
     delete [] Swimp_secondOrder;
+    delete [] Gwimp;
 }//HF
 
 
@@ -322,7 +316,7 @@ void SCHF (int solverDim, Eigen::MatrixXcd projimpurity_site_Hamiltonian, Eigen:
     double normUnit =  MatsubaraFtnnorm(Gwimp,N_freq);
     double normOccMat=0;
     pulayMixing Mixing_SCGF(3, 100, N_freq, solverDim, solverDim );
-    while( (SCHFloop<10 or(normGwimpDiffOuter > 1e-6) or normOccMat>1e-6) and SCHFloop <2000 ) {
+    while( (SCHFloop<10 or normGwimpDiffOuter > 1e-5 or normOccMat>1e-5) and SCHFloop <1000 ) {
         //transfer previous results
         for (int n=0; n<N_freq+4; n++)
             Gwimp_in[n] = Gwimp[n];
@@ -344,8 +338,8 @@ void SCHF (int solverDim, Eigen::MatrixXcd projimpurity_site_Hamiltonian, Eigen:
         normGwimpDiffOuter= MatsubaraFtnnorm(Gwimp_in, Gwimp, N_freq)  /  normUnit;
 
         /*mixing, Gwimp is used in the next iteration*/
-        if(SCHFloop%500==0) mixingSCGF /= 1.5;
-        if(SCHFloop < 1500) Mixing_SCGF.mixing( Gwimp_in, Gwimp, mixingSCGF, SCHFloop, 1);
+        if(SCHFloop%200==0) mixingSCGF /= 1.5;
+        if(SCHFloop < 900) Mixing_SCGF.mixing( Gwimp_in, Gwimp, mixingSCGF, SCHFloop, 1);
         else {
             for(int n=0; n<N_freq; n++) {
                 Gwimp[n] =  (1-mixingSCGF) * Gwimp_in[n] + mixingSCGF * Gwimp[n];
@@ -355,18 +349,20 @@ void SCHF (int solverDim, Eigen::MatrixXcd projimpurity_site_Hamiltonian, Eigen:
 //        estimate_asymto(Gwimp,2);
 //        estimate_asymto(Gwimp,3);
 
-        if(stdoutLevel>=2 and mpi_rank==0) {
-            std::cout <<"oc:";
-            Eigen::SelfAdjointEigenSolver<Eigen::MatrixXcd> ces(solverDim);
-            ces.compute(occMat);
-            for(int n=0; n<solverDim; n+=1) {
-                std::cout <<std::fixed << std::setprecision(5)<< std::fixed   <<  ( ces.eigenvalues()[n]  ) <<" " ;
-            }
-            std::cout <<": " << occMat.trace() <<"\n";
-        }
 
         /*mixing check*/
-        if (SCHFloop%10 == 0) mixing_check_outer(  normGwimpDiffOuter,  mixingSCGF);
+        if (SCHFloop%10 == 0) {
+            mixing_check_outer(  normGwimpDiffOuter,  mixingSCGF);
+            if(stdoutLevel>=2 and mpi_rank==0 ) {
+                std::cout <<"oc:";
+                Eigen::SelfAdjointEigenSolver<Eigen::MatrixXcd> ces(solverDim);
+                ces.compute(occMat_in);
+                for(int n=0; n<solverDim; n+=1) {
+                    std::cout <<std::fixed << std::setprecision(5)<< std::fixed   <<  ( ces.eigenvalues()[n]  ) <<" " ;
+                }
+                std::cout <<": " << occMat_in.trace() <<"\n";
+            }
+        }
         SCHFloop++;
     }//outer loop
 
@@ -377,6 +373,11 @@ void SCHF (int solverDim, Eigen::MatrixXcd projimpurity_site_Hamiltonian, Eigen:
 
     /*write result to NumMatrix and Sw*/
     writeResults( Swimp_secondOrder, Fock, Gwimp,    SE_out, Gwimp_out, solverDim);
+    for(int i = 0 ; i<  solverDim ; i++) {
+        for(int j = 0 ; j<  solverDim ; j++) {
+            projNumMatrix(i,j) = occMat(i,j) ;
+        }
+    }
 
     MPI_Barrier(MPI_COMM_WORLD);
 
@@ -528,6 +529,11 @@ void SCGF2 (int solverDim, Eigen::MatrixXcd projimpurity_site_Hamiltonian, Eigen
     ifroot printf      ("  mixing:%e\n:", mixingSCGF);
 
     writeResults( Swimp_secondOrder, Fock, Gwimp,    SE_out, Gwimp_out, solverDim);
+    for(int i = 0 ; i<  solverDim ; i++) {
+        for(int j = 0 ; j<  solverDim ; j++) {
+            projNumMatrix(i,j) = occMat(i,j) ;
+        }
+    }
 
     MPI_Barrier(MPI_COMM_WORLD);
 }//SCGF2
@@ -539,8 +545,7 @@ void SCGF2 (int solverDim, Eigen::MatrixXcd projimpurity_site_Hamiltonian, Eigen
 void getoccMat(Eigen::MatrixXcd * Gwimp, Eigen::MatrixXcd & occMat, int solverDim) {
 
 
-//occMat is not really occupation, but density matrix.
-//i.e. occMat(a,b) = G(a,b; 0-) = -G(a,b; beta-) =   <c^\dagger_b,  c_a> =! <c^\dagger_a,  c_b>
+// occMat(a,b) = G(a,b; 0-) = -G(a,b; beta-) =   <c^\dagger_b,  c_a> =! <c^\dagger_a,  c_b>
 //
     Eigen::MatrixXcd Id;
     Id.setIdentity(solverDim,solverDim);

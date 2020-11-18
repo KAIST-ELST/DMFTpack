@@ -1,4 +1,4 @@
-//#include <time.h>
+#include <time.h>
 #include "ImgTimeFtn.h"
 #include "tight_common.h"
 #include <cstring>
@@ -10,26 +10,22 @@
 #endif
 
 
-void rot_Uijkl(
-    std::vector<cmplx > & Utensor, std::vector<Eigen::VectorXi>  & Uindex,
-    std::vector<cmplx > & rotUtensor, std::vector<Eigen::VectorXi>  & rotUindex,
-    Eigen::MatrixXcd & SolverBasis, int n_spinorb
-) ;
-void rot_Uijkl_dd(
-    std::vector<cmplx > & Utensor, std::vector<Eigen::VectorXi>  & Uindex,
-    std::vector<cmplx > & rotUtensor, std::vector<Eigen::VectorXi>  & rotUindex,
-    Eigen::MatrixXcd & SolverBasis, int n_spinorb
-) ;
+void Time_print();
+//void rot_Uijkl(
+//    std::vector<cmplx > & Utensor, std::vector<Eigen::VectorXi>  & Uindex,
+//    std::vector<cmplx > & rotUtensor, std::vector<Eigen::VectorXi>  & rotUindex,
+//    Eigen::MatrixXcd & SolverBasis, int n_spinorb
+//) ;
 
 void IPT( int solverDim,Eigen::MatrixXcd projimpurity_site_Hamiltonian,  ImgFreqFtn & weiss_field, Eigen::MatrixXcd & projNumMatrix,
           ImgFreqFtn & SE_out,      ImgFreqFtn & Gwimp_out, double muTB,
           std::vector<Eigen::VectorXi> projUindex, std::vector<cmplx > projUtensor        ) ;
 //
 
-void on_shot_HF (int solverDim,
-                 ImgFreqFtn & SE_out,      ImgFreqFtn & Gwimp_out,
-                 std::vector<Eigen::VectorXi> projUindex, std::vector<cmplx > projUtensor
-                ) ;
+void one_shot_HF (int solverDim,
+                  ImgFreqFtn & SE_out,      ImgFreqFtn & Gwimp_out,
+                  std::vector<Eigen::VectorXi> projUindex, std::vector<cmplx > projUtensor
+                 ) ;
 
 void SC2PT_weak  ( int solverDim,
                    ImgFreqFtn & SE_out,      ImgFreqFtn & Gwimp_out, ImgFreqFtn & GwHF, bool SC,
@@ -78,9 +74,9 @@ void weak_solver(
 {
     if(SOLVERtype == std::string("HF")) {
 
-        on_shot_HF( solverDim,
-                    SE_out, Gwimp_in_out,
-                    projUindex, projUtensor);
+        one_shot_HF( solverDim,
+                     SE_out, Gwimp_in_out,
+                     projUindex, projUtensor);
 
     }//SCHF
     else if(SOLVERtype == std::string("2PT")) {
@@ -98,7 +94,6 @@ void weak_solver(
     else {
         ifroot std::cout << "Please set  Lowlevel_SOLVERTYPE = HF or SC2PT\n";
     }
-
 }
 
 
@@ -114,7 +109,10 @@ void SOLVER(
 {
 
 
+    ifroot std::cout << "******************\n";
+    ifroot    Time_print();
     ifroot std::cout << "<SOLVER>\n";
+    ifroot std::cout << "******************\n";
 
 
     Eigen::MatrixXcd   projimpurity_site_Hamiltonian, projSolverBasis, projNumMatrix ;
@@ -129,6 +127,10 @@ void SOLVER(
                    impurity_site_Hamiltonian, NumMatrix, weiss_field,
                    projimpurity_site_Hamiltonian, projSolverBasis, projNumMatrix, projweiss_field,
                    Sw_doublecounting, dc_weakCorr);
+
+    projweiss_field.dataOut(std::string("projdelta_w.dat")+intToString(solver_block));
+        MPI_Barrier(MPI_COMM_WORLD);
+
 
 
 
@@ -146,6 +148,7 @@ void SOLVER(
                 projimpurity_site_Hamiltonian_diag(h1,h1) = ( projimpurity_site_Hamiltonian )(h1,h1);
             }
         }
+        MPI_Barrier(MPI_COMM_WORLD);
 
 
         if (SOLVERtype==std::string("ALPS_CTSEG")) {//ALPS_CTSEG
@@ -181,10 +184,9 @@ void SOLVER(
                 fclose(datap4);
             }
             sleep(3);
-            MPI_Barrier(MPI_COMM_WORLD);
 
             /*set solver command*/
-            ifroot std::cout << "ALPS, CT-SEG solver\n";
+            ifroot std::cout << "ALPS, CT-HYB solver\n";
             MPI_Comm communication;
 
             std::ostringstream impSolver_hyb_comm;
@@ -234,7 +236,6 @@ void SOLVER(
             SE_out.read_diag(std::string("Swl.dat"));
             Gwimp_in_out.read_diag(std::string("Gw.dat"));
 
-            MPI_Barrier(MPI_COMM_WORLD);
             ifroot  std::cout << "Reading output data..\n";
 
             for (int l=0; l<solverDim; l++) {
@@ -246,30 +247,30 @@ void SOLVER(
             delete [] delta_t;
         }//ALPS_CTSEG
         else if (SOLVERtype==std::string("RUTGERS_CTSEG")) {//RUTGERS_CTSEG
+            MPI_Barrier(MPI_COMM_WORLD);
             ifroot std::cout << "Rutgers(K. Haule), CT-HYB(SEG) solver\n";
+//            std::cout << "Rutgers(K. Haule), CT-HYB(SEG) solver" << mpi_rank << "\n";
 
             Eigen::MatrixXcd * delta_t   = new Eigen::MatrixXcd  [N_tau+1];
-            write_hyb_t (projweiss_field, delta_t, 0);
+            //write_hyb_t (projweiss_field, delta_t, 0);
             ifroot std::cout <<"FILE OUT: delta_t.dat\n";
-            ifroot{
-                FILE *datap4 = fopen("delta_t.dat", "w");
-                for(int tau=0; tau<=N_tau; tau++) {
-                    fprintf(datap4, "%0.5f",tau*beta/N_tau);
-                    for(int h1=0; h1<solverDim; h1++) {
-                        fprintf(datap4, "    %0.10f", real(  delta_t[tau](h1,h1)));
-                    }
-                    fprintf(datap4, "\n");
-                }
-                fclose(datap4);
-            }
-            sleep(2);
+            //ifroot{
+            //    FILE *datap4 = fopen("delta_t.dat", "w");
+            //    for(int tau=0; tau<=N_tau; tau++) {
+            //        fprintf(datap4, "%0.5f",tau*beta/N_tau);
+            //        for(int h1=0; h1<solverDim; h1++) {
+            //            fprintf(datap4, "    %0.10f", real(  delta_t[tau](h1,h1)));
+            //        }
+            //        fprintf(datap4, "\n");
+            //    }
+            //    fclose(datap4);
+            //}
+            //sleep(2);
+            delete [] delta_t;
 
 
-            std::vector<cmplx > rotUtensor;
-            std::vector<Eigen::VectorXi> rotUindex;
-            rot_Uijkl_dd(projUtensor, projUindex, rotUtensor, rotUindex, projSolverBasis, solverDim);
 
-            ctqmc_rutgers_seg(  projimpurity_site_Hamiltonian_diag,  muTB, projweiss_field, rotUtensor, rotUindex, solverDim   );
+            ctqmc_rutgers_seg(  projimpurity_site_Hamiltonian_diag,  muTB, projweiss_field, projUtensor, projUindex, solverDim   );
 
             /*set solver command*/
             MPI_Comm communication;
@@ -281,19 +282,35 @@ void SOLVER(
             char * command_hyb = new char[impSolver_hyb_comm.str().size()+1];
             std::strcpy(command_hyb,impSolver_hyb_comm.str().c_str());
 
-            /*run alps solver*/
+            /*run solver*/
             ifroot  std::cout << "****Solver type=Rutgers CT-HYB(SEG)  ***\n";
             ifroot  std::cout <<  impSolver_hyb_comm.str().c_str() <<"\n" ;
 
             int errors[mpi_numprocs], checkTime=10;
-            MPI_Comm_spawn(command_hyb, hyb_In, mpi_numprocs,MPI_INFO_NULL, 0, MPI_COMM_WORLD, &communication, errors);
-            Wait_Run("Gcoeff.dat", checkTime, mpi_rank, maxTime);
+//////////////////
+//            MPI_Comm_spawn(command_hyb, hyb_In, mpi_numprocs, MPI_INFO_NULL, 0, MPI_COMM_WORLD, &communication, errors);
+//            Wait_Run("new.cix", checkTime, mpi_rank, maxTime);
+//////////////////
+            ifroot {
+                system( (std::string("rm new.cix") ).c_str() );
+                system (  (std::string("mpirun -np " ) + std::to_string(mpi_numprocs) + std::string("  ") + impSolver_hyb_comm.str() + std::string(" PARAMS")  ).c_str()          );
+            }
+            Wait_Run("new.cix", checkTime, mpi_rank, maxTime);
+            //else {
+            //    while (1) {
+            //        sleep(120);
+            //        if( 0 == access("new.cix", F_OK) ) {
+            //            break;
+            //        }
+            //    }
+            //}
+            MPI_Barrier(MPI_COMM_WORLD);
+///////////////
 
 
             /*read output*/
             SE_out.read_diag(std::string("Sw.dat"));
             Gwimp_in_out.read_diag(std::string("Gw.dat"));
-            MPI_Barrier(MPI_COMM_WORLD);
             ifroot  std::cout << "Reading output data..\n";
 
 
@@ -315,21 +332,19 @@ void SOLVER(
             ifroot  std::cout << "Writing output data..\n";
             std::stringstream ss;
             ss << solver_block;
-            ifroot system(  (std::string("cp ")+"rutgers_input.cix  rutgers_input.cix" +ss.str()).c_str());
+            ifroot system(  (std::string("cp ")+"rutgers_input.cix  rutgers_input.cix" +ss.str()).c_str()   );
+            ifroot system(  (std::string("cp ")+"ctqmc.log  ctqmc.log" +ss.str()).c_str());
+            ifroot system(  (std::string("cp ")+"Probability.dat  Probability.dat" +ss.str()).c_str());
             delete[] command_hyb;
-            delete [] delta_t;
         }//RUTGERS_CTSEG
         else if (SOLVERtype==std::string("RUTGERS_CTHYB")) {//Rutgers
             /*diagonalize onsite-Hamiltonian*/
             //SOLVER basis transformation
 
-            std::vector<cmplx > rotUtensor;
-            std::vector<Eigen::VectorXi> rotUindex;
-            rot_Uijkl_dd(projUtensor, projUindex, rotUtensor, rotUindex, projSolverBasis, solverDim);
 
 
             ifroot "write rutgers_input file\n";
-            ctqmc_rutgers(  projimpurity_site_Hamiltonian,  muTB, projweiss_field, rotUtensor, rotUindex, solverDim);
+            ctqmc_rutgers(  projimpurity_site_Hamiltonian,  muTB, projweiss_field, projUtensor, projUindex, solverDim);
 
             /*set solver command*/
             ifroot std::cout << "Rutgers(K. Haule), CT-HYB solver\n";
@@ -347,19 +362,35 @@ void SOLVER(
             ifroot  std::cout <<  impSolver_hyb_comm.str().c_str() <<"\n" ;
 
             int errors[mpi_numprocs], checkTime=10;
-            MPI_Comm_spawn(command_hyb, hyb_In, mpi_numprocs,MPI_INFO_NULL, 0, MPI_COMM_WORLD, &communication, errors);
-            Wait_Run("Gcoeff.dat", checkTime, mpi_rank, maxTime);
+//////////////////
+//            MPI_Comm_spawn(command_hyb, hyb_In, mpi_numprocs,MPI_INFO_NULL, 0, MPI_COMM_WORLD, &communication, errors);
+//            Wait_Run("Gcoeff.dat", checkTime, mpi_rank, maxTime);
+//////////////////
+            ifroot {
+                system (  (std::string("mpirun -np " ) + std::to_string(mpi_numprocs) + std::string("  ") + impSolver_hyb_comm.str() + std::string(" PARAMS")  ).c_str()          );
+            }
+            else {
+                system( (std::string("rm new.cix") ).c_str() );
+                while (1) {
+                    sleep(60);
+                    if( 0 == access("new.cix", F_OK) ) {
+                        break;
+                    }
+                }
+            }
+            MPI_Barrier(MPI_COMM_WORLD);
+///////////////
 
 
             /*read output*/
 
             int spindim=1;
             if(magnetism==0 or magnetism==1) spindim=2;
-            SE_out.read_uppertrian(std::string("Sw.dat") , spindim   );
-            Gwimp_in_out.read_uppertrian(std::string("Gw.dat") , spindim );
+            SE_out.read_uppertrian(std::string("Sw.dat"), spindim   );
+            Gwimp_in_out.read_uppertrian(std::string("Gw.dat"), spindim );
 
 
-            MPI_Barrier(MPI_COMM_WORLD);
+//            MPI_Barrier(MPI_COMM_WORLD);
             ifroot  std::cout << "Reading output data..\n";
 
 
@@ -385,6 +416,8 @@ void SOLVER(
             std::stringstream ss;
             ss << solver_block;
             system(  (std::string("cp ")+"rutgers_input.cix  rutgers_input.cix" +ss.str()).c_str());
+            system(  (std::string("cp ")+"ctqmc.log  ctqmc.log" +ss.str()).c_str());
+            system(  (std::string("cp ")+"Probability.dat  Probability.dat" +ss.str()).c_str());
             delete[] command_hyb;
 
         }//Rutgers
@@ -403,6 +436,19 @@ void SOLVER(
               SE_out, Gwimp_in_out, projweiss_field, muTB,
               projUindex, projUtensor);
 
+        //Eigen::MatrixXcd Gwimp_EIG [N_freq];
+        //for(int n=0; n<N_freq; n++) {
+        //    Gwimp_EIG[n].setZero(NSpinOrbit_per_atom,NSpinOrbit_per_atom);
+        //    for(int h1=0; h1<NSpinOrbit_per_atom; h1++) {
+        //        for(int h2=0; h2<NSpinOrbit_per_atom; h2++) {
+        //            Gwimp_EIG[n](h1,h2) = Gwimp_in_out.getValue(n,h1,h2);
+        //        }
+        //    }//h1
+        //}
+        //Eigen::MatrixXcd Id;
+        //Id.setIdentity(solverDim,solverDim);
+        //FourierTransform (Gwimp_EIG, projNumMatrix, beta, Id) ;
+        //projNumMatrix *= -1;
     }//SCHF
     else if(SOLVERtype == std::string("2PT")) {
         ifroot std::cout << "\n2PT solver\n";
@@ -414,24 +460,25 @@ void SOLVER(
     }//IPT
     else if(SOLVERtype == std::string("HF")) {
 
-        on_shot_HF( solverDim,
-                    SE_out, Gwimp_in_out,
-                    projUindex, projUtensor);
+        one_shot_HF( solverDim,
+                     SE_out, Gwimp_in_out,
+                     projUindex, projUtensor);
+
     }//HF
     else {
         std::cout << "Please check <SOLVER_TYPE> \n";
         exit(1);
     }
 
-    for(int n =0; n<N_freq; n++) {
-        SE_out.setMatrix(n,  projSolverBasis* SE_out.getMatrix(n) *(projSolverBasis).adjoint());
-    }
-
-    for(int n =0; n<N_freq; n++) {
-        Gwimp_in_out.setMatrix(n,  projSolverBasis* Gwimp_in_out.getMatrix(n) *(projSolverBasis).adjoint());
-    }
-
-    projNumMatrix = projSolverBasis * projNumMatrix * (projSolverBasis.adjoint());
+//    for(int n =0; n<N_freq; n++) {
+//        SE_out.setMatrix(n,  projSolverBasis* SE_out.getMatrix(n) *(projSolverBasis).adjoint());
+//    }
+//
+//    for(int n =0; n<N_freq; n++) {
+//        Gwimp_in_out.setMatrix(n,  projSolverBasis* Gwimp_in_out.getMatrix(n) *(projSolverBasis).adjoint());
+//    }
+//
+//    projNumMatrix = projSolverBasis * projNumMatrix * (projSolverBasis.adjoint());
 
 
 
@@ -525,82 +572,82 @@ void proj_to_site( int solverDim, int solver_block, std::vector<int> impurityOrb
         projweiss_field.setMatrix(n,  weiss_field.getMatrix(n,solver_block, solverDim ) +dc_weakCorr.at(n)    );
     }
 
-    ifroot std::cout << "Imp H0:\n"  << std::fixed << std::setprecision(6)<< projimpurity_site_Hamiltonian <<"\n";
-    ifroot std::cout << "Re[D([w=0)]:\n" << std::fixed << std::setprecision(6)<<( (projweiss_field.getMatrix(0)) + (projweiss_field.getMatrix(0)).adjoint() ) /2 <<"\n";
+    ifroot std::cout << "Imp H0:\n"       << std::fixed << std::setprecision(4)<< projimpurity_site_Hamiltonian <<"\n";
+    ifroot std::cout << "Imp DC_weak:\n"  << std::fixed << std::setprecision(4)<< dc_weakCorr.at(N_freq) <<"\n";
+    ifroot std::cout << "Re[D([w=0)]:\n"  << std::fixed << std::setprecision(4)<<( (projweiss_field.getMatrix(0)) + (projweiss_field.getMatrix(0)).adjoint() ) /2 <<"\n";
     std::cout << std::fixed << std::setprecision(4);
 
 
-    Eigen::MatrixXcd projimp_off  =   projimpurity_site_Hamiltonian.diagonal().asDiagonal();
-    Eigen::MatrixXcd weiss_off  =  (projweiss_field.getMatrix(0)).diagonal().asDiagonal();
-    double projimp_off_norm =  (projimpurity_site_Hamiltonian - projimp_off).norm();
-    double weiss_off_norm   =  (projweiss_field.getMatrix(0) - weiss_off).norm();
+//    Eigen::MatrixXcd projimp_off  =   projimpurity_site_Hamiltonian.diagonal().asDiagonal();
+//    Eigen::MatrixXcd weiss_off  =  (projweiss_field.getMatrix(0)).diagonal().asDiagonal();
+//    double projimp_off_norm =  (projimpurity_site_Hamiltonian - projimp_off).norm();
+//    double weiss_off_norm   =  (projweiss_field.getMatrix(0) - weiss_off).norm();
+//
+//
+//
+//
+////    projSolverBasis.setIdentity(solverDim, solverDim);
+////    if(impurityBasisSwitch) {
+////        std::cout << std::fixed << std::setprecision(4);
+////
+////        if(  ((  projimpurity_site_Hamiltonian  ).imag()).norm()  <  1e-5 and (magnetism==0 or magnetism==1) ) {
+////            Eigen::MatrixXcd weiss0_re(solverDim/2, solverDim/2);
+////            for (int i=0; i<solverDim; i+=2) {
+////                for (int j=0; j<solverDim; j+=2) {
+////                    cmplx temp = ( (projweiss_field.getMatrix(0))(i,j)  + (projweiss_field.getMatrix(0))(i+1,j+1) ) /2;
+////                    temp += (projimpurity_site_Hamiltonian(i,j) + projimpurity_site_Hamiltonian(i+1, j+1)) /2;
+////                    weiss0_re( i/2, j/2   ) = temp;
+////                }
+////            }//n
+////            weiss0_re  = (weiss0_re+weiss0_re.adjoint()).eval();
+////            weiss0_re /= 2.0;
+////
+////            Eigen::MatrixXd temp =  ((weiss0_re).real());
+////            Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd> ces( solverDim/2 );
+////            ces.compute(    temp   );
+////
+////            for (int i=0; i<solverDim; i+=2) {
+////                for (int j=0; j<solverDim; j+=2) {
+////                    projSolverBasis(i,j ) = (ces.eigenvectors())(i/2,j/2);
+////                    projSolverBasis(i+1,j+1) = (ces.eigenvectors())(i/2,j/2);
+////                }
+////            }//i
+////        }
+////        else {
+////            Eigen::MatrixXcd weiss0_reSOC =  projweiss_field.getMatrix(0) ;
+////            weiss0_reSOC = (weiss0_reSOC + weiss0_reSOC.adjoint()).eval();
+////            weiss0_reSOC /= 2.0;
+////
+////            Eigen::SelfAdjointEigenSolver<Eigen::MatrixXcd> ces( solverDim );
+////            ces.compute(    projimpurity_site_Hamiltonian   );
+////            projSolverBasis = ces.eigenvectors();
+////
+////            Eigen::MatrixXcd temp =  projSolverBasis.adjoint() * (projimpurity_site_Hamiltonian + weiss0_reSOC) * projSolverBasis;
+////            Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd> ces2( solverDim );
+////            ces2.compute(    temp.real()  );
+////
+////            projSolverBasis = (  projSolverBasis *  ces2.eigenvectors()  ).eval();
+////        }
+////    }
+//
+//
+//
+////    ifroot std::cout << "Solver:Basis:\n" << projSolverBasis<<"\n";
+////    projimpurity_site_Hamiltonian = (projSolverBasis.adjoint() * projimpurity_site_Hamiltonian* projSolverBasis);
+////    for(int n =0; n<N_freq; n++) {
+////        projweiss_field.setMatrix(n,  (projSolverBasis).adjoint()* projweiss_field.getMatrix(n) *(projSolverBasis));
+////    }
+//
+////    ifroot std::cout << "Imp H0:\n"  << std::fixed << std::setprecision(6)<< projimpurity_site_Hamiltonian <<"\n";
+////    ifroot std::cout << "Re[D([w=0)]:\n" << std::fixed << std::setprecision(6)<<( (projweiss_field.getMatrix(0)) + (projweiss_field.getMatrix(0)).adjoint() ) /2 <<"\n";
+//
+//
+//    projimp_off  =   projimpurity_site_Hamiltonian.diagonal().asDiagonal();
+//    weiss_off  =  (projweiss_field.getMatrix(0)).diagonal().asDiagonal();
+//    double projimp_off_norm2 =  (projimpurity_site_Hamiltonian - projimp_off).norm();
+//    double weiss_off_norm2   =  (projweiss_field.getMatrix(0) - weiss_off).norm();
+//    ifroot std::cout<< "offdiagonal part of the impurity hamilonian ( delta_0) is reduced from " << projimp_off_norm << " (" <<weiss_off_norm<<") to " << projimp_off_norm2 << " (" <<weiss_off_norm2<<")\n";
 
-
-
-
-    projSolverBasis.setIdentity(solverDim, solverDim);
-    if(impurityBasisSwitch) {
-        std::cout << std::fixed << std::setprecision(4);
-
-        if(  ((  projimpurity_site_Hamiltonian  ).imag()).norm()  <  1e-5 and (magnetism==0 or magnetism==1) ) {
-            Eigen::MatrixXcd weiss0_re(solverDim/2, solverDim/2);
-            for (int i=0; i<solverDim; i+=2) {
-                for (int j=0; j<solverDim; j+=2) {
-                    cmplx temp = ( (projweiss_field.getMatrix(0))(i,j)  + (projweiss_field.getMatrix(0))(i+1,j+1) ) /2;
-                    temp += (projimpurity_site_Hamiltonian(i,j) + projimpurity_site_Hamiltonian(i+1, j+1)) /2;
-                    weiss0_re( i/2, j/2   ) = temp;
-                }
-            }//n
-            weiss0_re  = (weiss0_re+weiss0_re.adjoint()).eval();
-            weiss0_re /= 2.0;
-
-            Eigen::MatrixXd temp =  ((weiss0_re).real());
-            Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd> ces( solverDim/2 );
-            ces.compute(    temp   );
-
-            for (int i=0; i<solverDim; i+=2) {
-                for (int j=0; j<solverDim; j+=2) {
-                    projSolverBasis(i ,j ) = (ces.eigenvectors())(i/2,j/2);
-                    projSolverBasis(i+1,j+1) = (ces.eigenvectors())(i/2,j/2);
-                }
-            }//i
-        }
-        else {
-            Eigen::MatrixXcd weiss0_reSOC =  projweiss_field.getMatrix(0) ;
-            weiss0_reSOC = (weiss0_reSOC + weiss0_reSOC.adjoint()).eval();
-            weiss0_reSOC /= 2.0;
-
-            Eigen::SelfAdjointEigenSolver<Eigen::MatrixXcd> ces( solverDim );
-            ces.compute(    projimpurity_site_Hamiltonian   );
-            projSolverBasis = ces.eigenvectors();
-
-
-
-            Eigen::MatrixXcd temp =  projSolverBasis.adjoint() * (projimpurity_site_Hamiltonian + weiss0_reSOC) * projSolverBasis;
-            Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd> ces2( solverDim );
-            ces2.compute(    temp.real()  );
-
-            projSolverBasis = (  projSolverBasis *  ces2.eigenvectors()  ).eval();
-
-        }
-    }
-
-
-
-    ifroot std::cout << "Solver:Basis:\n" << projSolverBasis<<"\n";
-    projimpurity_site_Hamiltonian = (projSolverBasis.adjoint() * projimpurity_site_Hamiltonian* projSolverBasis);
-    for(int n =0; n<N_freq; n++) {
-        projweiss_field.setMatrix(n,  (projSolverBasis).adjoint()* projweiss_field.getMatrix(n) *(projSolverBasis));
-    }
-
-    ifroot std::cout << "Imp H0:\n"  << std::fixed << std::setprecision(6)<< projimpurity_site_Hamiltonian <<"\n";
-    ifroot std::cout << "Re[D([w=0)]:\n" << std::fixed << std::setprecision(6)<<( (projweiss_field.getMatrix(0)) + (projweiss_field.getMatrix(0)).adjoint() ) /2 <<"\n";
-    projimp_off  =   projimpurity_site_Hamiltonian.diagonal().asDiagonal();
-    weiss_off  =  (projweiss_field.getMatrix(0)).diagonal().asDiagonal();
-    double projimp_off_norm2 =  (projimpurity_site_Hamiltonian - projimp_off).norm();
-    double weiss_off_norm2   =  (projweiss_field.getMatrix(0) - weiss_off).norm();
-    ifroot std::cout<< "offdiagonal part of the impurity hamilonian ( delta_0) is reduced from " << projimp_off_norm << " (" <<weiss_off_norm<<") to " << projimp_off_norm2 << " (" <<weiss_off_norm2<<")\n";
-
-    projNumMatrix = projSolverBasis.adjoint() * projNumMatrix * projSolverBasis ;
+//    projNumMatrix = projSolverBasis.adjoint() * projNumMatrix * projSolverBasis ;
 
 }

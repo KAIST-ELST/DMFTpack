@@ -58,13 +58,14 @@ Eigen::VectorXi rot_sym;
 
 
 int  k_pointx, k_pointy, k_pointz,  k_grid=0, mu_adjust, NumHartrOrbit, NumCorrAtom, BraLatt_x,BraLatt_y,BraLatt_z, Measure_nn, NumAtom, NumOrbit;
-int NumAtom_per_cluster, NumCluster, NumHartrOrbit_per_cluster;
+int NumAtom_per_cluster, NumCluster, NumHartrOrbit_per_cluster, ClusterBasis;
 int H0_from_OpenMX;
 //int  SOCCal,  interOrbitHop, currentIt=0, DFTIt=0;
 int  DFTIt=0;
 
 double beta,  EnergyUnit, doublecounting, NumberOfElectron, Band_renorm, TotalCorrEle_in_Imp;
-Eigen::Matrix2cd * Zeeman_field_spin;
+Eigen::Matrix2cd * Zeeman_field_spin_corratom;
+Eigen::Matrix2cd  Zeeman_field_spin;
 int  N_freq, N_tau,  magnetism;
 unsigned long long Num_MC_steps;
 std::string mode;
@@ -80,8 +81,9 @@ std::string dctype, localOrbitalType, SOLVERtype, Lowlevel_SOLVERtype, Coulombty
 //int *accumulated_Num_SpinOrbital ;
 int * KS2Hartr;
 
-int  maxDmftIt, maxDFTIt,maxTime=60,restart, NSpinOrbit_per_atom, N_peratom_HartrOrbit;
-double  UHubb, Uprime, JHund,mixing;
+int  maxDmftIt, maxDFTIt,maxTime=60,restart, NSpinOrbit_per_atom, N_peratom_HartrOrbit, imp_size, weaksolver_run;
+double  UHubb, Uprime, JHund, JX, JP, mixing;
+int pulay_hist, pulay_start;
 
 int knum, knum_mpiGlobal, myksta,mykend, NsBath=-1 ;
 //int SOLVERtype;
@@ -95,13 +97,15 @@ Eigen::MatrixXcd impurity_site_Hamiltonian;
 //cmplx **  Sw_inf;
 //cmplx  ** Sw_Hartree, ** Sw_doublecounting;
 //cmplx  **  NumMatrix;
-//Eigen::MatrixXcd Sw_Hartree, Sw_doublecounting;
+Eigen::MatrixXcd Sw_doublecounting;
 Eigen::MatrixXcd  NumMatrix;
+double Ekin, EkinDFT, Epot, Epot_weak,  Edc,   EngDMFT_prev, EngDMFT;
 //double   **  UMatrix;
 int * isOrbitalCorr, *isOrbitalCorrinHart,  * isOrbitalHartr, * isOrbitalHartrDFT, *CorrIndex,  *HartrIndex, *HartrIndex_inDFT, *Hart2Corr;
 //*CorrToHartr,
 Eigen::MatrixXi CorrToHartr;
 int impurityBasisSwitch;
+int segmentsolver;
 
 //Eigen::MatrixXi Uindex;
 //Eigen::VectorXcd Utensor;
@@ -110,8 +114,8 @@ int impurityBasisSwitch;
 
 std::vector<Eigen::VectorXi> Uindex;
 std::vector<cmplx > Utensor;
-std::vector<Eigen::VectorXi> Uindex_stronglyCorr;
-std::vector<cmplx > Utensor_stronglyCorr;
+//std::vector<Eigen::VectorXi> Uindex_stronglyCorr;
+//std::vector<cmplx > Utensor_stronglyCorr;
 
 
 //ImgFreqFtn doublecounting_w(0);
@@ -120,6 +124,7 @@ std::vector<cmplx > Utensor_stronglyCorr;
 void read_Uijkl(   std::vector<cmplx >  & Utensor,  std::vector<Eigen::VectorXi>  & Uindex) ;
 
 void read_inputFile(const std::string &hamiltonian) {
+    MPI_Barrier(MPI_COMM_WORLD);
 
 
 
@@ -132,21 +137,34 @@ void read_inputFile(const std::string &hamiltonian) {
 
     infinitesimal  = read_double(std::string("input.parm"), std::string("Infinitesimal"), true, 0.05)  ;  //NOTE : EWIN / Spectral_E should be smaller than infinitesimal
     Spectral_EnergyGrid             = read_double(std::string("input.parm"), std::string("SPECTRAL_ENERGY_GRID"), true, 1000) ;
+    MPI_Barrier(MPI_COMM_WORLD);
 
 
 
 //Computational options
     system_name=  read_string(std::string("input.parm"), std::string("SYSTEM_NAME"), false)   ;
+    MPI_Barrier(MPI_COMM_WORLD);
     mu_adjust =   read_int(std::string("input.parm"), std::string("mu_adjust"), true, 1)           ;   //0=fixed mu, 1=Adjusting mu to Filling Factor
     maxDFTIt    =read_int(std::string("input.parm"), std::string("MAX_DFT_ITER"),true, 1);
     maxDmftIt    =read_int(std::string("input.parm"), std::string("MAX_DMFT_ITER"),true, 20);
     restart =     read_int(std::string("input.parm"), std::string("RESTART"), false)  ;
     mixing =      read_double(std::string("input.parm"), std::string("MIXING"), true, 0.8 )  ;
-    mixingFtn =  read_int(std::string("input.parm"), std::string("MIXING_FUNCTION"), true ,1)  ;    //0=hybridization,  [1=self-energy]
+    pulay_start =     read_int(std::string("input.parm"), std::string("PULAY_START"), true, 500 )  ;
+    pulay_hist =      read_int(std::string("input.parm"), std::string("PULAY_HISTORY"), true, 5 )  ;
+    mixingFtn =  read_int(std::string("input.parm"), std::string("MIXING_FUNCTION"), true,1)  ;     //0=hybridization,  [1=self-energy]
+    MPI_Barrier(MPI_COMM_WORLD);
 
 
     /*solver option*/
-    SOLVERtype  = read_string(std::string("input.parm"), std::string("SOLVER_TYPE"), false);//TB, ALPS_CTSEG, ALPS_CTHYB, RUTGERS_CTSEG, RUTGERS_CTHYB, SC2PT,2PT
+    impurityBasisSwitch = read_int(std::string("input.parm"), std::string("impurityBasisSwitch"), true, 0);   // 1=den mat diag ; 2= Heff diag
+    SOLVERtype          = read_string(std::string("input.parm"), std::string("SOLVER_TYPE"), false);//TB, ALPS_CTSEG, ALPS_CTHYB, RUTGERS_CTSEG, RUTGERS_CTHYB, SC2PT,2PT
+    weaksolver_run      = read_int(std::string("input.parm"),  std::string("weaksolver_run"), true, 0);
+    MPI_Barrier(MPI_COMM_WORLD);
+    segmentsolver=0;
+    if ( SOLVERtype.find(std::string("SEG")) != std::string::npos ) {
+        segmentsolver = 1;
+        if(impurityBasisSwitch==0) impurityBasisSwitch = 1;
+    }
     std::string solverexe_default, solverdir_default;
     if(SOLVERtype.find(std::string("ALPS"))  != std::string::npos  ) {
         solverexe_default = std::string("hybridization");
@@ -158,6 +176,7 @@ void read_inputFile(const std::string &hamiltonian) {
     SOLVERexe   =read_string(std::string("input.parm"), std::string("SOLVER_EXE"), true, solverexe_default);
     SOLVERdir   =read_string(std::string("input.parm"), std::string("SOLVER_DIR"), true, solverdir_default);
     Lowlevel_SOLVERtype  = read_string(std::string("input.parm"), std::string("Lowlevel_SOLVERTYPE"),true, std::string("HF"));  //HF, 2PT
+    MPI_Barrier(MPI_COMM_WORLD);
 
 
     N_freq    =    read_int(std::string("input.solver"),std::string("input.solver1"), std::string("N_MATSUBARA"),false);
@@ -168,13 +187,16 @@ void read_inputFile(const std::string &hamiltonian) {
 //Lattice information
 //
     H0_from_OpenMX =   read_int(std::string("input.parm"), std::string("H0_FROM_OPENMX"),true, 0);
+ //   std::cout << "H0_FROM_OPENMX...\n";
     if(H0_from_OpenMX!=0  ) {
         ifroot analysis_example(system_name+std::string(".scfout"));
         MPI_Barrier(MPI_COMM_WORLD);
-        sleep(5);
+        sleep(30);
     }
-    NumAtom_per_cluster    =   read_int(std::string("input.parm"), std::string("N_ATOMS_CLUSTER"), true , 1)   ;   //num atoms for each cluster. Thus, num cluster = NumAtom/NumAtom_per_cluster
+
     NumAtom          =   read_int(std::string("input.parm"), std::string("N_ATOMS"), false )   ;   //total Num of atoms
+    NumAtom_per_cluster    =   read_int(std::string("input.parm"), std::string("N_ATOMS_CLUSTER"), true, 1)   ;    //num atoms for each cluster. Thus, num cluster = NumAtom/NumAtom_per_cluster
+
     NumCorrAtom      =   read_int(std::string("input.parm"), std::string("N_CORRELATED_ATOMS"), false) ; //Num of atoms, which inlude correlated and/or HF orbitals
     NumberOfElectron = read_double(std::string("input.parm"), std::string("N_ELECTRONS"), false, -1) ;    // Number of electron per unit cell = NumOrbit * FillingFactor
     EnergyUnit =    read_double(std::string("input.parm"), std::string("EnergyUnit"), true, 1)    ;    //Input (Hopping Hamiltonian) -> eV
@@ -190,21 +212,30 @@ void read_inputFile(const std::string &hamiltonian) {
 
 //Impurity information
     UHubb =                   read_double(std::string("input.solver"), std::string("U"), true, -2)    ;
-    Uprime =                  read_double(std::string("input.solver"), std::string("U'"),true, UHubb)    ;
     JHund =                   read_double(std::string("input.solver"), std::string("J"), true, -2)    ;
-    Coulombtype =             read_string(std::string("input.solver"), std::string("COULOMB_TYPE"), true, "dd")    ; //, dd (density-density) k(Kanamori), r (read Uijkl_Hart.dat)
+    Uprime =                  read_double(std::string("input.solver"), std::string("U'"),true, UHubb-2*JHund)    ;       // U-2J, t2g, SO(3); U-J, arb., SU(3)  See   A. Georges, et. al., Annu. Rev. Condens. Matter Phys. 2013. 4:137
+    JX =                      read_double(std::string("input.solver"), std::string("Jx"), true, JHund)    ;
+    JP =                      read_double(std::string("input.solver"), std::string("Jp"), true, UHubb-Uprime-JHund)    ;
+    Coulombtype =             read_string(std::string("input.solver"), std::string("COULOMB_TYPE"), true, "k_dd")    ; //, dd (density-density); k(Kanamori); sphd (d-orbitals, U=F0, J=(F2+F2)/14, and F2/F4=5/8);  r (read Uijkl_Hart.dat)
     beta                    = read_double(std::string("input.solver"), std::string("BETA"), false, -1) ;
     NSpinOrbit_per_atom     =    read_int(std::string("input.solver"), std::string("N_ORBITALS"),false)  ; //correlated orbital per Correlated atom
     N_peratom_HartrOrbit    =    read_int(std::string("input.solver"), std::string("N_HARTREE_ORBITALS"), true, NSpinOrbit_per_atom)   ; //Hartree orbital per correlated atom
-//    N_peratom_HartrOrbit += NSpinOrbit_per_atom;
-    impurityBasisSwitch  =       read_int(std::string("input.solver"), std::string("impurityBasisSwitch"), true , 0);
+
+//imp_size NSpinOrbit_per_atom*2
+    ClusterBasis    =   read_int(std::string("input.parm"), std::string("ClusterBase"), true, 1)   ;    //0=SingleSiteDMFT  1=SEET_AO  2=SEET_MO
+//    if(ClusterBasis== 1){
+//      NumAtom_per_cluster = 1
+//imp_size NSpinOrbit_per_atom*2
+//    }
+//    else if(ClusterBasis==1){
+//    }
 
 //etc..
     Band_renorm =         read_double(std::string("input.parm"), std::string("BAND_RENORM"), true,  1)    ;
 
 
 //projector
-    dctype           =   read_string(std::string("input.parm"), std::string("DC_TYPE"), true,std::string("fll")); //fll,  nominal, fll_Uprime
+    dctype           =   read_string(std::string("input.parm"), std::string("DC_TYPE"), true,std::string("fll")); //sigma0, fll,  fll_Uprime, amf, nominal, nominal_Uprime,     fll_dmft ,  amf_dmft
     if(dctype == std::string("none")) {
         doublecounting =     0;
     }
@@ -252,9 +283,10 @@ void read_inputFile(const std::string &hamiltonian) {
 
 
 //Lattice information
+std::vector<int> accumulated_Num_SpinOrbital_local(NumAtom+1);
+accumulated_Num_SpinOrbital_local[0]=0;
+ifroot{
     FILE *dataIN = fopen(hamiltonian.c_str(), "r");
-    std::vector<int> accumulated_Num_SpinOrbital_local(NumAtom+1);
-    accumulated_Num_SpinOrbital_local[0]=0;
     if (dataIN == NULL) {
         printf("Cannot open Hopping data file...\n");
         exit(1);
@@ -268,8 +300,12 @@ void read_inputFile(const std::string &hamiltonian) {
     }
     rewind(dataIN);
     fclose(dataIN);
-    ifroot std::cout<<"Reading Num of orbit : "<<NumOrbit <<"\n";
+}
+MPI_Bcast(accumulated_Num_SpinOrbital_local.data(), accumulated_Num_SpinOrbital_local.size(), MPI_INT, 0 , MPI_COMM_WORLD);
+MPI_Bcast(&NumOrbit, 1, MPI_INT, 0, MPI_COMM_WORLD);
 
+
+    ifroot std::cout<<"Reading Num of orbit : "<<NumOrbit <<"\n";
 
     std::vector<int> num_subshell_forAtom(NumAtom);
     for(int i=0; i<NumAtom; i++)  num_subshell_forAtom[i] = 1;
@@ -359,37 +395,37 @@ void read_inputFile(const std::string &hamiltonian) {
     //1p= 5:10 2p=11:16
     //1d=17:26
 
-    Zeeman_field_spin = new Eigen::Matrix2cd [NumAtom];
-    for(int at=0; at<NumAtom; at++) {
-        Zeeman_field_spin[at].setZero(2,2);
+    Zeeman_field_spin_corratom = new Eigen::Matrix2cd [NumAtom];
+    for(int at=0; at<NumCorrAtom; at++) {
+        Zeeman_field_spin_corratom[at].setZero(2,2);
     }
+    Zeeman_field_spin.setZero(2,2);
     Eigen::Matrix2cd  sigmax, sigmay, sigmaz;
     sigmax << 0.,1.,1.,0.;
     sigmay << 0.,-1*I,I,0.;
     sigmaz << 1.,0.,0.,-1.;
 
     std::vector<double>  Zeeman_spin_global_read( 4);
-    read_double_array(std::string("input.parm"), std::string("Zeeman_spin_global"), Zeeman_spin_global_read,  4, false, 0.0);
-    for(int at=0; at<NumAtom; at++) {
-        double unitVectorNorm = std::sqrt( std::pow(Zeeman_spin_global_read[1],2) +
-                                           std::pow(Zeeman_spin_global_read[2],2) +
-                                           std::pow(Zeeman_spin_global_read[3],2) );
-        Zeeman_spin_global_read[1] /= (unitVectorNorm +1e-20);
-        Zeeman_spin_global_read[2] /= (unitVectorNorm +1e-20);
-        Zeeman_spin_global_read[3] /= (unitVectorNorm +1e-20);
-        Zeeman_field_spin[at] =
-            Zeeman_spin_global_read[0]/2.0* ( Zeeman_spin_global_read[1] * sigmax + Zeeman_spin_global_read[2] * sigmay + Zeeman_spin_global_read[3] * sigmaz);
-    }
-
     std::vector<double>  Zeeman_spin_read(NumCorrAtom * 4);
+    read_double_array(std::string("input.parm"), std::string("Zeeman_spin_global"), Zeeman_spin_global_read,  4, false, 0.0);
+    double unitVectorNorm = std::sqrt( std::pow(Zeeman_spin_global_read[1],2) +
+                                       std::pow(Zeeman_spin_global_read[2],2) +
+                                       std::pow(Zeeman_spin_global_read[3],2) );
+    Zeeman_spin_global_read[1] /= (unitVectorNorm +1e-20);
+    Zeeman_spin_global_read[2] /= (unitVectorNorm +1e-20);
+    Zeeman_spin_global_read[3] /= (unitVectorNorm +1e-20);
+    Zeeman_field_spin =Zeeman_spin_global_read[0]/2.0* ( Zeeman_spin_global_read[1] * sigmax + Zeeman_spin_global_read[2] * sigmay + Zeeman_spin_global_read[3] * sigmaz);
+
+
     read_double_array(std::string("input.parm"), std::string("Zeeman_spin"), Zeeman_spin_read, NumCorrAtom * 4, false, 0.0);
     for(int at=0; at<NumCorrAtom; at++) {
         double unitVectorNorm = std::sqrt( std::pow(Zeeman_spin_read[at*4+1],2) +   std::pow(Zeeman_spin_read[at*4+2],2) + std::pow(Zeeman_spin_read[at*4+3],2) );
         Zeeman_spin_read[at*4+1] /= (unitVectorNorm +1e-20);
         Zeeman_spin_read[at*4+2] /= (unitVectorNorm +1e-20);
         Zeeman_spin_read[at*4+3] /= (unitVectorNorm +1e-20);
-        Zeeman_field_spin[HartreeAtom_idx[at]] =
+        Zeeman_field_spin_corratom[at] =
             Zeeman_spin_read[at*4+0]/2.0* ( Zeeman_spin_read[at*4+1] * sigmax + Zeeman_spin_read[at*4+2] * sigmay + Zeeman_spin_read[at*4+3] * sigmaz);
+//        Zeeman_field_spin_corratom[at] -= Zeeman_field_spin;
     }
 
 
@@ -405,10 +441,8 @@ void read_inputFile(const std::string &hamiltonian) {
     isOrbitalCorr =       new int [NumOrbit];
     isOrbitalHartr= new int  [NumOrbit];
     HartrRange = new int * [NumCorrAtom];
-//    HartrRange_DFT = new int * [NumCorrAtom];
     for(int i=0; i<NumCorrAtom; i++) {
         HartrRange[i] = new int [2];
-//        HartrRange_DFT[i] = new int [2];
     }
     FromOrbitalToAtom_model=new int [NumOrbit];
 
@@ -426,19 +460,19 @@ void read_inputFile(const std::string &hamiltonian) {
     }
 
     /*Construct Utensor */
+    ifroot std::cout << "UMatrix\n";
     std::vector<Eigen::VectorXi> Uindex_atom;
     std::vector<cmplx > Utensor_atom;
     if (Coulombtype == std::string("r")     ) {
         read_Uijkl(   Utensor_atom,  Uindex_atom) ;
     }
-//    else {}
-//        if ( SOLVERtype.find(std::string("SEG")) != std::string::npos ) {}
-    else if ( Coulombtype == "dd" ) {
-        ifroot std::cout << "gen_Uijkl_dd\n";
-        gen_Uijkl_density_density(N_peratom_HartrOrbit, UHubb, Uprime, JHund, Utensor_atom, Uindex_atom);
+    else if ( Coulombtype.find(std::string("k")) != std::string::npos)  gen_Uijkl(N_peratom_HartrOrbit, UHubb, Uprime, JHund, JX, JP,  Utensor_atom, Uindex_atom);
+    else if ( Coulombtype.find(std::string("sphd")) != std::string::npos) {
+        double averU  = UHubb-8*JHund/5;
+        double averJ  =  7*JHund/5;
+        gen_Uijkl_sphd(N_peratom_HartrOrbit, averU, averJ,  Utensor_atom, Uindex_atom);
     }
-    else if (Coulombtype =="k")  gen_Uijkl(N_peratom_HartrOrbit, UHubb, Uprime, JHund, Utensor_atom, Uindex_atom);
-//    {}
+
 
 
     for(int  cl =0; cl < NumAtom_per_cluster; cl++) {
@@ -453,21 +487,21 @@ void read_inputFile(const std::string &hamiltonian) {
         }
     }
 
-    for(int idx1=0;  idx1 <  Utensor_atom.size(); idx1++) {
-        if (    isOrbitalCorrinHart[Uindex_atom[idx1](0)] and
-                isOrbitalCorrinHart[Uindex_atom[idx1](1)] and
-                isOrbitalCorrinHart[Uindex_atom[idx1](2)] and
-                isOrbitalCorrinHart[Uindex_atom[idx1](3)] ) {
-
-            Eigen::VectorXi temp(4);
-            temp(0) = Hart2Corr[Uindex_atom[idx1](0)];
-            temp(1) = Hart2Corr[Uindex_atom[idx1](1)];
-            temp(2) = Hart2Corr[Uindex_atom[idx1](2)];
-            temp(3) = Hart2Corr[Uindex_atom[idx1](3)];
-            Uindex_stronglyCorr.push_back(temp);
-            Utensor_stronglyCorr.push_back(Utensor_atom[idx1]);
-        }
-    }
+//    for(int idx1=0;  idx1 <  Utensor_atom.size(); idx1++) {
+//        if (    isOrbitalCorrinHart[Uindex_atom[idx1](0)] and
+//                isOrbitalCorrinHart[Uindex_atom[idx1](1)] and
+//                isOrbitalCorrinHart[Uindex_atom[idx1](2)] and
+//                isOrbitalCorrinHart[Uindex_atom[idx1](3)] ) {
+//
+//            Eigen::VectorXi temp(4);
+//            temp(0) = Hart2Corr[Uindex_atom[idx1](0)];
+//            temp(1) = Hart2Corr[Uindex_atom[idx1](1)];
+//            temp(2) = Hart2Corr[Uindex_atom[idx1](2)];
+//            temp(3) = Hart2Corr[Uindex_atom[idx1](3)];
+//            Uindex_stronglyCorr.push_back(temp);
+//            Utensor_stronglyCorr.push_back(Utensor_atom[idx1]);
+//        }
+//    }
 
     /*input dependency parameters*/
     if (SOLVERtype==std::string("TB")) {
@@ -549,7 +583,7 @@ void setCorrelatedSpaceIndex( std::vector<int> HartreeOrbital_idx, int NumCorrAt
     read_int_array(std::string("input.parm"), std::string("DYNAMIC_ORBITALS"),  isOrbitalCorrinHart_vec, N_peratom_HartrOrbit * NumCorrAtom, true, 1);
     for (int i=0; i<N_peratom_HartrOrbit*NumCorrAtom; i++) isOrbitalCorrinHart[i] = isOrbitalCorrinHart_vec[i];
 
-    ifroot std::cout << "is Dynamical orbital\n";
+    ifroot std::cout << "are Dynamical orbitals\n";
     for(int i=0; i<NumOrbit; i++) isOrbitalCorr[i] = 0;
     int temp=0;
     for(int i=0; i<NumOrbit; i++) {
@@ -579,8 +613,7 @@ void setCorrelatedSpaceIndex( std::vector<int> HartreeOrbital_idx, int NumCorrAt
     }
     if(not( test2 == NumCorrAtom*NSpinOrbit_per_atom)) {
         ifroot std::cout
-                << "Please check input (HARTREE_ORBITALS_RANGE,DYNAMIC_ORBITALS , N_CORRELATED_ATOMS, and N_ORBITALS).\n"
-                <<  "total number of Correlated orbital !=  N_CORRELATED_ATOMS*N_ORBITALS\n"
+                << "Please check input,  total number of Correlated orbital !=  NumCorrAtom*NSpinOrbit_per_atom\n"
                 << test2<<", " <<NumCorrAtom*NSpinOrbit_per_atom ;
         MPI_Barrier(MPI_COMM_WORLD);
         exit(1);
@@ -656,8 +689,8 @@ bool operator==( cmplx  a, int b)
 // basis:
 // default = truncated (low-energy) space = valence
 // DFT = (R,\alpha) index from DFT
-// KS  = band index from DFT = valence
-// valence = dp space ( = truncated space)
+// KS  = band index from DFT in valence space  = low_energy_KS_band  =  dp space ( = truncated space), diagonalizing H_KS
+// Solver basis
 
 
 //NSpinOrbit_per_atom   = # of Corr orbitals per atom
@@ -668,10 +701,11 @@ bool operator==( cmplx  a, int b)
 //isOrbitalCorr[NumOrbit]
 //isOrbitalCorrinHart = new int [N_peratom_HartrOrbit *NumCorrAtom];
 
-//KS2Hartr     = from KS to  Hartr
-//CorrIndex    = from corr     index to whole KS orbital index
-//HartrIndex   = from hartreee index to whole KS orbital index
+//HartreeOrbital_idx[at*2+0] =< i < HartreeOrbital_idx[at*2+1] = Hartree orbital index i in H_k_inModelSpace
+//CorrIndex    = from corr     index to  WF  orbital index on valence space
+//HartrIndex   = from hartreee index to  WF  orbital index on valence space
 
+//KS2Hartr     = from model WF index  to  Hartr orbital
 //CorrToHartr  = from corr to hartree
 //Hart2Corr
 //HartrRange
@@ -679,6 +713,7 @@ bool operator==( cmplx  a, int b)
 
 
 
-//DF_CorrBase  = <lowenergy_projected_orbal |  low_energy_KS_band >
-//KS_eigenVectors_orthoBasis  = <orthogonal basis |  KS_band >
-//transformMatrix_k =  basis transformation from orthogonal to non-orthogonal basis, e.g.,  //\ket{ortho_j} = \ket{DFT_AO_i} T_{ij}
+//SolverBasis                 ~ 10 * 10  = <SolverBasis minimizing off-diagonal Delta (Molecular orbitals if NumAtom_per_cluster >=2) | lowenergy_projected_orbal >
+//DF_CorrBase                 ~ 10 * 50  = <lowenergy_projected_orbal |  low_energy_KS_band >
+//KS_eigenVectors_orthoBasis  ~ 500*500  = <orthogonal basis |  KS_band >
+//transformMatrix_k                      =  basis transformation from orthogonal to non-orthogonal basis, e.g.,  //\ket{ortho_j} = \ket{DFT_AO_i} T_{ij}

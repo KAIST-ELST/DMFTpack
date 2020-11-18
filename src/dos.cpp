@@ -5,7 +5,7 @@
 
 
 
-void dos(Eigen::VectorXd * KS_eigenEnergy,std::vector<Eigen::MatrixXcd> & KS_eigenVectors_orthoBasis, double E_window, double & muDFT  ) {
+void dos(Eigen::VectorXd * KS_eigenEnergy, Eigen::MatrixXcd & SolverBasis, double E_window, double & muDFT  ) {
     int  index ;
     double de = real(dE);
     ifroot printf("********************************\n");
@@ -18,15 +18,46 @@ void dos(Eigen::VectorXd * KS_eigenEnergy,std::vector<Eigen::MatrixXcd> & KS_eig
     Eigen::VectorXd  TdosData_RDC;
     Eigen::MatrixXd  PdosData_RDC;
     Eigen::MatrixXd      PdosData;
+    Eigen::VectorXd  occRDC;
+    Eigen::VectorXd      occ;
     double E;
     TdosData.setZero(Spectral_EnergyGrid);
     TdosData_RDC.setZero(Spectral_EnergyGrid);
     PdosData_RDC.setZero(Spectral_EnergyGrid,NumCorrAtom*N_peratom_HartrOrbit);
     PdosData.setZero(Spectral_EnergyGrid,NumCorrAtom*N_peratom_HartrOrbit);
+    occ.setZero(NumCorrAtom*N_peratom_HartrOrbit);
+    occRDC.setZero(NumCorrAtom*N_peratom_HartrOrbit);
 
     /*calculate dos*/
     for(int k=0; k<knum; k++) {
         for(int band=0; band<NumOrbit; band++) {
+            if ( (KS_eigenEnergy[k][band]-muDFT) > upper_model_window or  (KS_eigenEnergy[k][band]-muDFT) < lower_model_window) {
+                for(int index=0; index<Spectral_EnergyGrid; index++) {
+                    double energy_i      =  -E_window+index*de  ;
+                    double energy_i_high =     energy_i+de/2.   ;
+                    double energy_i_low  =     energy_i-de/2.   ;
+                    /*Lorentzian broadening :\integral 1/x**2 +1 = atan(x)*/
+                    if (    std::abs( energy_i- KS_eigenEnergy[k][band] +muDFT ) <=  50.* infinitesimal  ) {
+                        double Aw = (   std::atan( (energy_i_high - KS_eigenEnergy[k][band]+muDFT)/infinitesimal )
+                                        -std::atan( (energy_i_low - KS_eigenEnergy[k][band]+muDFT)/infinitesimal )  ) / pi;
+                        TdosData[index] += Aw ;
+                    }//if
+                    else if ( energy_i-KS_eigenEnergy[k][band]+muDFT > 50.*infinitesimal) break;
+                }/*dos data index*/
+            }//if
+        }/*band*/
+    }//k
+    for(int k=0; k<knum; k++) {
+        for(int bandval=0; bandval<NBAND[k]; bandval++) {
+            int band = FromValToKS[k][bandval];
+
+            for(int at1=0; at1<NumCorrAtom; at1++) {
+                for(int m=0; m< N_peratom_HartrOrbit ; m++) {
+                    int mKS = at1*N_peratom_HartrOrbit+m;
+                    occ(at1*N_peratom_HartrOrbit+m) +=  1./(1.+std::exp(beta*(KS_eigenEnergy[k][band]-muDFT)))   * pow(std::abs(DF_CorrBase[k](mKS,bandval)),2)    ;
+                }
+            }
+
             for(int index=0; index<Spectral_EnergyGrid; index++) {
                 double energy_i      =  -E_window+index*de  ;
                 double energy_i_high =     energy_i+de/2.   ;
@@ -36,12 +67,10 @@ void dos(Eigen::VectorXd * KS_eigenEnergy,std::vector<Eigen::MatrixXcd> & KS_eig
                     double Aw = (   std::atan( (energy_i_high - KS_eigenEnergy[k][band]+muDFT)/infinitesimal )
                                     -std::atan( (energy_i_low - KS_eigenEnergy[k][band]+muDFT)/infinitesimal )  ) / pi;
                     TdosData[index] += Aw ;
-                    assert(Aw>=0);
                     for(int at1=0; at1<NumCorrAtom; at1++) {
                         for(int m=0; m< N_peratom_HartrOrbit ; m++) {
-//                            int mDFT = m+HartrRange_DFT[at1][0];
-                            int mDFT = HartrIndex_inDFT[at1*N_peratom_HartrOrbit+m];
-                            PdosData(index,at1*N_peratom_HartrOrbit+m) +=  Aw * pow(std::abs(KS_eigenVectors_orthoBasis[k](mDFT,band)),2)    ;
+                            int mKS = at1*N_peratom_HartrOrbit+m;
+                            PdosData(index,at1*N_peratom_HartrOrbit+m) +=  Aw * pow(std::abs(DF_CorrBase[k](mKS,bandval)),2)    ;
                         }
                     }
                 }//if
@@ -51,6 +80,7 @@ void dos(Eigen::VectorXd * KS_eigenEnergy,std::vector<Eigen::MatrixXcd> & KS_eig
     }//k
     MPI_Allreduce(PdosData.data(), PdosData_RDC.data(), PdosData.size(), MPI_DOUBLE, MPI_SUM,  MPI_COMM_WORLD);
     MPI_Allreduce(TdosData.data(), TdosData_RDC.data(), TdosData.size(), MPI_DOUBLE, MPI_SUM,  MPI_COMM_WORLD);
+    MPI_Allreduce(occ.data(), occRDC.data(), occ.size(), MPI_DOUBLE, MPI_SUM,  MPI_COMM_WORLD);
 
 
 
@@ -58,14 +88,18 @@ void dos(Eigen::VectorXd * KS_eigenEnergy,std::vector<Eigen::MatrixXcd> & KS_eig
 
     TdosData_RDC/=(knum_mpiGlobal*NumCorrAtom*N_peratom_HartrOrbit);
     PdosData_RDC/=knum_mpiGlobal;
+    occRDC /= knum_mpiGlobal;
+    double occtot=0;
     double dosnormalization;
-    for(int at1=0; at1<NumCorrAtom; at1++) {
-        for(int m=0; m< N_peratom_HartrOrbit ; m++) {
+    for(int at1=0; at1<NumCluster; at1++) {
+        for(int m=0; m< NumHartrOrbit_per_cluster ; m++) {
             dosnormalization=0;
-            for(int i=0; i<Spectral_EnergyGrid; i++) dosnormalization += PdosData_RDC(i,at1*N_peratom_HartrOrbit+m);
-            ifroot std::cout << "normalization for atom" << at1 <<" and orbital"<< m <<":" << dosnormalization<<"\n";
+            for(int i=0; i<Spectral_EnergyGrid; i++) dosnormalization += PdosData_RDC(i,at1*NumHartrOrbit_per_cluster+m);
+            ifroot std::cout << "normalization for atom" << at1 <<" and orbital"<< m <<":" << dosnormalization<<  "occ: "<< occRDC(at1*NumHartrOrbit_per_cluster+m) << "\n";
+            occtot += occRDC(at1*NumHartrOrbit_per_cluster+m);
         }
     }
+    ifroot std::cout << "occ(sum):" << occtot <<"\n";
 
 //
 //    /*DOS distribution*/
@@ -321,32 +355,6 @@ void dos(Eigen::VectorXd * KS_eigenEnergy,std::vector<Eigen::MatrixXcd> & KS_eig
     }
     ifroot std::cout << "Total Num of electron from dos = " << TNumEle <<"\n";
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 

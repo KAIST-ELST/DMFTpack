@@ -59,18 +59,21 @@ extern int  *FromOrbitalToAtom; //0,1,...
 extern int  *FromOrbitalToLocalOrbital_DFT; //0,1,...
 extern int  *FromOrbitalToAtom_model; //0,1,...
 extern int  k_pointx, k_pointy, k_pointz,  k_grid, mu_adjust, SpinP_switch, NumAtom, BraLatt_x,BraLatt_y,BraLatt_z,Measure_nn, NumCorrAtom, NumCluster,NumHartrOrbit;
-extern int NumAtom_per_cluster, NumCluster, NumHartrOrbit_per_cluster;
+extern int NumAtom_per_cluster, NumCluster, NumHartrOrbit_per_cluster, ClusterBasis;
 extern int H0_from_OpenMX;
 extern double beta, NumberOfElectron, EnergyUnit, doublecounting, Band_renorm,  TotalCorrEle_in_Imp;
 extern std::string dctype, localOrbitalType, SOLVERtype, Lowlevel_SOLVERtype;
-extern Eigen::Matrix2cd * Zeeman_field_spin;
+extern Eigen::Matrix2cd  Zeeman_field_spin;
+extern Eigen::Matrix2cd * Zeeman_field_spin_corratom;
 extern int highFreq, N_freq, N_tau,  magnetism;
 extern unsigned long long  Num_MC_steps;
 //extern unsigned long long  THERMALIZATION;
 extern std::string mode;
 extern double infinitesimal ;
 extern int  maxDmftIt, maxDFTIt, maxTime,restart, NSpinOrbit_per_atom, N_peratom_HartrOrbit;
-extern double UHubb, Uprime, JHund ,mixing;
+extern int weaksolver_run;
+extern double UHubb, Uprime, JHund, JX, JP ,mixing;
+extern int pulay_start, pulay_hist;
 extern double nominal_charge;
 extern int  mixingFtn;
 //extern std::string LongRangeOrder_file;
@@ -80,6 +83,7 @@ extern cmplx w0, dw;
 //extern int SOLVERtype;
 extern int  SOCCal,  interOrbitHop;
 extern int impurityBasisSwitch;
+extern int segmentsolver;
 
 extern int **HartrRange;
 //extern int **HartrRange_DFT;
@@ -89,7 +93,8 @@ extern int NsBath;
 //Local var
 extern Eigen::MatrixXcd impurity_site_Hamiltonian;
 
-extern Eigen::MatrixXcd Sw_doublecounting, NumMatrix;
+extern Eigen::MatrixXcd Sw_doublecounting, NumMatrix; 
+extern double Edc, Ekin , Epot, Epot_weak, EkinDFT, EngDMFT_prev, EngDMFT;
 
 //extern double  **UMatrix;
 
@@ -138,14 +143,15 @@ extern double KpathPoint[3*30];
 int  diag_jacobi (cmplx **a_hermitian, int dim, double *eigenVal, cmplx **v_comp);
 void band(Eigen::VectorXd *KS_eigenEnergy, double muDFT, int knum) ;
 void band( std::vector<Eigen::MatrixXcd> & H_k_inModelSpace, double muTB, int knum) ;
-void getAsymto_moments (std::vector<Eigen::MatrixXcd> & moments, Eigen::MatrixXcd * delta_w , bool greenFtnAsym = false) ;
+void getAsymto_moments (std::vector<Eigen::MatrixXcd> & moments, Eigen::MatrixXcd * delta_w , bool greenFtnAsym = false, bool rstout=false) ;
+Eigen::MatrixXcd  FourierTransform_tau (Eigen::MatrixXcd * delta_w, double  tau, bool greenFtnAsym=false) ;
 void FourierTransform (Eigen::MatrixXcd * delta_w, Eigen::MatrixXcd * delta_t                                       , bool greenFtnAsym   = false, std::string FT_ftn=std::string("NOPRINT"), int print=0);
 void FourierTransform (Eigen::MatrixXcd * delta_w, Eigen::MatrixXcd * delta_t , Eigen::MatrixXcd AsymtoV            , bool greenFtnAsym   = false, std::string FT_ftn=std::string("NOPRINT"), int print=0);
 void FourierTransform (Eigen::MatrixXcd * delta_w, Eigen::MatrixXcd & delta_t , double tau                          , bool greenFtnAsym   = false, std::string FT_ftn=std::string("NOPRINT"), int print=0);
 void FourierTransform (Eigen::MatrixXcd * delta_w, Eigen::MatrixXcd & delta_t , double tau, Eigen::MatrixXcd AsymtoV, bool greenFtnAsym   = false, std::string FT_ftn=std::string("NOPRINT"), int print=0);
 void FT_t_to_w (Eigen::MatrixXcd * delta_w, Eigen::MatrixXcd * delta_t, int N_freq );
 
-void dos(Eigen::VectorXd * KS_eigenEnergy,std::vector<Eigen::MatrixXcd> & KS_eigenVectors_orthoBasis , double E_window, double & muDFT ) ;
+void dos(Eigen::VectorXd * KS_eigenEnergy, Eigen::MatrixXcd & SolverBasis , double E_window, double & muDFT ) ;
 
 
 double read_double(const std::string &Inputfile, const std::string &keyword, bool defalutBool, double dft);
@@ -184,7 +190,7 @@ cmplx operator/( cmplx  a, int b);
 bool operator!=( cmplx  a, int b);
 bool operator==( cmplx  a, int b);
 //void ImS_stoch_to_ReS( ImgFreqFtn & SelfEnergy_w);
-void rewrite_retardedSw() ;
+void rewrite_retardedSw(  ImgFreqFtn & SelfEnergy_w ) ;
 void free_energy_cal( cmplx **Sw, double mu) ;
 
 //int analytic_selfenergy(int magnetism, const std::string &ImgFtn_data );
@@ -192,8 +198,11 @@ void free_energy_cal( cmplx **Sw, double mu) ;
 
 
 
-void gen_Uijkl(int n_spinorb, double U, double Uprime, double JH, std::vector<cmplx >  & Utensor, std::vector<Eigen::VectorXi>  & Uindex ) ;
+void gen_Uijkl(int n_spinorb, double U, double Uprime, double JH, double JX,double  JP, std::vector<cmplx >  & Utensor, std::vector<Eigen::VectorXi>  & Uindex ) ;
 void gen_Uijkl_density_density(int n_spinorb, double U, double Uprime, double JH, std::vector<cmplx > & Utensor, std::vector<Eigen::VectorXi>  & Uindex ) ;
+void gen_Uijkl_sphd(int n_spinorb, double U, double J, std::vector<cmplx >  & Utensor, std::vector<Eigen::VectorXi>  & Uindex ) ;
+
+
 //int read_hdf5 (int index);
 
 void Wait_Run( char fileName[100], int checkTime, int mpi_rank ,int maxTime  ) ;

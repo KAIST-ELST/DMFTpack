@@ -64,18 +64,17 @@ int Construct_Hk_Sk(
     /*DFT_KS hamiltonian in k-space*/
     FromValToKS.resize(knum);
     for(int k = 0;  k < knum; k++) {
-//        std::cout <<k<<"aa\n";
         H_k_inModelSpace[k].setZero(NumOrbit, NumOrbit);
         S_overlap[k].setIdentity(NumOrbit, NumOrbit);
+//std::cout << " " << kmesh[k][0] << " " << kmesh[k][1] << " " <<  kmesh[k][2] <<"\n";
         for(int indx=0; indx<H_RMatrix.size(); indx++) {
             H_k_inModelSpace[k](H_Rindex(indx,3),H_Rindex(indx,4))
             += H_RMatrix(indx)* exp ( -I*( (kmesh[k][0]*ax*H_Rindex(indx,0))+(kmesh[k][1]*ay*H_Rindex(indx,1))+(kmesh[k][2]*az*H_Rindex(indx,2))) )  ;
 
-//            std::cout << H_Rindex(indx,0) <<" " << H_Rindex(indx, 1)  <<" " << H_Rindex(indx, 2)<<"\n";
-//            std::cout << H_Rindex(indx,3) <<" " << H_Rindex(indx, 4) <<"\n";
-//            std::cout << H_RMatrix(indx) <<"\n";
+//std::cout << H_Rindex(indx,0) <<" " << H_Rindex(indx, 1)  <<" " << H_Rindex(indx, 2)<<"\n";
+//std::cout << H_Rindex(indx,3) <<" " << H_Rindex(indx, 4) <<"\n";
+//std::cout << H_RMatrix(indx) <<"\n";
         }
-//        std::cout <<k<<"bb\n";
 //std::cout << H_k_inModelSpace[k] <<"\n";
         /*S(k),   H*S |\psi> = E |\psi>      */
         if (overlap_exist==1) {
@@ -93,6 +92,11 @@ int Construct_Hk_Sk(
             for (int i0=0; i0<Norbital_spatial; i0++) {
                 for (int m0=0; m0<Norbital_spatial; m0++) {
                     S_overlap[k]((2*i0+1), (2*m0+1)) = S_overlap[k](2*i0,2*m0);
+
+                    H_k_inModelSpace[k](2*i0+0, 2*m0+0) += Zeeman_field_spin(0,0)   *    S_overlap[k](2*i0+0, 2*m0+0) ;
+                    H_k_inModelSpace[k](2*i0+0, 2*m0+1) += Zeeman_field_spin(0,1)        ;
+                    H_k_inModelSpace[k](2*i0+1, 2*m0+0) += Zeeman_field_spin(1,0)        ;
+                    H_k_inModelSpace[k](2*i0+1, 2*m0+1) += Zeeman_field_spin(1,1)   *    S_overlap[k](2*i0+1, 2*m0+1) ;
                 }
             }
         }//if OverlapMatrix
@@ -305,26 +309,18 @@ void  ConstructModelHamiltonian
     ifroot    std::cout << "Hk was constructed..\n"  ;
 
 
-//Zeeman
-    for(int k = 0;  k < knum; k++) {
-        for(int at=0; at<NumAtom; at++) {
-            for(int i0 = accumulated_Num_SpinOrbital[at];  i0 < accumulated_Num_SpinOrbital[at+1] ; i0+=2) {
-                H_k_inModelSpace[k](i0+0, i0+0) += Zeeman_field_spin[at](0,0);
-                H_k_inModelSpace[k](i0+0, i0+1) += Zeeman_field_spin[at](0,1);
-                H_k_inModelSpace[k](i0+1, i0+0) += Zeeman_field_spin[at](1,0);
-                H_k_inModelSpace[k](i0+1, i0+1) += Zeeman_field_spin[at](1,1);
-            }
-        }
-    }
-    if (magnetism <2 ) {
-        for(int k = 0;  k < knum; k++) {
-            for(int i0 = 0;  i0 < NumOrbit; i0+=2) {
-                H_k_inModelSpace[k](i0+0, i0+1) = 0;
-                H_k_inModelSpace[k](i0+1, i0+0) = 0;
-            }
-        }
-    }
-
+//    //Zeeman
+//    for(int k = 0;  k < knum; k++) {
+//        for(int at=0; at<NumAtom; at++) {
+//            for(int i0 = accumulated_Num_SpinOrbital[at];  i0 < accumulated_Num_SpinOrbital[at+1] ; i0+=2) {
+//                H_k_inModelSpace[k](i0+0, i0+0) += Zeeman_field_spin[at](0,0);
+//                H_k_inModelSpace[k](i0+0, i0+1) += Zeeman_field_spin[at](0,1);
+//                H_k_inModelSpace[k](i0+1, i0+0) += Zeeman_field_spin[at](1,0);
+//                H_k_inModelSpace[k](i0+1, i0+1) += Zeeman_field_spin[at](1,1);
+//            }
+//        }
+//    }
+//
 
 
 
@@ -357,7 +353,7 @@ void  ConstructModelHamiltonian
     ifroot std::cout << "d-orbital normalization       : "  << tempd2GL/(knum_mpiGlobal*N_peratom_HartrOrbit)<<"\n";
     MPI_Allreduce(HartreWeightInWindows_local.data(), HartreWeightInWindows_global.data(), HartreWeightInWindows_global.size(), MPI_DOUBLE, MPI_SUM,  MPI_COMM_WORLD);
     for (int m=0; m<N_peratom_HartrOrbit; m++) {
-        ifroot std::cout << "d-orbital in rest energy space: "  << HartreWeightInWindows_global[m] /(knum_mpiGlobal) <<"\n";
+        ifroot std::cout << "d-orbitals outside the energy window: "  << HartreWeightInWindows_global[m] /(knum_mpiGlobal) <<"\n";
     }
 
 }//ConstructModel

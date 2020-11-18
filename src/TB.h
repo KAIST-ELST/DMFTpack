@@ -44,7 +44,7 @@ extern Eigen::MatrixXi H_Rindex;
 
 void Construct_hyb_delta(int impurityDim, std::vector<int> impurityOrbit,
                          ImgFreqFtn & SelfE_w, std::vector<Eigen::MatrixXcd>   Gw, double mu,
-                         ImgFreqFtn &  weiss_fieldTB, int atom,     Eigen::MatrixXcd & SolverBasis  ) ;
+                         ImgFreqFtn &  weiss_fieldTB, int atom,     Eigen::MatrixXcd & SolverBasis , int segmentsolver  ) ;
 
 
 //void upfolding_k(Eigen::MatrixXcd & Matrix_k, Eigen::MatrixXcd & KS_eigenVectors_k, int k, double mu , std::vector<Eigen::MatrixXcd> & S_overlap);
@@ -60,7 +60,9 @@ void GreenFtn_w( int NumCorrAtom, int NSpinOrbit_per_atom,   std::vector<Eigen::
                 std::vector<Eigen::MatrixXcd> & densityMatDFT
                ) ;
 //void retarded_GreenFtn( cmplx *retGkw , std::vector<Eigen::MatrixXcd> &   H_k_inModelSpace,  ImgFreqFtn & SE, double mu, int k, int n, int NumSubSpace) ;
-void retarded_GreenFtn2( Eigen::MatrixXcd &retGkw_full , Eigen::MatrixXcd & retGkw,  std::vector<Eigen::MatrixXcd> & H_k_inModelSpace, ImgFreqFtn & SE, double mu, int k, int n) ;
+void retarded_GreenFtn2( Eigen::MatrixXcd &retGkw_full,    Eigen::MatrixXcd & retGkw, Eigen::MatrixXcd & retG0kw,
+                         std::vector<Eigen::MatrixXcd> &  H_k_inModelSpace, ImgFreqFtn &  SE,
+                         double mu, int k, int n) ;
 
 
 void low_energy_subspace_in_KS_basis(

@@ -32,7 +32,7 @@ void  downfolding_ftn
                     int p0 = HartrIndex_inDFT[cl1*NumHartrOrbit_per_cluster+p0_];
                     for(int i1=0; i1<NBAND[k]; i1++) {
                         /*DF_CorrBase = <\phi_\alpha in model | nk > ( size = dim(CorrSpace) * NBAND ) */
-                        DF_CorrBase[k](p00,i1) =  KS_eigenVectors_orthoBasis[k](p0,FromValToKS.at(k).at(i1));
+                        DF_CorrBase[k](p00,i1) =  KS_eigenVectors_orthoBasis[k](p0,FromValToKS.at(k).at(i1)) ;
                     }
                     p00++;
                 }
@@ -48,9 +48,9 @@ void  downfolding_ftn
 
             /*QR decomposition; find d+p space in orthonomal base*/
             temp = DF_CorrBase[k];           //(size=dim(CorrSpace)*NBAND)
+
             DF_CorrBase[k] =((DF_CorrBase[k].adjoint()).householderQr().householderQ()).adjoint();       //dim = recovered to NBAND * NBAND, QR-decompose
             if(mpi_rank==0 and k==0) std::cout << "qr-decompose done\n";
-
             for (int i=0; i<NBAND[k]; i++) {
                 for (int j=0; j<NBAND[k]; j++) {
                     if(i<N_peratom_HartrOrbit*NumCorrAtom) DF_CorrBase[k](i,j) = temp(i,j);  //Do not alter the projected-d orbitals,dim(DF_CorrBase) = NBAND*NBAND
@@ -58,10 +58,8 @@ void  downfolding_ftn
             }
 
             if(mpi_rank==0 and k==0) std::cout << "We have model projected-ligand orbital\n";
-
             H_k_inModelSpace[k].setZero(NBAND[k],NBAND[k]);
             for (int i=0; i<NBAND[k]; i++) H_k_inModelSpace[k](i,i) = KS_eigenEnergy[k][FromValToKS[k][i]];
-            //Following  is the definition of the DF_CorrBase;::  <\alpha_ortho|nk in W>
             H_k_inModelSpace[k]          = DF_CorrBase[k] * H_k_inModelSpace[k] * DF_CorrBase[k].adjoint();
 
             if(mpi_rank==0 and k==0)   std::cout << "ConstructModel: downfolding done\n";
@@ -77,7 +75,27 @@ void  downfolding_ftn
         }
         // HartrRange was modified here.
         setCorrelatedSpaceIndex(HartreeOrbital_idx, NumCorrAtom);
+
     }/*downfolding*/
+
+//    for(int k = 0;  k < knum; k++) {
+////        for (int i=0; i<NBAND[k]; i+=2) {
+////            H_k_inModelSpace[k](i+0, i+0) += Zeeman_field_spin(0,0);
+////            H_k_inModelSpace[k](i+0, i+1) += Zeeman_field_spin(0,1);
+////            H_k_inModelSpace[k](i+1, i+0) += Zeeman_field_spin(1,0);
+////            H_k_inModelSpace[k](i+1, i+1) += Zeeman_field_spin(1,1);
+////        }
+//        for (int at=0; at<NumCorrAtom; at++) {
+//            for(int  i=at*N_peratom_HartrOrbit; i<at*N_peratom_HartrOrbit+N_peratom_HartrOrbit; i+=2) {
+//                H_k_inModelSpace[k](HartrIndex[i+0], HartrIndex[i+0]) += Zeeman_field_spin_corratom[at](0,0);
+//                H_k_inModelSpace[k](HartrIndex[i+0], HartrIndex[i+1]) += Zeeman_field_spin_corratom[at](0,1);
+//                H_k_inModelSpace[k](HartrIndex[i+1], HartrIndex[i+0]) += Zeeman_field_spin_corratom[at](1,0);
+//                H_k_inModelSpace[k](HartrIndex[i+1], HartrIndex[i+1]) += Zeeman_field_spin_corratom[at](1,1);
+//
+//            }
+//        }
+//    }//k
+
 
 
 
@@ -160,8 +178,15 @@ void low_energy_subspace_in_KS_basis(
 //                }
 //            }
             NBAND[k] = 0;
+double Emin=upper_model_window;
+double Emax=lower_model_window;
             for(int i=0; i<NumOrbit; i++) {
-                if(  lower_model_window < (KS_eigenEnergy[k][i]-muDFT) and (KS_eigenEnergy[k][i]-muDFT) <  upper_model_window  ) NBAND[k]++;
+                if(  lower_model_window < (KS_eigenEnergy[k][i]-muDFT) and (KS_eigenEnergy[k][i]-muDFT) <  upper_model_window  ){
+                         NBAND[k]++;
+if (k==0 and mpi_rank==0 and Emin>KS_eigenEnergy[k][i]-muDFT) Emin=KS_eigenEnergy[k][i]-muDFT;
+if (k==0 and mpi_rank==0 and Emax<KS_eigenEnergy[k][i]-muDFT) Emax=KS_eigenEnergy[k][i]-muDFT;
+}
+
             }
 
             /*index for correlated (d-p) space */
@@ -176,6 +201,8 @@ void low_energy_subspace_in_KS_basis(
             assert ( NBAND[k] != 0) ;
             assert ( i1 == NBAND[k]);
             if(mpi_rank==0 and k==0) std::cout << "<downfolding> NBAND at k=0 is " <<  NBAND[0] <<"\n";
+            if(mpi_rank==0 and k==0) std::cout << "<downfolding> E_max at k=0 is " <<  Emax <<"\n";
+            if(mpi_rank==0 and k==0) std::cout << "<downfolding> E_min at k=0 is " <<  Emin <<"\n";
             if(NBAND[k] < N_peratom_HartrOrbit*NumCorrAtom) {
                 std::cout << "NBAND at rank " <<mpi_rank <<"k-point: " << k <<" = " << NBAND[k] <<"\n";
                 exit(1);
@@ -201,3 +228,4 @@ void low_energy_subspace_in_KS_basis(
 
     ///////////////////////////////////////////////////////////////////
 }
+

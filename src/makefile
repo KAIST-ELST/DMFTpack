@@ -20,35 +20,32 @@ DEPFILE = dependency
 
 #
 #
-##########################
-###gcc
-##########################
 #
-#CC=mpigxx
-#OFLAGS = -O0       -g  -ggdb  
-#CCFLAGS=   -std=c++11  
+#########################
+##gcc
+#########################
 
-##CC=mpicxx
-##CCFLAGS=   -std=c++11     -fstack-protector-all
-##OFLAGS = -O3      
-##OFLAGS = -O0      -g  -ggdb    
+#
+#CC=mpicxx
+##OFLAGS = -O0 -std=c++11       -g  -ggdb   -fstack-protector-all
+#CCFLAGS=  -O3 -std=c++11     #-fstack-protector-all
+#OFLAGS =      -lblas -llapack 
 #
 #DEFINES= -DMPI_ENABLED   \
-#         -DEIGEN_INITIALIZE_MATRICES_BY_ZERO  
-#
+#         -DEIGEN_INITIALIZE_MATRICES_BY_ZERO    # -DEIGEN_USE_LAPACKE    -DEIGEN_USE_BLAS
 
-#########################
-##Intel MKL
 ##########################
+### gnu+mkl
+###########################
 
-CC = mpiicpc
-INTEL = /home/users1/jhsim/intel_2019/
+CC = mpicxx
+MKL = ${MKLROOT}
 
-MKL = ${INTEL}/mkl
-
-CCFLAGS=   -std=c++11   -I${MKL}/include -ip  -inline-level=2   -inline-forceinline   -w2  #-check-pointers=rw
-#OFLAGS = -O0       -g  -ggdb  
+CCFLAGS=  -O3   -std=c++11   -I${MKL}/include       -finline-functions
 OFLAGS = -O3
+
+#CCFLAGS=  -O0   -std=c++11   -I${MKL}/include       -finline-functions   -g  -ggdb  
+#OFLAGS = -O0       -g  -ggdb  
 
 DEFINES= -DMPI_ENABLED   \
          -L${MKL}/lib/intel64 -lmkl_intel_lp64  -lmkl_core -lifcore   -lmkl_sequential\
@@ -57,12 +54,26 @@ DEFINES= -DMPI_ENABLED   \
 
 
 
-
+###########################
+###Intel MKL
+###########################
+#
+#CC = mpiicpc   #-I/usr/local/include 
+#MKL = ${MKLROOT}
+#CCFLAGS= -O3    -std=c++11   -I${MKL}/include -ip  -inline-level=2   -inline-forceinline   -w2  #-check-pointers=rw
+##CCFLAGS= -O0    -std=c++11   -I${MKL}/include   #-check-pointers=rw
+#OFLAGS =  ""
+##OFLAGS =  " -fPIC"
+#DEFINES= -L${MKL}/lib/intel64  -mkl  \
+#         -DEIGEN_USE_MKL_ALL -DEIGEN_INITIALIZE_MATRICES_BY_ZERO  # -DMPI_ENABLED   \
+#
+#
 
 #######################
 #EIGEN
 #######################
-EIGEN_INC = -I$(CURDIR)/../../eigen-git-mirror/
+#EIGEN_INC = -I$(CURDIR)/../../EIGEN3.3.7/
+EIGEN_INC = -I/home/jaehoon.sim/src_nobkup/EIGEN3.3.7
 
 SOURCE =    band.cpp   FourierTransform.cpp  tight_common.cpp Construct_hyb_delta.cpp GreenFtn.cpp  \
             dos.cpp  readInput_text.cpp mpi_interface.cpp dmft_main.cpp  ImgTimeFtn.cpp   SOLVER.cpp  \
@@ -76,11 +87,11 @@ OBJS_dmft = $(SOURCE:%.cpp=%.o)
 
 .SUFFIXES : .cpp .o
 .cpp.o: 
-	$(CC)  -c  $(OFLAGS)    $(CCFLAGS)   $(DEFINES)    $(EIGEN_INC)    $<
+	$(CC)  -c     $(CCFLAGS)   $(DEFINES)    $(EIGEN_INC)    $<
 
 
 $(TARGET_dmft) : $(OBJS_dmft)  
-	$(CC) $(CCFLAGS) $(OFLAGS)  -fPIC    -o $@ $(OBJS_dmft)    $(DEFINES)     
+	$(CC) $(CCFLAGS) $(OFLAGS)   -o $@ $(OBJS_dmft)    $(DEFINES)     
 	cp $(TARGET_dmft) ../example
 all : style dep $(TARGET_dmft)
 	cp $(TARGET_dmft)  ../example
@@ -89,5 +100,5 @@ dep :
 style : 
 	astyle $(SOURCE)
 clean : 
-	rm $(TARGET_dmft) $(OBJS_dmft)  *.cpp.orig
+	rm $(TARGET_dmft) $(OBJS_dmft)  *.cpp.orig  $(DEPFILE)
 -include $(DEPFILE)

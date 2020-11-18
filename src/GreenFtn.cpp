@@ -5,7 +5,7 @@
 #include <Eigen/Eigenvalues>
 //
 #define   history                  2
-#define  highFreq2 2
+#define  highFreq2                 1
 #define valenceHAMILTONIAN(n,k)                                                                                                                                           \
 {                                                                                                                                                                         \
 	Eigen::MatrixXcd SWLOCAL;\
@@ -58,6 +58,7 @@
 
 
 
+void Time_print();
 double GiwToNele (double muTB, ImgFreqFtn & SelfE_w, cmplx *** eigenVal, int preComputation,std::vector<Eigen::MatrixXcd> &H_k_inModelSpace  );
 //double traceNorm_full( cmplx *A, int n,int dim ) ;
 //double traceNorm_diag( cmplx *A, int n,int dim ) ;
@@ -67,6 +68,7 @@ double GreenFtn_w_adjust_mu( std::vector<Eigen::MatrixXcd> &   H_k_inModelSpace,
     time_t timeStartGreen, timeEndGreen;
     timeStartGreen = clock();
     ifroot printf(" Adjusting Chemical Potential...\n");
+    ifroot    Time_print();
 //    int i,j,k,l,m,n,tau;
     cmplx *** eigenVal = new cmplx ** [N_freq*highFreq2+1];
     for (int n=0; n<N_freq*highFreq2+1; n++) {
@@ -121,6 +123,7 @@ double GreenFtn_w_adjust_mu( std::vector<Eigen::MatrixXcd> &   H_k_inModelSpace,
     }//while
     timeEndGreen = clock(); //time
     if( mpi_rank==0 )  printf("Adjusted Chemical potential : From %2.5f to %2.5f  (RD= %+2.5f )\n",muInput, mu,  mu-muInput) ;
+    ifroot    Time_print();
     Nele[0] = GiwToNele( mu, SelfE_w,  eigenVal, 1, H_k_inModelSpace  );
 
     for (int n=0; n<N_freq*highFreq2+1; n++) {
@@ -192,7 +195,6 @@ void GreenFtn_w(  int NumCluster, int NumHartrOrbit_per_cluster, std::vector<Eig
         SelfEnergy_Eig[n] = SelfE_w.getMatrix(n);
     }
     getAsymto_moments(Swmoments, SelfEnergy_Eig);
-    delete [] SelfEnergy_Eig;
 
     for(int k=0; k<knum; k++) {
         static_ev[k].setZero(NBAND[k]);
@@ -307,7 +309,10 @@ void GreenFtn_w(  int NumCluster, int NumHartrOrbit_per_cluster, std::vector<Eig
         if(mpi_rank==0 and n==0)  std::cout << "We will spend " << ((timeEnd - timeStart)* N_freq*highFreq2)/(CLOCKS_PER_SEC)  << " sec\n";
     }/*n*/
 
-    /*upfolding_number operator*/
+    /*densityMatDFT high freq. tails.. and transform to NAO basis*/
+    double   Ekin_mpiloc=0.,  EkinDFT_mpiloc=0;
+    Ekin =0;
+    EkinDFT=0.;
     for(int k=0; k<knum; k++) {
         densityMatDFT[k] /= beta;
         for(int i0=0; i0<NBAND[k]; i0++) {
@@ -316,7 +321,18 @@ void GreenFtn_w(  int NumCluster, int NumHartrOrbit_per_cluster, std::vector<Eig
             else      static_ev[k](i0)  = 1./( 1.+std::exp(  beta*(static_ev[k](i0)-mu) ));
         }
         densityMatDFT[k] += (   (staticHamiltonian_Model[k]) * static_ev[k].asDiagonal() ) * (staticHamiltonian_Model[k].adjoint()) ;
+        Ekin_mpiloc +=  real(( (H_k_inModelSpace[k] ) * densityMatDFT[k]).trace());
+
+
+        for(int l0=0; l0<NBAND[k]; l0++) {
+            int   l=FromValToKS[k][l0];
+            EkinDFT_mpiloc += KS_eigenEnergy[k][l] * 1./(1+std::exp( beta * (KS_eigenEnergy[k][l]-muDFT)));
+        }
     }
+    MPI_Allreduce(&(Ekin_mpiloc), &(Ekin), 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+    MPI_Allreduce(&(EkinDFT_mpiloc), &(EkinDFT), 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+    Ekin /= knum_mpiGlobal;
+    EkinDFT /= knum_mpiGlobal;
 
 
     /*NumMat high freq. tails.. Caution: Order is important!!.*/
@@ -378,9 +394,28 @@ void GreenFtn_w(  int NumCluster, int NumHartrOrbit_per_cluster, std::vector<Eig
                     Gw[n](h1F,h2F)=  Gw_loc(ATOM,n*COL+h12);
                     GwHF[n](h1F,h2F)=  GwHF_loc(ATOM,n*COL+h12);
                 }
-            }
-        }
+            }//h1
+        }//n
     }
+
+
+    // Epot  = 0.5*Tr[\Sigma* G] =  0.5*Tr[ (\Delta\Sigma+Vdc) * G]
+//    Eigen::MatrixXcd * SelfEnergy_Eig = new Eigen::MatrixXcd [N_freq];
+//    std::vector<Eigen::MatrixXcd >  Swmoments;
+//    for(int n=0; n < N_freq; n++) {
+//        SelfEnergy_Eig[n] = SelfEnergy_w_out.getMatrix(n);
+//    }
+//    getAsymto_moments(Swmoments, SelfEnergy_Eig);
+
+//    Epot=0;
+//    for(int n=0; n<N_freq; n++) {
+//        Epot  +=  2.0 * real(( (SelfEnergy_Eig[n]  -Swmoments[0]    ) * Gw[n]).trace());
+//    }
+//    Epot /= beta;
+//    Epot += real( (  (Swmoments[0]+Sw_doublecounting) * NumMatrix).trace() );
+//    Epot *= 0.5;
+
+    delete [] SelfEnergy_Eig;
 
 
 
@@ -422,30 +457,31 @@ void GreenFtn_w(  int NumCluster, int NumHartrOrbit_per_cluster, std::vector<Eig
 }/*GreenFtn_w*/
 
 
-void retarded_GreenFtn2( Eigen::MatrixXcd &retGkw_full,    Eigen::MatrixXcd & retGkw,
+void retarded_GreenFtn2( Eigen::MatrixXcd &retGkw_full,    Eigen::MatrixXcd & retGkw, Eigen::MatrixXcd & retG0kw,
                          std::vector<Eigen::MatrixXcd> &  H_k_inModelSpace, ImgFreqFtn &  SE,
                          double mu, int k, int n) {
-    Eigen::MatrixXcd retG0kw;
-    retGkw.setZero(NBAND[k], NBAND[k]);
+    retGkw.setZero(NBAND[k], NBAND[k]);   //retarded Green's Ftn in KS band basis
     retG0kw.setZero(NBAND[k], NBAND[k]);
-    retGkw = -H_k_inModelSpace[k];
-    retG0kw = -H_k_inModelSpace[k];
     for (int i0=0; i0<NBAND[k]; i0++) {
         for (int m0=0; m0<NBAND[k]; m0++) {
-//            if(isOrbitalHartr[i0] and isOrbitalHartr[m0] and isSameAtom(i0,m0) ) {}
             if(isOrbitalHartr[i0] and isOrbitalHartr[m0] ) {
                 retGkw(i0,m0) -= SE.getValue( n, (KS2Hartr[i0]), (KS2Hartr[m0]) );
             }
         }//m
-        retGkw(i0,i0) += (   E0+n*dE   + mu + I*infinitesimal  );
-        retG0kw(i0,i0) += (   E0+n*dE   + mu + I*infinitesimal  );
     }//i
-    retGkw = retGkw.inverse();
-    retG0kw = retG0kw.inverse();
 
-    //from model basis to KS band base index
-    Eigen::MatrixXcd retGkw_band =  (DF_CorrBase[k].adjoint() * retGkw * DF_CorrBase[k]).eval();
-    retG0kw = (DF_CorrBase[k].adjoint() * retG0kw * DF_CorrBase[k]).eval();
+    //from model basis to KS band  index
+//    Eigen::MatrixXcd retGkw_band =  (DF_CorrBase[k].adjoint() * retGkw * DF_CorrBase[k]).eval();
+    retGkw  =  (DF_CorrBase[k].adjoint() * retGkw * DF_CorrBase[k]).eval();
+
+    //calc. Green's ftn
+    for( int band1=0; band1<NBAND[k]; band1++) {
+        retGkw(band1,band1) +=  (   E0+n*dE  -KS_eigenEnergy[k][FromValToKS[k][band1]]+ mu + I*infinitesimal  );
+        retG0kw(band1,band1) = 1.0/(    E0+n*dE  -KS_eigenEnergy[k][FromValToKS[k][band1]]+ mu + I*infinitesimal  );
+    }
+    retGkw = retGkw.inverse();
+
+
 
     //upfolding to full DFT basis
     retGkw_full.setZero(NumOrbit,NumOrbit);
@@ -454,7 +490,7 @@ void retarded_GreenFtn2( Eigen::MatrixXcd &retGkw_full,    Eigen::MatrixXcd & re
     }
     for( int band1=0; band1<NBAND[k]; band1++) {
         for( int band2=0; band2<NBAND[k]; band2++) {
-            retGkw_full(FromValToKS[k][band1], FromValToKS[k][band2]) +=   (retGkw_band(band1,band2) - retG0kw(band1,band2));
+            retGkw_full(FromValToKS[k][band1], FromValToKS[k][band2]) +=   (retGkw(band1,band2) - retG0kw(band1,band2));
         }
     }
 
@@ -522,9 +558,9 @@ double GiwToNele (double muTB, ImgFreqFtn & SelfE_w, cmplx *** eigenVal, int pre
         }
         getAsymto_moments(moments, SelfEnergy_Eig);
         ifroot std::cout <<"Sw_HF    :\n" <<  moments[0] <<"\n";
-        ifroot std::cout <<"1/(iwn)  :\n" <<  moments[1] <<"\n";
-        ifroot std::cout <<"1/(iwn)^2:\n" <<  moments[2] <<"\n";
-        ifroot std::cout <<"1/(iwn)^3:\n" <<  moments[3] <<"\n";
+//        ifroot std::cout <<"1/(iwn)  :\n" <<  moments[1] <<"\n";
+//        ifroot std::cout <<"1/(iwn)^2:\n" <<  moments[2] <<"\n";
+//        ifroot std::cout <<"1/(iwn)^3:\n" <<  moments[3] <<"\n";
 
 
 
@@ -563,8 +599,9 @@ double GiwToNele (double muTB, ImgFreqFtn & SelfE_w, cmplx *** eigenVal, int pre
         }//k
         ifroot    std::cout << "And we have freq. dep. eigen-energy.\n";
         /*highFreq*/
+
+        int n=N_freq*highFreq2;
         for(int k=0; k<knum; k++) {
-            int n=N_freq*highFreq2;
             std::vector<cmplx > model_qp_hamiltonian(  NBAND[k] * NBAND[k] );
             for(int i1=0; i1<NBAND[k]; i1++) {
                 for(int m1=0; m1<NBAND[k]; m1++) {

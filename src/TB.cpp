@@ -47,7 +47,7 @@ void TB_free();
 int TB_allc_downfolding = 0;
 
 void qs_spectra(ImgFreqFtn & SelfE_w,std::vector<Eigen::MatrixXcd>  KS_eigenVectors_orthoBasis,Eigen::VectorXd *KS_eigenEnergy, double  mu,
-                std::vector<Eigen::MatrixXcd> H_k_inModelSpace       );
+                std::vector<Eigen::MatrixXcd> H_k_inModelSpace, Eigen::MatrixXcd & SolverBasis      );
 
 void read_HR(Eigen::MatrixXi &H_Rindex, Eigen::VectorXcd  &H_RMatrix, const std::string &hamiltonian, std::vector<int> & accumulated_Num_SpinOrbital, int NumOrbit);
 
@@ -60,7 +60,7 @@ void  downfolding_ftn
 
 
 
-//void Find_best_correlated_basis (std::vector<Eigen::MatrixXcd> & H_k_inModelSpace, Eigen::MatrixXcd & SolverBasis, double muDFT) ;
+void Find_best_correlated_basis (std::vector<Eigen::MatrixXcd> & H_k_inModelSpace, Eigen::MatrixXcd & SolverBasis, double muDFT) ;
 void        NumMat_PWF(  int knum, int knum_mpiGlobal, double muDFT,
                          Eigen::MatrixXcd & NumMatrix, Eigen::VectorXd  * KS_eigenEnergy, std::vector<Eigen::MatrixXcd> & DF_CorrBase  ) ;
 
@@ -101,13 +101,14 @@ double  TightBinding(double mu, const std::string &hamiltonian, ImgFreqFtn & Sel
 {
 
 //mu_adjustTB == {-2,-1,0,1}
-//== -1  Find initial chemical potential setting.
+//== -1  Find initial chemical potential (non-interacting system)
+//== -2, adjusting chem, exit
 //==  0, no adjusting chem, Green ftn cal.
 //==  1, adjusting chem, Green ftn cal.
 
 
     bool k_grid_dos;
-    if (  (mode.find(std::string("band")) == std::string::npos ) or SOLVERtype != std::string("TB") or mu_adjustTB==-1 )
+    if (  (mode.find(std::string("band")) == std::string::npos ) or SOLVERtype != std::string("TB") or mu_adjustTB==-1 or mu_adjustTB==-2 )
         k_grid_dos = true;
     else
         k_grid_dos = false;
@@ -251,21 +252,20 @@ double  TightBinding(double mu, const std::string &hamiltonian, ImgFreqFtn & Sel
     if(mu_adjustTB == -1) {
         mu = Nele_non_Inter(knum, knum_mpiGlobal, H_k_inModelSpace, S_overlap);
 
-//
-//        low_energy_subspace_in_KS_basis(knum, knum_mpiGlobal, NBAND, FromValToKS, mu,
-//                                        KS_eigenVectors_orthoBasis, KS_eigenEnergy);
-//
-//
-//        ConstructModelHamiltonian (   knum,  knum_mpiGlobal,  kmesh, accumulated_Num_SpinOrbital,
-//                                      H_k_inModelSpace, S_overlap, KS_eigenVectors_orthoBasis, transformMatrix_k,  KS_eigenEnergy, overlap_exist, mu);
-//
-//
-//        downfolding_ftn(knum, knum_mpiGlobal, NBAND, H_k_inModelSpace, KS_eigenVectors_orthoBasis, KS_eigenEnergy,  mu);
-//
-//        Find_best_correlated_basis(H_k_inModelSpace, SolverBasis, mu);
+        low_energy_subspace_in_KS_basis(knum, knum_mpiGlobal, NBAND, FromValToKS, mu,
+                                        KS_eigenVectors_orthoBasis, KS_eigenEnergy);
+
+
+        ConstructModelHamiltonian (   knum,  knum_mpiGlobal,  kmesh, accumulated_Num_SpinOrbital,
+                                      H_k_inModelSpace, S_overlap, KS_eigenVectors_orthoBasis, transformMatrix_k,  KS_eigenEnergy, overlap_exist, mu);
+
+
+        downfolding_ftn(knum, knum_mpiGlobal, NBAND, H_k_inModelSpace, KS_eigenVectors_orthoBasis, KS_eigenEnergy,  mu);
+
 //        SpreadFtn_PWF(knum, S_overlap, transformMatrix_k, KS_eigenVectors_orthoBasis, accumulated_Num_SpinOrbital);
-//        NumMat_PWF(knum, knum_mpiGlobal, mu, NumMatrix, KS_eigenEnergy, DF_CorrBase);
-//
+        NumMat_PWF(knum, knum_mpiGlobal, mu, NumMatrix, KS_eigenEnergy, DF_CorrBase);
+        Find_best_correlated_basis(H_k_inModelSpace, SolverBasis, mu);
+
         return mu;
     }
 
@@ -280,7 +280,7 @@ double  TightBinding(double mu, const std::string &hamiltonian, ImgFreqFtn & Sel
     downfolding_ftn(knum, knum_mpiGlobal, NBAND, H_k_inModelSpace, KS_eigenVectors_orthoBasis, KS_eigenEnergy,  muDFT);
 //    Find_best_correlated_basis (H_k_inModelSpace, SolverBasis, mu);
 //    SpreadFtn_PWF(knum, S_overlap, transformMatrix_k, KS_eigenVectors_orthoBasis, accumulated_Num_SpinOrbital);
-    NumMat_PWF(knum, knum_mpiGlobal, mu, NumMatrix, KS_eigenEnergy, DF_CorrBase);
+//    NumMat_PWF(knum, knum_mpiGlobal, mu, NumMatrix, KS_eigenEnergy, DF_CorrBase);
 
 
 
@@ -290,7 +290,13 @@ double  TightBinding(double mu, const std::string &hamiltonian, ImgFreqFtn & Sel
 
     /*Band & DOS real freq.*/
     if (SOLVERtype==std::string("TB")) {
-        qs_spectra( SelfE_w, KS_eigenVectors_orthoBasis,KS_eigenEnergy,    mu, H_k_inModelSpace );
+        if(mu_adjustTB ==-2 ) {
+            mu = GreenFtn_w_adjust_mu(H_k_inModelSpace,SelfE_w,mu,1,mu_adjustTB);
+            ifroot  printf("We have found chemical potential mu\n");
+            TB_free();
+            return mu;
+        }
+        qs_spectra( SelfE_w, KS_eigenVectors_orthoBasis,KS_eigenEnergy,    mu, H_k_inModelSpace, SolverBasis );
     }
     else {
         std::vector<Eigen::MatrixXcd> densityMatDFT;
@@ -311,11 +317,12 @@ double  TightBinding(double mu, const std::string &hamiltonian, ImgFreqFtn & Sel
 
 
         for(int clust=0; clust < NumCluster; clust++) {
+            ifroot std::cout <<"Construct weiss field for cluster " << clust << std::endl;
             std::vector<int> weaklyCorr(NumHartrOrbit_per_cluster);
             std::vector<int> strongCorr(NSpinOrbit_per_atom);
             for (int i=0; i<NumHartrOrbit_per_cluster; i++) weaklyCorr[i] = clust* NumHartrOrbit_per_cluster +i;
 
-            Construct_hyb_delta ( NumHartrOrbit_per_cluster, weaklyCorr,  SelfE_w, Gw,  mu, weiss_fieldTBweakCorr, clust, SolverBasis);
+            Construct_hyb_delta ( NumHartrOrbit_per_cluster, weaklyCorr,  SelfE_w, Gw,  mu, weiss_fieldTBweakCorr, clust, SolverBasis, 0);
             if(NSpinOrbit_per_atom>0) {
                 for(int atom=clust*NumAtom_per_cluster; atom < (clust+1)*NumAtom_per_cluster; atom++) {
                     ifroot std::cout <<"Construct weiss field for atom " << atom << std::endl;
@@ -325,7 +332,7 @@ double  TightBinding(double mu, const std::string &hamiltonian, ImgFreqFtn & Sel
                         ifroot std::cout << strongCorr[i] <<" " ;
                     }
                     ifroot std::cout << std::endl;
-                    Construct_hyb_delta (   NSpinOrbit_per_atom, strongCorr, SelfE_w, Gw,  mu, weiss_fieldTBstrongCorr, atom, SolverBasis);
+                    Construct_hyb_delta (   NSpinOrbit_per_atom, strongCorr, SelfE_w, Gw,  mu, weiss_fieldTBstrongCorr, atom, SolverBasis, segmentsolver);
                 }
             }
         }
@@ -401,75 +408,6 @@ void TB_free() {
 
 
 
-//void Find_best_correlated_basis(std::vector<Eigen::MatrixXcd> & H_k_inModelSpace, Eigen::MatrixXcd & SolverBasis, double muDFT) {
-//
-//
-//    SolverBasis.setIdentity(NumCorrAtom*N_peratom_HartrOrbit, NumCorrAtom*N_peratom_HartrOrbit);
-//    std::vector<Eigen::MatrixXcd > SolverBasis_atom(NumCorrAtom);
-//
-//    for(int ATOM=0 ; ATOM < NumCorrAtom; ATOM++) {
-//        SolverBasis_atom[ATOM].setIdentity(N_peratom_HartrOrbit, N_peratom_HartrOrbit);
-//    }
-//
-//
-//
-//    if( impurityBasisSwitch == 1) {
-//
-//
-////        Eigen::MatrixXcd  Gloc_w0[NumCorrAtom], Gloc_w0_mpilocal[NumCorrAtom];
-//        std::vector<Eigen::MatrixXcd>          Gloc_w0(NumCorrAtom);
-//        std::vector<Eigen::MatrixXcd> Gloc_w0_mpilocal(NumCorrAtom);
-//        Eigen::MatrixXcd Gkw_w0;
-//        for(int ATOM=0 ; ATOM < NumCorrAtom; ATOM++) {
-//            Gloc_w0[ATOM].setZero(NSpinOrbit_per_atom,NSpinOrbit_per_atom);
-//            Gloc_w0_mpilocal[ATOM].setZero(NSpinOrbit_per_atom,NSpinOrbit_per_atom);
-//        }
-//
-//        for(int k=0; k<knum; k++) {
-//            Gkw_w0 = -H_k_inModelSpace[k];
-//            for(int i0=0; i0<NBAND[k]; i0++) {
-//                Gkw_w0(i0,i0) += muDFT;
-//            }
-//
-////            Gkw_w0 = Gkw_w0.inverse();
-//            for(int ATOM=0 ; ATOM < NumCorrAtom; ATOM++) {
-//                for(int i0=0; i0<NSpinOrbit_per_atom; i0+=1) {
-//                    for( int m0=0; m0<NSpinOrbit_per_atom; m0+=1) {
-//                        int  i0F = CorrIndex[ATOM*NSpinOrbit_per_atom+i0];
-//                        int  m0F = CorrIndex[ATOM*NSpinOrbit_per_atom+m0];
-//                        Gloc_w0_mpilocal[ATOM](i0,m0) +=Gkw_w0(i0F,m0F);
-//                    }
-//                }
-//            }
-//
-//        }//k
-//        for(int ATOM=0 ; ATOM < NumCorrAtom; ATOM++) {
-//            MPI_Allreduce(Gloc_w0_mpilocal[ATOM].data(), Gloc_w0[ATOM].data(), Gloc_w0[ATOM].size(), MPI_DOUBLE_COMPLEX, MPI_SUM,  MPI_COMM_WORLD);
-//            Gloc_w0[ATOM] /= knum_mpiGlobal;
-//            Eigen::SelfAdjointEigenSolver<Eigen::MatrixXcd> ces( NSpinOrbit_per_atom );
-//            ces.compute(Gloc_w0[ATOM]);
-//
-//            for (int n=0; n<NSpinOrbit_per_atom; n++) {
-//                for (int m=0; m<NSpinOrbit_per_atom; m++) {
-//                    int n0 = CorrToHartr(ATOM,n) - N_peratom_HartrOrbit *ATOM;
-//                    int m0 = CorrToHartr(ATOM,m) - N_peratom_HartrOrbit *ATOM;
-//
-//                    SolverBasis_atom.at(ATOM)(n0,m0) =  ces.eigenvectors()(n,m);
-//                }
-//            }
-//            ifroot {
-////                std::cout << "Solver:Gloc_w0:\n" << Gloc_w0[ATOM] <<"\n";
-////                std::cout <<"\n";
-//                std::cout << "Solver:Basis:\n" << SolverBasis_atom[ATOM] <<"\n";
-////                std::cout << "Solver:Gloc_w0_eval:\n" << ces.eigenvalues() <<"\n";
-//            }
-//        }
-//        for(int ATOM=0 ; ATOM < NumCorrAtom; ATOM++) {
-//            SolverBasis.block(ATOM*N_peratom_HartrOrbit, ATOM*N_peratom_HartrOrbit, N_peratom_HartrOrbit, N_peratom_HartrOrbit) = SolverBasis_atom[ATOM];
-//        }
-//
-//    }//impurityBasisSwitch
-//}
 
 void        NumMat_PWF(  int knum, int knum_mpiGlobal, double muDFT,
                          Eigen::MatrixXcd & NumMatrix, Eigen::VectorXd  * KS_eigenEnergy, std::vector<Eigen::MatrixXcd> & DF_CorrBase  ) {
@@ -489,8 +427,161 @@ void        NumMat_PWF(  int knum, int knum_mpiGlobal, double muDFT,
     MPI_Allreduce(NumMatrix_mpilocal.data(), NumMatrix.data(), NumMatrix.size(), MPI_DOUBLE_COMPLEX, MPI_SUM,  MPI_COMM_WORLD);
 
     ifroot  std::cout << "<TB> Occupancy, PWF:\n";
-    for(int h1F=0; h1F<N_peratom_HartrOrbit; h1F++) {
-        ifroot std::cout << h1F << " " << NumMatrix(h1F,h1F)<<"\n" ;
+    for(int at=0; at<NumCorrAtom; at++) {
+    double Nat=0;
+    for(int h1F=at*N_peratom_HartrOrbit; h1F<(at+1)*N_peratom_HartrOrbit; h1F++) {
+        double Nh1F = real(NumMatrix(h1F,h1F));
+Nat += Nh1F;
+        ifroot std::cout << h1F << " " << Nh1F <<"\n" ;
     }
+ifroot std::cout << "Atom" << at  << ": " << Nat<<"\n";
+}
 
+}
+
+
+
+void Find_best_correlated_basis(std::vector<Eigen::MatrixXcd> & H_k_inModelSpace, Eigen::MatrixXcd & SolverBasis, double muDFT) {
+//
+//
+    int NumMatBlock ;
+    int rotMatBlockSize;
+    int BlockDim;
+    if(ClusterBasis==2) {
+        rotMatBlockSize  = NSpinOrbit_per_atom* NumAtom_per_cluster;
+        NumMatBlock = NumCluster;
+        BlockDim    = N_peratom_HartrOrbit*NumAtom_per_cluster;
+    }
+    else
+    {
+        rotMatBlockSize = NSpinOrbit_per_atom;
+        NumMatBlock = NumCorrAtom;
+        BlockDim    = N_peratom_HartrOrbit;
+    }
+    int spinsize=1;
+    if (magnetism==0 or magnetism==1)  spinsize=2;
+    rotMatBlockSize /= spinsize;
+
+    SolverBasis.setIdentity(NumCorrAtom*N_peratom_HartrOrbit, NumCorrAtom*N_peratom_HartrOrbit);
+    std::vector<Eigen::MatrixXcd > SolverBasis_cl(NumMatBlock);
+//
+    if(impurityBasisSwitch != 0 ) {
+        for(int cl=0 ; cl < NumMatBlock; cl++) {
+            SolverBasis_cl[cl].setIdentity(BlockDim, BlockDim);
+        }
+
+        std::vector<Eigen::MatrixXcd>          Gloc_w0(NumMatBlock);
+        std::vector<Eigen::MatrixXcd> Gloc_w0_mpilocal(NumMatBlock);
+        Eigen::MatrixXcd Gkw_w0;
+        for(int cl=0 ; cl < NumMatBlock; cl++) {
+            Gloc_w0[cl].setZero(rotMatBlockSize,rotMatBlockSize);
+            Gloc_w0_mpilocal[cl].setZero(rotMatBlockSize,rotMatBlockSize);
+        }
+        if(impurityBasisSwitch==2) {
+/////////////////
+//Diag Heff
+/////////////////
+            for(int k=0; k<knum; k++) {
+                Gkw_w0 = -H_k_inModelSpace[k]  ;
+                for(int i0=0; i0<NBAND[k]; i0++) {
+                    Gkw_w0(i0,i0) += muDFT + I*infinitesimal;
+                }
+                Gkw_w0 = Gkw_w0.inverse();
+
+                for(int cl=0 ; cl < NumMatBlock; cl++) {
+                    for(int i0=0; i0<rotMatBlockSize; i0+=1) {
+                        for( int m0=0; m0<rotMatBlockSize; m0+=1) {
+                            int  i0F = CorrIndex[ (cl*rotMatBlockSize+ i0 )  *  spinsize    ];
+                            int  m0F = CorrIndex[ (cl*rotMatBlockSize+ m0 )  *  spinsize    ];
+                            Gloc_w0_mpilocal[cl](i0,m0) += Gkw_w0(i0F,m0F);
+                        }
+                    }
+                }
+            }//k
+            for(int cl=0 ; cl < NumMatBlock; cl++) {
+                MPI_Allreduce(Gloc_w0_mpilocal[cl].data(), Gloc_w0[cl].data(), Gloc_w0[cl].size(), MPI_DOUBLE_COMPLEX, MPI_SUM,  MPI_COMM_WORLD);
+                Gloc_w0[cl] /= knum_mpiGlobal;
+                Gloc_w0[cl] *= -1;
+            }
+            ifroot {
+                std::cout << "Solver:Heff diagonal basis:\n" ;
+            }
+        }
+        else {
+
+///////////////////
+//Or DenMat
+///////////////////
+            for(int cl=0 ; cl < NumMatBlock; cl++) {
+                for(int i0=0; i0<rotMatBlockSize; i0+=1) {
+                    for( int m0=0; m0<rotMatBlockSize; m0+=1) {
+                        int  i0F =    KS2Hartr[CorrIndex[(cl*rotMatBlockSize+ i0 )  *  spinsize   ]];
+                        int  m0F =    KS2Hartr[CorrIndex[(cl*rotMatBlockSize+ m0 )  *  spinsize   ]];
+//                    std::cout << i0 <<" " << i0F <<"\n" ;
+                        Gloc_w0_mpilocal[cl](i0,m0) = NumMatrix(i0F,m0F);
+                    }
+                }
+                Gloc_w0[cl] =  -Gloc_w0_mpilocal[cl].inverse();
+            }
+///////////////////
+            ifroot {
+                std::cout << "Solver:densMat diagonal basis:\n" ;
+            }
+        }
+
+
+        for(int cl=0 ; cl < NumMatBlock; cl++) {
+
+
+            Eigen::SelfAdjointEigenSolver<Eigen::MatrixXcd> ces( rotMatBlockSize );
+            Eigen::MatrixXcd Heff = -(Gloc_w0[cl].inverse() + Gloc_w0[cl].inverse().adjoint())/2.;
+//            Eigen::MatrixXcd Heff = NumMatrix;
+            ces.compute( Heff);
+            if(ClusterBasis==2) {
+                for(int at1=cl*NumAtom_per_cluster; at1 < (cl+1)*NumAtom_per_cluster; at1++) {
+                    for(int at2=cl*NumAtom_per_cluster; at2 < (cl+1)*NumAtom_per_cluster; at2++) {
+                        for (int n=0; n< NSpinOrbit_per_atom; n++) {
+                            for (int m=0; m< NSpinOrbit_per_atom; m++) {
+
+
+                                int n0 =   (CorrToHartr(at1,n) - cl*BlockDim )  /spinsize   ;
+                                int m0 =   (CorrToHartr(at2,m) - cl*BlockDim )  /spinsize   ;
+
+                                int n1 =   (n + (at1-cl*NumAtom_per_cluster) * NSpinOrbit_per_atom )/ spinsize  ;
+                                int m1 =   (m + (at2-cl*NumAtom_per_cluster) * NSpinOrbit_per_atom )/ spinsize ;
+
+
+                                SolverBasis_cl.at(cl)(spinsize*n0,spinsize*m0) =  ces.eigenvectors()(n1, m1);
+                                if (spinsize==2)           SolverBasis_cl.at(cl)(spinsize*n0+1,spinsize*m0+1) =  ces.eigenvectors()(n1, m1);
+                            }
+                        }
+                    }
+                }
+            }
+            else {
+                for (int n=0; n< NSpinOrbit_per_atom; n++) {             //rotMatBlockSize == NSpinOrbit_per_atom / spinsize
+                    for (int m=0; m< NSpinOrbit_per_atom; m++) {
+
+                        int n0 =   (CorrToHartr(cl,n) - cl*BlockDim  ) /spinsize  ;
+                        int m0 =   (CorrToHartr(cl,m) - cl*BlockDim  ) /spinsize  ;
+
+                        int n1 = n /spinsize  ;
+                        int m1 = m /spinsize  ;
+
+                        SolverBasis_cl.at(cl)(spinsize*n0,spinsize*m0) =  ces.eigenvectors()(n1,m1);
+                        if (spinsize==2)           SolverBasis_cl.at(cl)(spinsize*n0+1,spinsize*m0+1) =  ces.eigenvectors()(n1,m1);
+                    }
+                }
+            }
+
+            ifroot {
+                std::cout << SolverBasis_cl[cl] <<"\n";
+            }
+            ifroot std::cout <<"orgMat =\n" <<(Heff)  <<"\n";
+            ifroot std::cout <<"rotMat =\n" <<( ces.eigenvectors().adjoint()* Heff * ces.eigenvectors() ).diagonal()  <<"\n";
+        }//cl
+        for(int cl=0 ; cl < NumMatBlock; cl++) {
+            SolverBasis.block(cl*BlockDim, cl*BlockDim, BlockDim, BlockDim) = SolverBasis_cl[cl];
+        }
+    }
 }

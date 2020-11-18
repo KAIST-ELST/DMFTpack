@@ -2,7 +2,7 @@
 #include "mpi.h"
 #include "TB.h"
 
-void rewrite_retardedSw() {
+void rewrite_retardedSw( ImgFreqFtn & SelfEnergy_w ) {
     int NumCorrOrbit = NSpinOrbit_per_atom * NumCorrAtom;
     char chr1[50];
     char chr2[50];
@@ -39,7 +39,7 @@ void rewrite_retardedSw() {
                 assert(ImS[orbital1][orbital2][Spectral_EnergyGrid] == magicNumber);
                 assert(ReS[orbital1][orbital2][Spectral_EnergyGrid] == magicNumber);
                 while ( k<Spectral_EnergyGrid and real(E0+k*dE) < freq_right ) {
-                    ReS[orbital1][orbital2][k] = 0;
+                    ReS[orbital1][orbital2][k] = S_right_imagPart;
                     ImS[orbital1][orbital2][k] = 0;
                     k++;
                 }
@@ -68,18 +68,19 @@ void rewrite_retardedSw() {
                 assert(ReS[orbital1][orbital2][Spectral_EnergyGrid] == magicNumber);
 
                 while ( k<Spectral_EnergyGrid ) {
-                    ReS[orbital1][orbital2][k] = 0;
+                    ReS[orbital1][orbital2][k] = freq_right;
                     ImS[orbital1][orbital2][k] = 0;
                     k++;
                 }
                 fclose(dataIN);
             }
             else {
-                ifroot std::cout << "##Warning: We can't read realFreq_Sw.dat_a_b##\n" ;
+                ifroot std::cout << "HF selfenergy for realFreq_Sw.dat_a_b##\n"  ;
                 int k=0;
+                Eigen::MatrixXcd  HF = (SelfEnergy_w.getMatrix(N_freq-1) + SelfEnergy_w.getMatrix(N_freq-1).adjoint())/2.0;
                 while ( k<Spectral_EnergyGrid ) {
-                    ReS[orbital1][orbital2][k] = 0;
-                    ImS[orbital1][orbital2][k] = 0;
+                    ReS[orbital1][orbital2][k] = real(HF(orbital1,orbital2));
+                    ImS[orbital1][orbital2][k] = imag(HF(orbital1,orbital2));
                     k++;
                 }
             }

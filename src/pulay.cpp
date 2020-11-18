@@ -30,7 +30,7 @@ pulayMixing::pulayMixing(int mixing_history_, int start_mixing_,int dim_i_, int 
         for(int k=0; k<mixing_history; k++) {
             OptimalMatrix(mixing_history,k)= -1;
             OptimalMatrix(k,mixing_history)= -1;
-            OptimalMatrix(mixing_history-1, mixing_history-1)=-100.;
+//            OptimalMatrix(mixing_history-1, mixing_history-1)=-100.;
         }
         OptimalMatrix(mixing_history, mixing_history)=0.;
     }
@@ -109,7 +109,6 @@ void pulayMixing::mixing(Eigen::MatrixXcd  * inputDensity_n, Eigen::MatrixXcd * 
         }
 
         //Linear solver to find optimal history mixing values
-//        Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd> ces( OptimalMatrix );
         Eigen::FullPivLU<Eigen::MatrixXd> lu_decomp(OptimalMatrix);
         bool lin_dep_check = lu_decomp.isInvertible();
         if(SCGFloop>mixing_history + start_mixing and SCGFloop%mixingStep==0 and lin_dep_check   ) {

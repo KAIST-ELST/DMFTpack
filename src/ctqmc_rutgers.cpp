@@ -2,7 +2,7 @@
 
 #include <iostream>
 #include "ImgTimeFtn.h"
-#include <Eigen/Sparse>
+//#include <Eigen/Sparse>
 
 #include "tight_common.h"
 #include <time.h>
@@ -24,10 +24,10 @@
 
 
 int occupation_Bits(int i, unsigned long long alp) ;
-int Sz(unsigned  long long  n);
+double Sz(unsigned  long long  n);
 int F_dagger_sign(int i, unsigned long long alp) ;
 int countSetBits(unsigned  long long  n);
-double getTotEng_seg( Eigen::MatrixXcd Local_Hamiltonian_ED, double muTB,  unsigned long long   alp);
+double getTotEng_seg( Eigen::MatrixXcd Local_Hamiltonian_ED, double muTB,  unsigned long long   alp,  std::vector<cmplx > Utensor, std::vector<Eigen::VectorXi> Uindex) ;
 
 unsigned long choose(int n, int k) ;   //nCk
 void SectorToGlobalIndxConstruction (std::vector<std::vector<int> > & SectorToGlobalIndx, Eigen::VectorXi & GlobalIndx2Sector, Eigen::VectorXi & Global2SectorIndex,
@@ -46,7 +46,7 @@ void write_PARMS() ;
 void write_cix_file (int NSector, int maxDim, int Nstate, Eigen::VectorXi dim_for_sector,  std::vector<std::vector<double> > & ImpTotalEnergy, Eigen::MatrixXcd ** f_annMat,
                      std::vector<cmplx > Utensor, std::vector<Eigen::VectorXi> Uindex,
                      Eigen::MatrixXi  SuperState_quantumNum, Eigen::MatrixXi f_dagger_ann_SuperState,
-                     Eigen::MatrixXcd Local_Hamiltonian_ED);
+                     Eigen::MatrixXcd Local_Hamiltonian_ED,  std::vector<std::vector<int> > & SectorToGlobalIndx ) ;
 
 
 void write_Delta(   ImgFreqFtn & weiss_field );
@@ -120,7 +120,7 @@ void ctqmc_rutgers(  Eigen::MatrixXcd Local_Hamiltonian_ED, double muTB,
         for (int state=0 ; state < Nstate ; state++) {
             if( magnetism == 2 ) {
                 f_ann_SuperState(Sector, state) =  Sector-1 ;
-                if(Sector>0) f_dagger_ann_SuperState(  Sector-1   , state  ) = Sector;
+                if(Sector>0) f_dagger_ann_SuperState(  Sector-1, state  ) = Sector;
             }
             else {
                 for (int SectorBra=0 ; SectorBra< NSector; SectorBra++) {
@@ -128,14 +128,14 @@ void ctqmc_rutgers(  Eigen::MatrixXcd Local_Hamiltonian_ED, double muTB,
                             SuperState_quantumNum(SectorBra,0) == SuperState_quantumNum(Sector, 0) - 1   and
                             SuperState_quantumNum(SectorBra,1) == SuperState_quantumNum(Sector,1)  -1               ) {
                         f_ann_SuperState(Sector, state) = SectorBra;
-                        f_dagger_ann_SuperState(  SectorBra   , state  ) = Sector;
+                        f_dagger_ann_SuperState(  SectorBra, state  ) = Sector;
                         break;
                     }
                     else if(state % 2 == 1 and
                             SuperState_quantumNum(SectorBra,0) == SuperState_quantumNum(Sector, 0) - 1   and
                             SuperState_quantumNum(SectorBra,1) == SuperState_quantumNum(Sector,1)  +1               ) {
                         f_ann_SuperState(Sector, state) = SectorBra;
-                        f_dagger_ann_SuperState(  SectorBra   , state  ) = Sector;
+                        f_dagger_ann_SuperState(  SectorBra, state  ) = Sector;
                         break;
                     }//else if
                 }
@@ -156,21 +156,25 @@ void ctqmc_rutgers(  Eigen::MatrixXcd Local_Hamiltonian_ED, double muTB,
     evec_prev[0](0,0)=1;
     ImpTotalEnergy[0][0] = 0.0;
 
+    for (int state=0 ; state < Nstate ; state++) {
+        f_annMat[0][state].setZero( 1, 1);   //Sector=0
+    }
     for (int Sector=1 ; Sector< NSector; Sector++) {
         ifroot       std::cout << "\nSector: " << Sector
-                               << "\nNumber of electron in the total system: (" << SuperState_quantumNum(Sector,0) << "," << SuperState_quantumNum(Sector,1)
+                               << "\n(N, Sz) = (" << SuperState_quantumNum(Sector,0) << "," << SuperState_quantumNum(Sector,1)
                                <<") in "<<  Nstate <<" states\n"
                                << "Hilbert space dimension:"<<dim_for_sector[Sector]<<"\n";
 
 
         for (int state=0 ; state < Nstate ; state++) {
-            if(  f_ann_SuperState(Sector,state) >= 0 )       f_annMat[Sector][state].setZero(  dim_for_sector[f_ann_SuperState(Sector,state)],  dim_for_sector[Sector] );
+            if(  f_ann_SuperState(Sector,state) >= 0 )   f_annMat[Sector][state].setZero(  dim_for_sector[f_ann_SuperState(Sector,state)],  dim_for_sector[Sector] );
+            else                                         f_annMat[Sector][state].setZero(   1,  dim_for_sector[Sector] );   //should be null
             for(int  i=0; i< dim_for_sector[Sector]; i ++) {
                 if(occupation_Bits(state, SectorToGlobalIndx[Sector][i]) == 1) {
-                    int temp= SectorToGlobalIndx[Sector][i] - std::pow(2,state);
-                    assert( GlobalIndx2Sector[temp] == f_ann_SuperState(Sector,state) );
-                    f_annMat[Sector][state](   Global2SectorIndex[  temp ]    ,   i  )
-                        = F_element(state, temp, SectorToGlobalIndx[Sector][i])  ;
+                    int bra_state= SectorToGlobalIndx[Sector][i] - std::pow(2,state);
+                    assert( GlobalIndx2Sector[bra_state] == f_ann_SuperState(Sector,state) );
+                    f_annMat[Sector][state](   Global2SectorIndex[  bra_state ],   i  )
+                        = F_element(state, bra_state, SectorToGlobalIndx[Sector][i])  ;
                 }
             }
         }
@@ -207,7 +211,7 @@ void ctqmc_rutgers(  Eigen::MatrixXcd Local_Hamiltonian_ED, double muTB,
     ifroot     write_cix_file (NSector,  maxDim, Nstate, dim_for_sector, ImpTotalEnergy, f_annMat,
                                Utensor, Uindex,
                                SuperState_quantumNum, f_dagger_ann_SuperState,
-                               Local_Hamiltonian_ED  );
+                               Local_Hamiltonian_ED, SectorToGlobalIndx  );
     write_Delta(    weiss_field);
     ifroot write_PARMS();
 
@@ -217,6 +221,7 @@ void ctqmc_rutgers(  Eigen::MatrixXcd Local_Hamiltonian_ED, double muTB,
         delete []        f_annMat[N];
     }
     delete [] f_annMat;
+    delete [] evec_prev;
 } //ct_qmc_rut
 
 void ctqmc_rutgers_seg(  Eigen::MatrixXcd Local_Hamiltonian, double muTB,
@@ -237,14 +242,14 @@ void ctqmc_rutgers_seg(  Eigen::MatrixXcd Local_Hamiltonian, double muTB,
         }
         fprintf(cix, "\n#   N   K   Sz size F^{+,0}, F^{+,1}, F^{+,2}, F^{+,3}, F^{+,4}, F^{+,5}, {Ea,Eb..} ;  {Sa, Sb..}\n");
         for(int alp=0; alp<std::pow(2,solverDim); alp++) {
-            fprintf(cix,      "%d  %d   0  %d  1  ",
-            alp+1, countSetBits(alp) , Sz(alp)  );
+            fprintf(cix,      "%d  %d   0  %+0.3f  1  ",
+                    alp+1, countSetBits(alp), Sz(alp)  );
             for(int i=0; i<solverDim; i++) {   //alp = \sum_i  n_i * 2^i; i=0,1,... NSpinOrbit_per_atom-1 <=> |n_{NSpinOrbit_per_atom-1}, .., n_1, n_0>
                 int operationState = std::pow(2,i);   // (0,0,...,0,1,0,...0)
                 fprintf(cix,      "%d ", (1-occupation_Bits(i,alp))*(alp+1+operationState));
             }
 
-            fprintf(cix,      "%+0.8f", getTotEng_seg(Local_Hamiltonian, muTB,alp));
+            fprintf(cix,      "%+0.8f", getTotEng_seg(Local_Hamiltonian, muTB,alp, Utensor, Uindex));
             fprintf(cix,      " 0 \n");
         }//alp
 
@@ -255,7 +260,7 @@ void ctqmc_rutgers_seg(  Eigen::MatrixXcd Local_Hamiltonian, double muTB,
             for(int i=0; i<solverDim; i++) {
                 int operationState = std::pow(2,i);   // (0,0,...,0,1,0,...0)
                 fprintf(cix,      "%d  %d   1  %d  ",
-                        alp+1, (1-occupation_Bits(i,alp))*(alp+1+operationState), (1-occupation_Bits(i,alp))  );
+                        alp+1, (1-occupation_Bits(i,alp))*(alp+1+operationState), (1-occupation_Bits(i,alp))  );    //start-state,end-state, dim1, dim2, <e|F^{+}_i|s>,   if i-th level occupied in |s> then  end state=0 = 1-occ(i,alp)
                 if(  (occupation_Bits(i,alp)) ==0 )  fprintf(cix,      " %+0.8f",             ((double)F_dagger_sign(i,alp))   );
                 fprintf(cix,      "\n");
             }
@@ -266,50 +271,55 @@ void ctqmc_rutgers_seg(  Eigen::MatrixXcd Local_Hamiltonian, double muTB,
         int length = (int) Utensor.size();
         int nH=0;
         while(nH < length) {
-//            if( isOrbitalCorrinHart[Uindex[nH](0) ] and
-//                    isOrbitalCorrinHart[Uindex[nH](1) ] and
-//                    isOrbitalCorrinHart[Uindex[nH](2) ] and
-//                    isOrbitalCorrinHart[Uindex[nH](3) ] ) {}
             fprintf(cix, " %d %d %d %d %+0.8f\n",
                     Uindex[nH](0),
                     Uindex[nH](1),
                     Uindex[nH](3),
                     Uindex[nH](2),  real(Utensor[nH]) );
             assert(imag(Utensor[nH]) < 1e-5);
-//            {}
             nH++;
         }
 
+//        fprintf(cix, "# number of operators needed\n0\n");
 
-        fprintf(cix, "# number of operators needed\n0");
+
+        fprintf(cix, "# number of operators needed\n1\n# Occupancy\n");
+        for(int alp=0; alp<std::pow(2,solverDim); alp++) {
+            for(int i=0; i<solverDim; i++) { //0,2,4...NSpinOrbit_per_atom-2
+                fprintf(cix,      "%d  1  1  ",alp+1 );
+                fprintf(cix, "%+0.3f\n",  (double) occupation_Bits(i,alp) );
+            }
+        }//alp
 
         fclose(cix);
 
 
         ifroot std::cout << "\nwrite_cix_file\n";
-        write_Delta_diag(    weiss_field );
-        ifroot write_PARMS();
     }//ifroot
+        write_Delta_diag(    weiss_field );
+        write_PARMS();
 }//ctqmc_rutgers_seg
 
 void write_PARMS() {
 
-    int tsample = read_int(std::string("input.solver"), std::string("N_MEAS"),  true, 50);
+    int tsample = read_int(std::string("input.solver"), std::string("N_MEAS"),  true, 50     );
     double tempD = read_double(std::string("input.solver"), std::string("SWEEPS"),  true, 1e9);
     Num_MC_steps = (unsigned long long) tempD;
     unsigned long long THERMALIZATION;
     tempD = read_double(std::string("input.solver"), std::string("THERMALIZATION"),  true, 1e6);
     THERMALIZATION = (unsigned long long) tempD;
-    int svd_lmax = read_int(std::string("input.solver"), std::string("svd_lmax"),  true, 30);
+    int svd_lmax = read_int(std::string("input.solver"), std::string("svd_lmax"),  true, 30   );
+    int svd_L = read_int(std::string("input.solver"), std::string("svd_L"),  true, 15         );
+    int aom = read_int(std::string("input.solver"), std::string("aom"),  true, 1              );
 
+if(mpi_rank==0){
     FILE *fp;
-//    if ((fp = fopen("PARAMS","r")) == NULL) {
     FILE * PARMS_file = fopen("PARAMS", "w");
     fprintf(PARMS_file, "nom %d  # number of Matsubara frequencies\n", N_freq                 );
     fprintf(PARMS_file, "svd_lmax %d # number of SVD functions to project the solution\n", svd_lmax                 );
-    fprintf(PARMS_file, "svd_L 15 # To compute the SVD decomposition of the kernel for analytic continuation, we need to choose the cutoff on the real axis.(default: 10).\n"                 );
-    fprintf(PARMS_file, "tsample  %d     # how often to record the measurements\n" , tsample                        );
-    fprintf(PARMS_file, "aom      1      # number of frequency points to determin high frequency tail\n"  );
+    fprintf(PARMS_file, "svd_L  %d  # To compute the SVD decomposition of the kernel for analytic continuation, we need to choose the cutoff on the real axis.(default: 10).\n", svd_L                 );
+    fprintf(PARMS_file, "tsample  %d     # how often to record the measurements\n", tsample                        );
+    fprintf(PARMS_file, "aom      %d      # number of frequency points to determin high frequency tail\n", aom  );
     fprintf(PARMS_file, "M      %llu     # Number of Monte Carlo steps\n", Num_MC_steps                                       );
     fprintf(PARMS_file, "warmup %llu     # Number of Monte Carlo steps\n", THERMALIZATION                                       );
     fprintf(PARMS_file, "beta %0.5f        # Inverse temperature\n", beta                                 );
@@ -323,7 +333,7 @@ void write_PARMS() {
     fclose(PARMS_file);
     sleep(3);
     std::cout <<"Write ct-qmc input, PARMS\n";
-//    }
+}
 }
 
 
@@ -374,8 +384,8 @@ void write_Delta_diag(   ImgFreqFtn & weiss_field) {
 
 void write_cix_file (int NSector, int maxDim, int Nstate, Eigen::VectorXi dim_for_sector,  std::vector<std::vector<double> > & ImpTotalEnergy, Eigen::MatrixXcd ** f_annMat,
                      std::vector<cmplx > Utensor, std::vector<Eigen::VectorXi> Uindex,
-                     Eigen::MatrixXi  SuperState_quantumNum, Eigen::MatrixXi f_dagger_ann_SuperState ,
-                     Eigen::MatrixXcd Local_Hamiltonian_ED) {
+                     Eigen::MatrixXi  SuperState_quantumNum, Eigen::MatrixXi f_dagger_ann_SuperState,
+                     Eigen::MatrixXcd Local_Hamiltonian_ED,  std::vector<std::vector<int> > & SectorToGlobalIndx ) {
 
 
     int spindim=1;
@@ -397,22 +407,6 @@ void write_cix_file (int NSector, int maxDim, int Nstate, Eigen::VectorXi dim_fo
         }
     }
 
-//    for(int alp=0; alp<Nstate; alp++) {
-//        for(int bet=0; bet<Nstate; bet++) {
-//            if (alp==bet) {
-//                deltaForRutgersCTQMS[alp][bet] = upper_triangle;
-//                upper_triangle++;
-//            }
-//            else if (alp <bet) {
-//                deltaForRutgersCTQMS[alp][bet] = upper_triangle;
-//                upper_triangle++;
-//            }
-//
-//        }
-//    }
-
-
-
     for(int spin = 0 ; spin< spindim; spin++) {
         fprintf(cix, "%d  %d\n", spin, Nstate/spindim );
         for(int alp=spin; alp<Nstate; alp+=spindim) {
@@ -432,10 +426,6 @@ void write_cix_file (int NSector, int maxDim, int Nstate, Eigen::VectorXi dim_fo
 
 
     fprintf(cix, "# cluster energies for unique baths, eps[k]\n");
-//    for(int alp=0; alp<Nstate; alp++) {
-//        fprintf(cix, " 0");
-//    }
-
 
     for(int spin = 0 ; spin< spindim; spin++) {
         for(int alp=spin; alp<Nstate; alp+=spindim) {
@@ -452,7 +442,7 @@ void write_cix_file (int NSector, int maxDim, int Nstate, Eigen::VectorXi dim_fo
     fprintf(cix, "#   N   K   Sz size F^{+,0}, F^{+,1}, F^{+,2}, F^{+,3}, F^{+,4}, F^{+,5}, {Ea,Eb..} ;  {Sa, Sb..}\n");
     for (int Sector=0; Sector < NSector; Sector++) {
         int sectorIndex = Sector+1;
-        fprintf(cix, "%d %d 0 %d %d   ", sectorIndex, SuperState_quantumNum(Sector,0), SuperState_quantumNum(Sector,1 ),  (int)dim_for_sector[Sector]);
+        fprintf(cix, "%d %d 0  %+0.3f %d   ", sectorIndex, SuperState_quantumNum(Sector,0), (0.5*SuperState_quantumNum(Sector,1 )),  (int)dim_for_sector[Sector]);
 
         for(int spin = 0 ; spin< spindim; spin++) {
             for (int alp=spin; alp < Nstate; alp+=spindim) {
@@ -471,8 +461,6 @@ void write_cix_file (int NSector, int maxDim, int Nstate, Eigen::VectorXi dim_fo
     }
 
     fprintf(cix, "# matrix elements\n");
-//    for (int ketSectorIndex=1; ketSectorIndex <= NSector; ketSectorIndex++) {
-//        int braSectorIndex = ketSectorIndex+1;
 
     for (int ketSector=0; ketSector < NSector; ketSector++) {
 
@@ -487,12 +475,11 @@ void write_cix_file (int NSector, int maxDim, int Nstate, Eigen::VectorXi dim_fo
                 int braSector = f_dagger_ann_SuperState(ketSector,alp);
                 int braSectorIndex = braSector + 1;
                 int braDim = ( (braSector==-1) ? 0:  dim_for_sector[braSector] );
-//            braSectorIndex = ( (braSectorIndex>NSector) ? 0:  braSectorIndex );
 
 
                 fprintf(cix, "%d %d %d %d",ketSectorIndex, braSectorIndex, ketDim, braDim);
                 Eigen::MatrixXcd  f_dagger;
-                if(braSector != -1 )   f_dagger= f_annMat[braSector][alp].adjoint(); // <N+1|f^+ |N>  = <N| f | N+1>.adjoint()
+                if(braSector != -1 )   f_dagger= f_annMat[braSector][alp].adjoint(); // <N+1,bra|f^+ |N,ket>  = <N,ket| f | N+1, bra>.adjoint()
                 for (int ketN=0; ketN < ketDim; ketN++) {
                     for (int braN=0; braN < braDim; braN++) {
                         fprintf(cix, " %e",real(f_dagger(braN,ketN)) );
@@ -547,7 +534,30 @@ void write_cix_file (int NSector, int maxDim, int Nstate, Eigen::VectorXi dim_fo
 //////////////////////////////////////////////////////////
 
 
-    fprintf(cix, "# number of operators needed\n0");
+//    fprintf(cix, "# number of operators needed\n0");
+    fprintf(cix, "# number of operators needed\n1\n# Occupancy\n");   //SuperStateIndex  #dim1   #dim2  #  11   12 13 ... 1n, 21 22, ,...,  ..., n1, ... nn
+    std::cout << "number of operators needed\n";
+//  <alp|c^+_i c_i |bet>
+    for(int ketSector=0; ketSector<NSector; ketSector++) {
+        for(int spin = 0 ; spin< spindim; spin++) {
+            for(int i= spin ; i<Nstate; i+=spindim) {
+
+
+
+
+                Eigen::MatrixXcd matele = f_annMat[ketSector][i].adjoint()    * f_annMat[ketSector][i];
+//                std::cout << dim_for_sector[ketSector] <<"\n" << matele ;
+
+                fprintf(cix,      "%d  %d  %d  ",ketSector+1, dim_for_sector[ketSector], dim_for_sector[ketSector] );
+                for(int  alp=0; alp< dim_for_sector[ketSector]; alp++) {
+                    for(int  bet=0; bet< dim_for_sector[ketSector]; bet++) {
+                        fprintf(cix, "%+0.3f  ",    matele(alp,bet)        );                //    <alp;sec | n_i | alp;sec>
+                    }
+                }
+                fprintf(cix, "\n");
+            }
+        }
+    }
 
     fclose(cix);
 
@@ -576,7 +586,6 @@ void HamiltonianConstruc (  Eigen::MatrixXcd & Himp, int Nstate, int Sector, std
                         GlobalIndx2Sector[global_i] == Sector    ) {
                     int i  =   Global2SectorIndex[ global_i]      ;
                     Himp(i,j) +=  Local_Hamiltonian_ED(alp,bet) * F_element(alp, global_i) * F_element( bet, SectorToGlobalIndx[Sector][j] );
-
                     if(alp==bet) Himp(i,j) -= muTB * F_element(alp, global_i) * F_element( bet, SectorToGlobalIndx[Sector][j] );
                 }
             }
@@ -671,7 +680,7 @@ void SectorToGlobalIndxConstruction (std::vector<std::vector<int> > & SectorToGl
 //            if(N>=NSector) std::cout << NSector<<" " << N <<" " << Ntot<<" " << Ndn <<" " << Nhole<<"\n";
 
             SuperState_quantumNum(N,0) = Ntot;
-            SuperState_quantumNum(N,1) = Ntot- 2*Ndn;
+            SuperState_quantumNum(N,1) = (Ntot- 2*Ndn);   // =  (Nup - Ndn)
         }
         assert(N< NSector);
         SectorToGlobalIndx[N].push_back(globalindex);
@@ -725,7 +734,7 @@ int countSetBits(unsigned  long long  n)
     }
     return count;
 }
-int Sz(unsigned  long long  n)
+double Sz(unsigned  long long  n)
 {
     int count = 0;
     int s_z = 1;
@@ -735,7 +744,7 @@ int Sz(unsigned  long long  n)
         s_z = -1*s_z;
         n >>= 1;
     }
-    return count;
+    return 0.5*count;
 }
 int occupation_Bits(int i, unsigned long long alp) {
     return ( (alp >> i) & 1);   //
@@ -777,21 +786,64 @@ int F_element(int alpha, unsigned long long state1) {
 
 
 
-double getTotEng_seg( Eigen::MatrixXcd Local_Hamiltonian_ED, double muTB,  unsigned long long   alp) {
+double getTotEng_seg( Eigen::MatrixXcd Local_Hamiltonian_ED, double muTB,  unsigned long long   alp,  std::vector<cmplx > Utensor, std::vector<Eigen::VectorXi> Uindex) {
 
     double TotEng=0;
     int solverDim =  Local_Hamiltonian_ED.rows();
     for(int i=0; i<solverDim; i++) {
         TotEng +=  ( real(Local_Hamiltonian_ED(i,i))-muTB) *  occupation_Bits(i,alp);
     }//alp
-    for(int i=0; i<solverDim; i+=2) { //0,2,4...NSpinOrbit_per_atom-2
-        TotEng += UHubb   * occupation_Bits(i,alp) *occupation_Bits(i+1,alp) ;
-        for(int j=0; j<i; j+=2) {
-            TotEng +=  Uprime         *  occupation_Bits(i,alp)  * occupation_Bits(j+1,alp);   //H_interaction
-            TotEng +=  Uprime         *  occupation_Bits(i+1,alp)  * occupation_Bits(j,alp);     //H_interaction
-            TotEng += (Uprime-JHund)  *  occupation_Bits(i,alp)  * occupation_Bits(j,alp);     //H_interaction
-            TotEng += (Uprime-JHund)  *  occupation_Bits(i+1,alp)  * occupation_Bits(j+1,alp); //H_interaction
-        }
-    }//alp
+    int length = (int) Utensor.size();
+    int nH=0;
+    while(nH < length) {
+        int i=   Uindex[nH](0);
+        int j =  Uindex[nH](1);
+        int k =  Uindex[nH](2);
+        int l =  Uindex[nH](3);
+        if (i!=j and i==k and j==l)  TotEng +=  real(0.5*Utensor[nH] *occupation_Bits(i,alp)  * occupation_Bits(j,alp));  //dd
+        nH++;
+    }
     return TotEng;
 }
+
+
+
+
+//double getS_seg(   unsigned long long   alp,  std::vector<cmplx > Utensor, std::vector<Eigen::VectorXi> Uindex) {
+//
+////    double TotEng=0;
+////    int solverDim =  Local_Hamiltonian_ED.rows();
+////    for(int i=0; i<solverDim; i++) {
+////        TotEng +=  ( real(Local_Hamiltonian_ED(i,i))-muTB) *  occupation_Bits(i,alp);
+////    }//alp
+//
+//Eigen::MatrixXcd   Sx[dim], Sy[dim], Sz[dim];
+//    for(int alp=0; alp<Nstate; alp++) {
+//        for(int bet=0; bet<Nstate; bet++) {
+//            for(int  j=0; j< dim_for_sector[Sector]; j++) {
+//                int global_i  =       SectorToGlobalIndx[Sector][j] - std::pow(2,bet) + std::pow(2,alp);
+//                if(     occupation_Bits(bet, SectorToGlobalIndx[Sector][j]) == 1  and
+//                        (occupation_Bits(alp, SectorToGlobalIndx[Sector][j]) == 0 or alp==bet)  and
+//                        GlobalIndx2Sector[global_i] == Sector    ) {
+//                    int i  =   Global2SectorIndex[ global_i]      ;
+//                    Himp(i,j) +=  Local_Hamiltonian_ED(alp,bet) * F_element(alp, global_i) * F_element( bet, SectorToGlobalIndx[Sector][j] );
+//
+//                    if(alp==bet) Himp(i,j) -= muTB * F_element(alp, global_i) * F_element( bet, SectorToGlobalIndx[Sector][j] );
+//                }
+//            }
+//        }//bet
+//    }//alp
+////
+////    int length = (int) Utensor.size();
+////    int nH=0;
+////    while(nH < length) {
+////        int i=   Uindex[nH](0);
+////        int j =  Uindex[nH](1);
+////        int k =  Uindex[nH](2);
+////        int l =  Uindex[nH](3);
+////        if (i!=j and i==k and j==l)  TotEng +=  real(0.5*Utensor[nH] *occupation_Bits(i,alp)  * occupation_Bits(j,alp));
+////        nH++;
+////    }
+//
+//    return TotEng;
+//}

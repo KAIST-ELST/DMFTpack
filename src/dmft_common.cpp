@@ -8,7 +8,7 @@
 
 
 void Wait_Run( char fileName[100], int checkTime, int mpi_rank,int maxTime  ) {
-    ifroot system( (std::string("rm ") + fileName).c_str() );
+//    ifroot system( (std::string("rm ") + fileName).c_str() );
     int solvercheck=0;
     int STOP_message =0;
     while (1) {
@@ -21,6 +21,7 @@ void Wait_Run( char fileName[100], int checkTime, int mpi_rank,int maxTime  ) {
             }
         }/*ifroot*/
         sleep(checkTime);
+//        if( (mpi_rank==0 and STOP_message==1) or mpi_rank!=0) MPI_Bcast(&STOP_message, 1, MPI_INT, 0, MPI_COMM_WORLD);
         MPI_Bcast(&STOP_message, 1, MPI_INT, 0, MPI_COMM_WORLD);
         if(STOP_message==1) break;
     }
