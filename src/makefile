@@ -77,7 +77,7 @@ EIGEN_INC = -I/home/jaehoon.sim/src_nobkup/EIGEN3.3.7
 
 SOURCE =    band.cpp   FourierTransform.cpp  tight_common.cpp Construct_hyb_delta.cpp GreenFtn.cpp  \
             dos.cpp  readInput_text.cpp mpi_interface.cpp dmft_main.cpp  ImgTimeFtn.cpp   SOLVER.cpp  \
-            TB.cpp     diag_EIGEN.cpp          ConstructModelHamiltonian.cpp  ImS_stoch_to_ReS.cpp \
+            TB.cpp               ConstructModelHamiltonian.cpp  ImS_stoch_to_ReS.cpp \
             upfolding.cpp  qs_spectra.cpp gen_Uijkl.cpp    dmft_common.cpp pulay.cpp   \
             SCGF2_fullLoop.cpp  ctqmc_rutgers.cpp  read_TB_parm.cpp downfolding.cpp  get_weight.cpp SpreadFtn.cpp \
             read_scfout.cpp

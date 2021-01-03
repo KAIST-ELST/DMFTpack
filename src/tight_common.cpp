@@ -112,6 +112,7 @@ int segmentsolver;
 
 
 
+std::vector<int> num_subshell_forAtom;
 std::vector<Eigen::VectorXi> Uindex;
 std::vector<cmplx > Utensor;
 //std::vector<Eigen::VectorXi> Uindex_stronglyCorr;
@@ -135,7 +136,7 @@ void read_inputFile(const std::string &hamiltonian) {
 //ED outdated
 //input var. with  dependence
 
-    infinitesimal  = read_double(std::string("input.parm"), std::string("Infinitesimal"), true, 0.05)  ;  //NOTE : EWIN / Spectral_E should be smaller than infinitesimal
+    infinitesimal  = read_double(std::string("input.parm"), std::string("Infinitesimal"), true, 0.05)  ;  //NOTE : EWIN / Spectral_EnergyGrid should be smaller than infinitesimal
     Spectral_EnergyGrid             = read_double(std::string("input.parm"), std::string("SPECTRAL_ENERGY_GRID"), true, 1000) ;
     MPI_Barrier(MPI_COMM_WORLD);
 
@@ -156,7 +157,7 @@ void read_inputFile(const std::string &hamiltonian) {
 
 
     /*solver option*/
-    impurityBasisSwitch = read_int(std::string("input.parm"), std::string("impurityBasisSwitch"), true, 0);   // 1=den mat diag ; 2= Heff diag
+    impurityBasisSwitch = read_int(std::string("input.parm"), std::string("impurityBasisSwitch"), true, 0);   // 1=den mat diag ; 2= Heff diag   10=transform the TB model basis in energy window
     SOLVERtype          = read_string(std::string("input.parm"), std::string("SOLVER_TYPE"), false);//TB, ALPS_CTSEG, ALPS_CTHYB, RUTGERS_CTSEG, RUTGERS_CTHYB, SC2PT,2PT
     weaksolver_run      = read_int(std::string("input.parm"),  std::string("weaksolver_run"), true, 0);
     MPI_Barrier(MPI_COMM_WORLD);
@@ -187,7 +188,7 @@ void read_inputFile(const std::string &hamiltonian) {
 //Lattice information
 //
     H0_from_OpenMX =   read_int(std::string("input.parm"), std::string("H0_FROM_OPENMX"),true, 0);
- //   std::cout << "H0_FROM_OPENMX...\n";
+//   std::cout << "H0_FROM_OPENMX...\n";
     if(H0_from_OpenMX!=0  ) {
         ifroot analysis_example(system_name+std::string(".scfout"));
         MPI_Barrier(MPI_COMM_WORLD);
@@ -235,14 +236,14 @@ void read_inputFile(const std::string &hamiltonian) {
 
 
 //projector
-    dctype           =   read_string(std::string("input.parm"), std::string("DC_TYPE"), true,std::string("fll")); //sigma0, fll,  fll_Uprime, amf, nominal, nominal_Uprime,     fll_dmft ,  amf_dmft
+    dctype           =   read_string(std::string("input.parm"), std::string("DC_TYPE"), true,std::string("fll")); //sigma0, fll, fllsk  , amf, nominal, nominal_amf, nominal  //options: unif, dmft
     if(dctype == std::string("none")) {
         doublecounting =     0;
     }
     else {
         doublecounting =     1;
         if ( dctype.find(std::string("nominal")) != std::string::npos      ) {
-            nominal_charge   =   read_double(std::string("input.parm"), std::string("N_d"), false,  -1);
+            nominal_charge   =   read_double(std::string("input.parm"), std::string("N_d"), true,  -1);
         }
     }
     localOrbitalType = read_string(std::string("input.parm"), std::string("LOCAL_ORBITAL_TYPE"), true, std::string("nao_direct")); //nao_direct, nao_recip, nao_hyb, nao_sc,  and... _F
@@ -283,31 +284,32 @@ void read_inputFile(const std::string &hamiltonian) {
 
 
 //Lattice information
-std::vector<int> accumulated_Num_SpinOrbital_local(NumAtom+1);
-accumulated_Num_SpinOrbital_local[0]=0;
-ifroot{
-    FILE *dataIN = fopen(hamiltonian.c_str(), "r");
-    if (dataIN == NULL) {
-        printf("Cannot open Hopping data file...\n");
-        exit(1);
+    std::vector<int> accumulated_Num_SpinOrbital_local(NumAtom+1);
+    accumulated_Num_SpinOrbital_local[0]=0;
+    ifroot{
+        FILE *dataIN = fopen(hamiltonian.c_str(), "r");
+        if (dataIN == NULL) {
+            printf("Cannot open Hopping data file...\n");
+            exit(1);
+        }
+        NumOrbit=0;
+        for(int i=0; i<NumAtom; i++) {
+            int temp1=0;
+            fscanf(dataIN,"Norbital of Atom = %d\n", &temp1);
+            accumulated_Num_SpinOrbital_local[i+1]=temp1+accumulated_Num_SpinOrbital_local[i];
+            NumOrbit += temp1;
+        }
+        rewind(dataIN);
+        fclose(dataIN);
     }
-    NumOrbit=0;
-    for(int i=0; i<NumAtom; i++) {
-        int temp1=0;
-        fscanf(dataIN,"Norbital of Atom = %d\n", &temp1);
-        accumulated_Num_SpinOrbital_local[i+1]=temp1+accumulated_Num_SpinOrbital_local[i];
-        NumOrbit += temp1;
-    }
-    rewind(dataIN);
-    fclose(dataIN);
-}
-MPI_Bcast(accumulated_Num_SpinOrbital_local.data(), accumulated_Num_SpinOrbital_local.size(), MPI_INT, 0 , MPI_COMM_WORLD);
-MPI_Bcast(&NumOrbit, 1, MPI_INT, 0, MPI_COMM_WORLD);
+    MPI_Bcast(accumulated_Num_SpinOrbital_local.data(), accumulated_Num_SpinOrbital_local.size(), MPI_INT, 0, MPI_COMM_WORLD);
+    MPI_Bcast(&NumOrbit, 1, MPI_INT, 0, MPI_COMM_WORLD);
 
 
     ifroot std::cout<<"Reading Num of orbit : "<<NumOrbit <<"\n";
 
-    std::vector<int> num_subshell_forAtom(NumAtom);
+    num_subshell_forAtom.resize(NumAtom);
+//    std::vector<int> num_subshell_forAtom(NumAtom);
     for(int i=0; i<NumAtom; i++)  num_subshell_forAtom[i] = 1;
     read_int_array(std::string("input.parm"), std::string("num_subshell"),      num_subshell_forAtom,     NumAtom,true,  1) ;
 
@@ -588,7 +590,7 @@ void setCorrelatedSpaceIndex( std::vector<int> HartreeOrbital_idx, int NumCorrAt
     int temp=0;
     for(int i=0; i<NumOrbit; i++) {
         if(isOrbitalHartr[i] == 1) {
-            ifroot std::cout << "correlated orbitals: " <<i<<"\n";
+//            ifroot std::cout << "correlated orbitals: " <<i<<"\n";
             if (isOrbitalCorrinHart[temp]==1) isOrbitalCorr[i] = 1;
             temp++;
         }
@@ -713,7 +715,9 @@ bool operator==( cmplx  a, int b)
 
 
 
-//SolverBasis                 ~ 10 * 10  = <SolverBasis minimizing off-diagonal Delta (Molecular orbitals if NumAtom_per_cluster >=2) | lowenergy_projected_orbal >
-//DF_CorrBase                 ~ 10 * 50  = <lowenergy_projected_orbal |  low_energy_KS_band >
-//KS_eigenVectors_orthoBasis  ~ 500*500  = <orthogonal basis |  KS_band >
-//transformMatrix_k                      =  basis transformation from orthogonal to non-orthogonal basis, e.g.,  //\ket{ortho_j} = \ket{DFT_AO_i} T_{ij}
+// SolverBasis                 ~ 10  * 10   = <lowenergy_projected_orbal               |  SolverBasis minimizing off-diagonal Delta (Molecular orbitals if NumAtom_per_cluster >=2) >
+// DF_CorrBase                 ~ 50  * 50   = <lowenergy_projected_orbal \oplus ligand |  low_energy_KS_band >
+
+// transformMatrix_k           ~ 500 * 500  =  basis transformation from orthogonal to non-orthogonal basis, e.g.,  //\ket{ortho_j} = \ket{DFT_AO_i} T_{ij}
+// KS_eigenVectors_orthoBasis                 ~ 500*500  = <orthogonal basis |  KS_band >
+// KS_eigenVectors_nonOrtho_DFT_direct_Basis  ~ 500*500  = <PAO^dual |  KS_band >  =   transformMatrix_k * KS_eigenVectors_orthoBasis[k]

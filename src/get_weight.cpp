@@ -77,7 +77,7 @@ void get_preNAOs (Eigen::MatrixXcd weightMatrix,
 
 
 //////////////////////////////////////////////////////////////////////////////
-void get_NAO_transfrom( Eigen::MatrixXcd & Sk, Eigen::MatrixXcd &  KS_evec_k,
+void get_NAO_transform( Eigen::MatrixXcd & Sk, Eigen::MatrixXcd &  KS_evec_k,
                         Eigen::MatrixXcd weightMatrix_preNAOs, Eigen::MatrixXcd & transformMatrix,
                         int kpoint,std::vector<int> & accumulated_Num_SpinOrbital,
                         Eigen::MatrixXcd principal_number_tfm,  bool WSW   ) {
@@ -473,7 +473,7 @@ Eigen::MatrixXcd getweight_direct(std::vector<Eigen::MatrixXcd> S_overlap,  std:
 //        weightMatrix_locl.setZero(NumOrbit, NumOrbit);
 //        for(int k = 0;  k < knum; k++) {
 //            Eigen::MatrixXcd transformMatrix;  // \ket{new_i} = \sum_j \ket{old_j} T_{ji}
-//            get_NAO_transfrom( S_overlap[k], weightMatrix , transformMatrix, false);
+//            get_NAO_transform( S_overlap[k], weightMatrix , transformMatrix, false);
 //
 //            Eigen::MatrixXcd temp;
 //            temp = (transformMatrix.adjoint() * direct_DM_direct[k] * transformMatrix).eval();
@@ -524,25 +524,31 @@ void lowdin_symmetric_orthogonalization( Eigen::MatrixXcd & Hk, Eigen::MatrixXcd
 
 
 void naturalAtomicOrbitals_population_weighted_symmetric_orthogonalization_r(
-    Eigen::MatrixXcd & Hk, Eigen::MatrixXcd & Sk, int kpoint,  std::vector<int> & accumulated_Num_SpinOrbital,
+    Eigen::MatrixXcd & Hk, Eigen::MatrixXcd  Sk, int kpoint,  std::vector<int> & accumulated_Num_SpinOrbital,
     Eigen::MatrixXcd & evec,  Eigen::VectorXd & eval,
     Eigen::MatrixXcd weightMatrix_preNAOs,
     Eigen::MatrixXcd & transformMatrix,
     Eigen::MatrixXcd  principal_number_tfm) {
 
     /*subshell averaging*/
-
-//    Eigen::MatrixXcd  Sk_preNAOs = preNAOs.adjoint() * (Sk) *preNAOs;    // <i|j> = <i|a> S^-1 <b|c> S^-1 <d|j> = <i|a> S^-1 <d|j>, plz check
     Eigen::MatrixXcd  KS_evec_k  =  evec;
-    get_NAO_transfrom(Sk, KS_evec_k, weightMatrix_preNAOs, transformMatrix, kpoint, accumulated_Num_SpinOrbital,
-                      principal_number_tfm, true);   //  \ket{j_ortho} = \ket{DFT_AO} T_{ij}
+    get_NAO_transform(Sk, KS_evec_k, weightMatrix_preNAOs, transformMatrix, kpoint, accumulated_Num_SpinOrbital,
+                      principal_number_tfm, true);
+    //  \ket{j_ortho} = \ket{DFT_AO_i} T_{ij}
+    //  T_{ij} =  < AO^i | ortho_j >
+    //  1) T.adjoint()*S*T=I,  2) (T^-1)_{ij} = <ortho_i | AO_j> )
 
     Hk  = (transformMatrix.adjoint() * Hk * transformMatrix).eval();
+    evec  =  ( transformMatrix.inverse()* evec ).eval();    // = transformMatrix.inverse() * evec
 
-    Eigen::SelfAdjointEigenSolver<Eigen::MatrixXcd> ces3( Hk );
-    ces3.compute(Hk);
-    evec = ces3.eigenvectors();
-    eval = ces3.eigenvalues();
+//Eigen::MatrixXcd  temp;
+//temp.setIdentity(NumOrbit, NumOrbit);
+//if ((evec*evec.adjoint() -temp).norm() > 1e-5)         std::cout << "cccccccccccccccc" <<  (evec*evec.adjoint() -temp).norm();
+
+//    Eigen::SelfAdjointEigenSolver<Eigen::MatrixXcd> ces3( Hk );
+//    ces3.compute(Hk);
+//    evec = ces3.eigenvectors();
+//    eval = ces3.eigenvalues();
 }
 
 

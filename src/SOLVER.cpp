@@ -129,7 +129,7 @@ void SOLVER(
                    Sw_doublecounting, dc_weakCorr);
 
     projweiss_field.dataOut(std::string("projdelta_w.dat")+intToString(solver_block));
-        MPI_Barrier(MPI_COMM_WORLD);
+    MPI_Barrier(MPI_COMM_WORLD);
 
 
 
@@ -415,9 +415,9 @@ void SOLVER(
             ifroot  std::cout << "Writing output data..\n";
             std::stringstream ss;
             ss << solver_block;
-            system(  (std::string("cp ")+"rutgers_input.cix  rutgers_input.cix" +ss.str()).c_str());
-            system(  (std::string("cp ")+"ctqmc.log  ctqmc.log" +ss.str()).c_str());
-            system(  (std::string("cp ")+"Probability.dat  Probability.dat" +ss.str()).c_str());
+            ifroot system(  (std::string("cp ")+"rutgers_input.cix  rutgers_input.cix" +ss.str()).c_str());
+            ifroot system(  (std::string("cp ")+"ctqmc.log  ctqmc.log" +ss.str()).c_str());
+            ifroot system(  (std::string("cp ")+"Probability.dat  Probability.dat" +ss.str()).c_str());
             delete[] command_hyb;
 
         }//Rutgers

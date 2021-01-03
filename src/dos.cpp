@@ -291,7 +291,7 @@ void dos(Eigen::VectorXd * KS_eigenEnergy, Eigen::MatrixXcd & SolverBasis, doubl
 //
 
             FILE *datap2;   //dos.dat
-//            datap2 = fopen( (std::string("dos.dat")+std::to_string(  (at1+1) )).c_str()       , "w");
+//          datap2 = fopen( (std::string("dos.dat")+std::to_string(  (at1+1) )).c_str()       , "w");
             datap2 = fopen( (std::string("dos.dat")+ intToString(  (at1+1) )).c_str(), "w");
             fprintf(datap2, "E    Totaldos");
             for(int k=0; k<N_peratom_HartrOrbit; k++) {
@@ -354,89 +354,4 @@ void dos(Eigen::VectorXd * KS_eigenEnergy, Eigen::MatrixXcd & SolverBasis, doubl
         if( E<0)    TNumEle += (TdosData_RDC[n]*NumCorrAtom*N_peratom_HartrOrbit);
     }
     ifroot std::cout << "Total Num of electron from dos = " << TNumEle <<"\n";
-}
-
-
-
-
-
-
-
-
-
-
-double FromHkToNele (double muDFT, std::vector<Eigen::VectorXd>  & KS_eigenEnergy) {
-
-    double TNumEle=0;
-    double TNumEle_local=0;
-    for(int k=0; k<knum; k++) {
-        for(int band=0; band<NumOrbit; band++) {
-            TNumEle_local +=  1./(1+std::exp( beta*(KS_eigenEnergy[k][band]-muDFT) ));
-        }
-    }
-    MPI_Allreduce(&(TNumEle_local), &(TNumEle), 1, MPI_DOUBLE, MPI_SUM,  MPI_COMM_WORLD);
-    TNumEle/=knum_mpiGlobal;
-    return TNumEle;
-}
-
-double Nele_non_Inter(
-    int knum, int knum_mpiGlobal,
-    std::vector<Eigen::MatrixXcd> & H_k_inModelSpace,  std::vector<Eigen::MatrixXcd> & S_overlap
-)
-{
-//find chemical potentiol for non-interacting band
-
-    std::vector<Eigen::VectorXd> KS_eigenEnergy(knum);
-
-    for(int k=0; k< knum; k++) {
-        Eigen::GeneralizedSelfAdjointEigenSolver<Eigen::MatrixXcd> ces1(NumOrbit);
-        ces1.compute( H_k_inModelSpace[k], S_overlap[k] );       //  HS \psi = S  \psi E
-        KS_eigenEnergy[k] = ces1.eigenvalues();
-    }
-
-    double Nele[2];
-    double dmu = 1.0;
-    double mu = 1.0;
-
-
-    for (int i=0; i<2; i++)  Nele[i]=-1;
-    Nele[0] =  FromHkToNele(mu, KS_eigenEnergy);
-
-    /*Find chemical potential*/
-    double muUB=0, muLB=0;
-    double elecNumGoal = NumberOfElectron;
-    int nearAns=0;
-    if(Nele[0] > NumberOfElectron) mu-=(dmu-dmu);
-    else if(Nele[0] < NumberOfElectron) mu-=(dmu+dmu);
-    int step=0;
-    while (  (Nele[0] != elecNumGoal)   and  std::abs(dmu)>1e-6 ) {
-        mu += dmu;
-        for(int i=2-1; i>0 ; i--) Nele[i]=Nele[i-1];
-        Nele[0] = FromHkToNele(mu, KS_eigenEnergy);
-
-        if (nearAns ==0) {
-            if ( Nele[0] < elecNumGoal) {
-                muLB = mu;
-                if (Nele[1]>elecNumGoal && Nele[1] >0 ) nearAns = 1;
-                else dmu = fabs(dmu);
-            }
-            if ( Nele[0] > elecNumGoal) {
-                muUB = mu;
-                if (Nele[1] < elecNumGoal && Nele[1] > 0)  nearAns =1;
-                else dmu = -1*fabs(dmu);
-            }
-            if ( Nele[0] == elecNumGoal) break;
-            assert( std::abs(mu) <  600)   ;
-        }
-        else if (nearAns ==1) {
-            if (Nele[0] > elecNumGoal) muUB = mu;
-            else if(Nele[0] < elecNumGoal) muLB =mu;
-            double mu_next;
-            mu_next = (muUB+muLB)/2.;
-            dmu = mu_next - mu;
-        }
-    }//while
-    Nele[0] = FromHkToNele(mu, KS_eigenEnergy);
-
-    return mu;
 }

@@ -19,7 +19,7 @@ void direct_projection( Eigen::MatrixXcd & Hk, Eigen::MatrixXcd & Sk, Eigen::Mat
 void lowdin_symmetric_orthogonalization( Eigen::MatrixXcd & Hk, Eigen::MatrixXcd & Sk, Eigen::MatrixXcd  & evec,  Eigen::VectorXd & eval, Eigen::MatrixXcd & transformMatrix    );
 //void naturalAtomicOrbitals_population_weighted_symmetric_orthogonalization_k(Eigen::MatrixXcd & Hk, Eigen::MatrixXcd & Sk, Eigen::MatrixXcd  & evec,  Eigen::VectorXd & eval,int NumOrbit, double muDFT, Eigen::MatrixXcd & transformMatrix) ;
 void naturalAtomicOrbitals_population_weighted_symmetric_orthogonalization_r(
-    Eigen::MatrixXcd & Hk, Eigen::MatrixXcd & Sk, int kpoint,  std::vector<int> & accumulated_Num_SpinOrbital,
+    Eigen::MatrixXcd & Hk, Eigen::MatrixXcd Sk,  int kpoint,  std::vector<int> & accumulated_Num_SpinOrbital,
     Eigen::MatrixXcd  & evec,  Eigen::VectorXd & eval, Eigen::MatrixXcd weightMatrix, Eigen::MatrixXcd & transformMatri, Eigen::MatrixXcd principal_number_tfm);
 
 
@@ -31,23 +31,26 @@ Eigen::MatrixXcd getweight_direct(std::vector<Eigen::MatrixXcd> S_overlap,std::v
 
 int read_OverlapMat(Eigen::MatrixXi &S_overlap_Rindex, Eigen::VectorXcd  &S_overlap_RMatrix, const std::string &hamiltonian, std::vector<int> &  accumulated_Num_SpinOrbital);
 int read_DensityMat(Eigen::MatrixXi &NumMat_Rindex,         Eigen::VectorXcd  &NumMat_RMatrix, const std::string &hamiltonian, std::vector<int> & accumulated_Num_SpinOrbital) ;
+void read_HR(Eigen::MatrixXi &H_Rindex, Eigen::VectorXcd  &H_RMatrix, const std::string &hamiltonian, std::vector<int> & accumulated_Num_SpinOrbital, int NumOrbit);
 
 //void read_HR(Eigen::MatrixXi &H_Rindex, Eigen::VectorXcd  &H_RMatrix, const std::string &hamiltonian, int * accumulated_Num_SpinOrbital, int NumOrbit);
 
 
 
-int Construct_Hk_Sk(
-    int knum, int knum_mpiGlobal,   Eigen::MatrixXi  H_Rindex, Eigen::VectorXcd H_RMatrix, double ** kmesh, std::vector<int> & accumulated_Num_SpinOrbital,
-    std::vector<Eigen::MatrixXcd> & H_k_inModelSpace,  std::vector<Eigen::MatrixXcd> & S_overlap,
-    std::vector<Eigen::MatrixXcd> & KS_eigenVectors_orthoBasis, Eigen::VectorXd  * KS_eigenEnergy
+int Construct_Hk_Sk(  const std::string &hamiltonian,
+                      int knum, int knum_mpiGlobal,   Eigen::MatrixXi  H_Rindex, double ** kmesh, std::vector<int> & accumulated_Num_SpinOrbital,
+//                      std::vector<Eigen::MatrixXcd> & H_k_inModelSpace,
+                      std::vector<Eigen::MatrixXcd> & H_k_inModelSpace,  std::vector<Eigen::MatrixXcd> & S_overlap,
+                      std::vector<Eigen::MatrixXcd> & KS_eigenVectors_orthoBasis, Eigen::VectorXd  * KS_eigenEnergy
 
-) {
+                   ) {
     int temp;
     /*Read Overlap matrix*/
     Eigen::MatrixXi S_overlap_Rindex    ;
     Eigen::VectorXcd S_overlap_RMatrix  ;
+    Eigen::VectorXcd H_RMatrix;
 
-
+    read_HR(H_Rindex, H_RMatrix, hamiltonian, accumulated_Num_SpinOrbital, NumOrbit);
     int    overlap_exist = read_OverlapMat(S_overlap_Rindex, S_overlap_RMatrix, std::string("OverlapMatrix.HWR"), accumulated_Num_SpinOrbital);
 
 
@@ -101,13 +104,14 @@ int Construct_Hk_Sk(
             }
         }//if OverlapMatrix
     }//k
-    if(mpi_rank==0 )   std::cout << "<TB> Construct Hk from HR :\n";
+    if(mpi_rank==0 )   std::cout << "<TB> Construct Hk from HR.\n";
+    if(mpi_rank==0 )   std::cout << "<TB> ... delete H_RMatrix and S_overlap_RMatrix\n";
 
 
     for(int k = 0;  k < knum; k++) {
 
         Eigen::GeneralizedSelfAdjointEigenSolver<Eigen::MatrixXcd> ces1(NumOrbit);
-        ces1.compute( H_k_inModelSpace[k], S_overlap[k] );       //  HS \psi = S  \psi E
+        ces1.compute( H_k_inModelSpace[k], S_overlap[k] );       //  H \psi = S  \psi E
 
         KS_eigenEnergy[k] = ces1.eigenvalues();
         KS_eigenVectors_orthoBasis[k] = ces1.eigenvectors();
@@ -124,16 +128,23 @@ int Construct_Hk_Sk(
 
 Eigen::MatrixXcd  weightMatrix;
 
+//void  ConstructModelHamiltonian
+//(
+//    int knum, int knum_mpiGlobal, double ** kmesh, std::vector<int> & accumulated_Num_SpinOrbital,
+//    std::vector<Eigen::MatrixXcd> & H_k_inModelSpace,  std::vector<Eigen::MatrixXcd> & transformMatrix_k,
+//    std::vector<Eigen::MatrixXcd> & KS_eigenVectors_orthoBasis,  Eigen::VectorXd  * KS_eigenEnergy,  int overlap_exist,double muDFT
+//)
 void  ConstructModelHamiltonian
 (
     int knum, int knum_mpiGlobal, double ** kmesh, std::vector<int> & accumulated_Num_SpinOrbital,
-    std::vector<Eigen::MatrixXcd> & H_k_inModelSpace,  std::vector<Eigen::MatrixXcd> & S_overlap,
-    std::vector<Eigen::MatrixXcd> & KS_eigenVectors_orthoBasis, std::vector<Eigen::MatrixXcd> & transformMatrix_k, Eigen::VectorXd  * KS_eigenEnergy,  int overlap_exist,double muDFT
+    std::vector<Eigen::MatrixXcd> & H_k_inModelSpace,  //std::vector<Eigen::MatrixXcd> & S_overlap,
+    std::vector<Eigen::MatrixXcd> & KS_eigenVectors_orthoBasis, std::vector<Eigen::MatrixXcd> & transformMatrix_k, Eigen::VectorXd  * KS_eigenEnergy,  int overlap_exist,
+    double muDFT
 )
 {
 
 
-
+    std::vector<Eigen::MatrixXcd>  S_overlap = transformMatrix_k;
     std::vector<Eigen::MatrixXcd>  dual_DM_direct;
     dual_DM_direct.resize(knum);
     Eigen::MatrixXi   NumMat_Rindex;
@@ -141,49 +152,37 @@ void  ConstructModelHamiltonian
 
 //    /*
     //read density Matrix
-    int temp =          read_DensityMat(NumMat_Rindex, NumMat_RMatrix, std::string("dual_DM_direct.HWR"), accumulated_Num_SpinOrbital);
-    if (temp ==1 and (
-                localOrbitalType.find(std::string("recip_F")) != std::string::npos or
-                localOrbitalType.find(std::string("direct_F")) != std::string::npos  or
-                localOrbitalType.find(std::string("hyb_F")) != std::string::npos
-            )
-       ) {
-        double diffnorm=0;
-        double diffnorm_diag=0;
-        for(int k = 0;  k < knum; k++) {
-            dual_DM_direct[k].setZero(NumOrbit, NumOrbit);
-            for(int indx=0; indx<NumMat_RMatrix.size(); indx++) {
-                int n=  NumMat_Rindex(indx,0) ;
-                int l=  NumMat_Rindex(indx,1) ;
-                int m=  NumMat_Rindex(indx,2) ;
-                int i0= NumMat_Rindex(indx,3) ;
-                int m0= NumMat_Rindex(indx,4) ;
-                dual_DM_direct[k](i0,m0) += NumMat_RMatrix(indx) * exp ( -I*( (kmesh[k][0]*ax*n)+(kmesh[k][1]*ay*l)+(kmesh[k][2]*az*m)) )  ;
-            }
+    //int temp =          read_DensityMat(NumMat_Rindex, NumMat_RMatrix, std::string("dual_DM_direct.HWR"), accumulated_Num_SpinOrbital);
+    //if (temp ==1 and (
+    //            localOrbitalType.find(std::string("recip_F")) != std::string::npos or
+    //            localOrbitalType.find(std::string("direct_F")) != std::string::npos  or
+    //            localOrbitalType.find(std::string("hyb_F")) != std::string::npos
+    //        )
+    //   ) {
+    //    double diffnorm=0;
+    //    double diffnorm_diag=0;
+    //    for(int k = 0;  k < knum; k++) {
+    //        dual_DM_direct[k].setZero(NumOrbit, NumOrbit);
+    //        for(int indx=0; indx<NumMat_RMatrix.size(); indx++) {
+    //            int n=  NumMat_Rindex(indx,0) ;
+    //            int l=  NumMat_Rindex(indx,1) ;
+    //            int m=  NumMat_Rindex(indx,2) ;
+    //            int i0= NumMat_Rindex(indx,3) ;
+    //            int m0= NumMat_Rindex(indx,4) ;
+    //            dual_DM_direct[k](i0,m0) += NumMat_RMatrix(indx) * exp ( -I*( (kmesh[k][0]*ax*n)+(kmesh[k][1]*ay*l)+(kmesh[k][2]*az*m)) )  ;
+    //        }
+    //    }
+    //}
+//    else {
+    for(int k = 0;  k < knum; k++) {
+        dual_DM_direct[k].setZero(NumOrbit, NumOrbit);
+        for (int n=0; n<NumOrbit; n++) {
+            dual_DM_direct[k](n,n) =  1./(1+std::exp(beta_smearing*(KS_eigenEnergy[k](n)-muDFT))) ;
         }
-    }
-    else {
-        for(int k = 0;  k < knum; k++) {
-            dual_DM_direct[k].setZero(NumOrbit, NumOrbit);
-
-            Eigen::SelfAdjointEigenSolver<Eigen::MatrixXcd> ces1(S_overlap[k]);
-            Eigen::MatrixXcd S_invsq =  (  ces1.operatorInverseSqrt() );
-            Eigen::MatrixXcd S_sq = S_invsq.inverse();
-            Eigen::MatrixXcd Hk = S_invsq * H_k_inModelSpace[k] * S_invsq;
-
-            Eigen::SelfAdjointEigenSolver<Eigen::MatrixXcd> ces(Hk);
-            ces.compute(Hk);
-
-            for (int n=0; n<NumOrbit; n++) {
-                dual_DM_direct[k](n,n) =  1./(1+std::exp(beta*(ces.eigenvalues()(n)-muDFT))) ;
-            }
-
-            dual_DM_direct[k] = (ces.eigenvectors() * dual_DM_direct[k] * (ces.eigenvectors()).adjoint()).eval();
-            dual_DM_direct[k] =  (S_invsq * dual_DM_direct[k] * S_sq).eval();
-
-
-        }//k
-    }
+        dual_DM_direct[k] = (KS_eigenVectors_orthoBasis[k] * dual_DM_direct[k] * (KS_eigenVectors_orthoBasis[k]).adjoint()).eval();
+        dual_DM_direct[k] =   (dual_DM_direct[k] * S_overlap[k]).eval();
+    }//k
+//    }
     ifroot std::cout <<"Now, we have occupation matrix\n";
     //    */
 
@@ -204,12 +203,12 @@ void  ConstructModelHamiltonian
             occ_temp +=  ((temp + temp.adjoint()))/knum_mpiGlobal;
         }//k
         MPI_Allreduce(occ_temp.data(), occ.data(), occ.size(), MPI_DOUBLE_COMPLEX, MPI_SUM,  MPI_COMM_WORLD);
-        if(mpi_rank==0 )   std::cout << "<TB> Mulliken populations:\n";
+//        if(mpi_rank==0 )   std::cout << "<TB> Mulliken populations:\n";
         ifroot{
             double sum =0;
             for(int at=0; at<NumAtom; at++) {
                 for(int h1=accumulated_Num_SpinOrbital[at]; h1<accumulated_Num_SpinOrbital[at+1]; h1++) {
-                    if(isOrbitalHartrDFT[h1]) std::cout << at+1<< " " << h1-accumulated_Num_SpinOrbital[at]+1 <<" " <<  occ(h1,h1) <<"\n";
+//                    if(isOrbitalHartrDFT[h1]) std::cout << at+1<< " " << h1-accumulated_Num_SpinOrbital[at]+1 <<" " <<  occ(h1,h1) <<"\n";
                     sum+=real(occ(h1,h1));
                 }
             }
@@ -264,14 +263,14 @@ void  ConstructModelHamiltonian
                 }
                 we_have_weightMatrix = true;
 
-                ifroot{
-                    std::cout << "<TB> weightMatrix:\n";
-                    for(int at=0; at<NumAtom; at++) {
-                        for(int h1=accumulated_Num_SpinOrbital[at]; h1<accumulated_Num_SpinOrbital[at+1]; h1++) {
-                            if(isOrbitalHartrDFT[h1]) std::cout << at+1<< " " << h1-accumulated_Num_SpinOrbital[at]+1 <<" " <<  weightMatrix(h1,h1) <<"\n";
-                        }
-                    }
-                }
+                //ifroot{
+                //    std::cout << "<TB> weightMatrix:\n";
+                //    for(int at=0; at<NumAtom; at++) {
+                //        for(int h1=accumulated_Num_SpinOrbital[at]; h1<accumulated_Num_SpinOrbital[at+1]; h1++) {
+                //            if(isOrbitalHartrDFT[h1]) std::cout << at+1<< " " << h1-accumulated_Num_SpinOrbital[at]+1 <<" " <<  weightMatrix(h1,h1) <<"\n";
+                //        }
+                //    }
+                //}
             }//weightMatrix cal
 
             Eigen::MatrixXcd weightMatrix_preNAOs;
@@ -279,16 +278,15 @@ void  ConstructModelHamiltonian
             get_preNAOs(weightMatrix, principal_number_tfm, weightMatrix_preNAOs);
             ifroot{
                 ifroot std::cout << "we have pre-NAOs\n";
-                for(int at=0; at<NumAtom; at++) {
-                    for(int h1=accumulated_Num_SpinOrbital[at]; h1<accumulated_Num_SpinOrbital[at+1]; h1++) {
-                        if(isOrbitalHartrDFT[h1]) std::cout << at+1<< " " << h1-accumulated_Num_SpinOrbital[at]+1 <<" " <<  weightMatrix_preNAOs(h1,h1) <<"\n";
-                    }
-                }
+                //for(int at=0; at<NumAtom; at++) {
+                //    int h1=accumulated_Num_SpinOrbital[at];
+                //    if(isOrbitalHartrDFT[h1]) std::cout <<"Atom: " <<  at+1<< " "  <<  weightMatrix_preNAOs(h1,h1) <<"\n";
+                //}
             }
 
             for(int k = 0;  k < knum; k++) {
                 naturalAtomicOrbitals_population_weighted_symmetric_orthogonalization_r(
-                    H_k_inModelSpace[k],S_overlap[k], k, accumulated_Num_SpinOrbital,
+                    H_k_inModelSpace[k], S_overlap[k], k, accumulated_Num_SpinOrbital,
                     KS_eigenVectors_orthoBasis[k], KS_eigenEnergy[k],
                     weightMatrix_preNAOs, transformMatrix_k[k], principal_number_tfm   );
             }
@@ -303,24 +301,11 @@ void  ConstructModelHamiltonian
                 direct_projection(H_k_inModelSpace[k], S_overlap[k], KS_eigenVectors_orthoBasis[k], KS_eigenEnergy[k]);
             }
         }
-//        SpreadFtn( knum,  S_overlap, transformMatrix_k, accumulated_Num_SpinOrbital);
     }//overlap
     /*info:spread function*/
     ifroot    std::cout << "Hk was constructed..\n"  ;
 
 
-//    //Zeeman
-//    for(int k = 0;  k < knum; k++) {
-//        for(int at=0; at<NumAtom; at++) {
-//            for(int i0 = accumulated_Num_SpinOrbital[at];  i0 < accumulated_Num_SpinOrbital[at+1] ; i0+=2) {
-//                H_k_inModelSpace[k](i0+0, i0+0) += Zeeman_field_spin[at](0,0);
-//                H_k_inModelSpace[k](i0+0, i0+1) += Zeeman_field_spin[at](0,1);
-//                H_k_inModelSpace[k](i0+1, i0+0) += Zeeman_field_spin[at](1,0);
-//                H_k_inModelSpace[k](i0+1, i0+1) += Zeeman_field_spin[at](1,1);
-//            }
-//        }
-//    }
-//
 
 
 
@@ -384,36 +369,28 @@ void  ConstructModelHamiltonian
 
 
 
-/*
-void naturalAtomicOrbitals_population_weighted_symmetric_orthogonalization_k(Eigen::MatrixXcd & Hk, Eigen::MatrixXcd & Sk, Eigen::MatrixXcd  & evec,  Eigen::VectorXd & eval,int NumOrbit, double muDFT , Eigen::MatrixXcd &transformMatrix ) {
-
-    Eigen::MatrixXcd KS_evec_direct, weightMatrix;
-    weightMatrix.setZero(NumOrbit, NumOrbit);
-    Eigen::GeneralizedSelfAdjointEigenSolver<Eigen::MatrixXcd> ces1(NumOrbit);
-    ces1.compute( Hk, Sk );       //  H  \psi = E S  \psi
-    evec = ces1.eigenvectors();
-    eval = ces1.eigenvalues();
-
-    KS_evec_direct = (Sk * ces1.eigenvectors()); //full,     KS_evec_direct[k][i][n] = <\psi_i | kn>
-    for (int i=0; i<NumOrbit; i++) {
-        for (int n=0; n<NumOrbit; n++) {
-            weightMatrix(i,i) += 1./(1+std::exp(beta*(eval(n)-muDFT)))  * std::pow(std::abs(KS_evec_direct(i,n)),2);
-        }
-    }
-
-    Eigen::SelfAdjointEigenSolver<Eigen::MatrixXcd> ces2( (weightMatrix*Sk*weightMatrix) );
-    transformMatrix =     weightMatrix * ces2.operatorInverseSqrt();
-    Hk = transformMatrix.adjoint() * Hk * transformMatrix;
-
-    Eigen::SelfAdjointEigenSolver<Eigen::MatrixXcd> ces3( Hk );
-    ces3.compute(Hk);
-    evec = ces3.eigenvectors();
-    eval = ces3.eigenvalues();
-}
-*/
-
-
-
-
-
-
+//  void naturalAtomicOrbitals_population_weighted_symmetric_orthogonalization_k(Eigen::MatrixXcd & Hk, Eigen::MatrixXcd & Sk, Eigen::MatrixXcd  & evec,  Eigen::VectorXd & eval,int NumOrbit, double muDFT , Eigen::MatrixXcd &transformMatrix ) {
+//  
+//      Eigen::MatrixXcd KS_evec_direct, weightMatrix;
+//      weightMatrix.setZero(NumOrbit, NumOrbit);
+//      Eigen::GeneralizedSelfAdjointEigenSolver<Eigen::MatrixXcd> ces1(NumOrbit);
+//      ces1.compute( Hk, Sk );       //  H  \psi = E S  \psi
+//      evec = ces1.eigenvectors();
+//      eval = ces1.eigenvalues();
+//  
+//      KS_evec_direct = (Sk * ces1.eigenvectors()); //full,     KS_evec_direct[k][i][n] = <\psi_i | kn>
+//      for (int i=0; i<NumOrbit; i++) {
+//          for (int n=0; n<NumOrbit; n++) {
+//              weightMatrix(i,i) += 1./(1+std::exp(beta*(eval(n)-muDFT)))  * std::pow(std::abs(KS_evec_direct(i,n)),2);
+//          }
+//      }
+//  
+//      Eigen::SelfAdjointEigenSolver<Eigen::MatrixXcd> ces2( (weightMatrix*Sk*weightMatrix) );
+//      transformMatrix =     weightMatrix * ces2.operatorInverseSqrt();
+//      Hk = transformMatrix.adjoint() * Hk * transformMatrix;
+//  
+//      Eigen::SelfAdjointEigenSolver<Eigen::MatrixXcd> ces3( Hk );
+//      ces3.compute(Hk);
+//      evec = ces3.eigenvectors();
+//      eval = ces3.eigenvalues();
+//  }

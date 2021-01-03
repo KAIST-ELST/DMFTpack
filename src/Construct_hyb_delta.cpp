@@ -3,10 +3,10 @@
 #include "TB.h"
 #include <Eigen/Dense>
 
-void Construct_H0_local(Eigen::MatrixXcd * Heff_loc, double mu, ImgFreqFtn & SelfE_w, int atom);
+void Construct_H0_local(Eigen::MatrixXcd * Heff_loc, double mu, ImgFreqFtn & SelfE_z, int atom);
 
 void Construct_hyb_delta(int impurityDim, std::vector<int> impurityOrbit,
-                         ImgFreqFtn & SelfE_w, std::vector<Eigen::MatrixXcd>   Gw, double mu,
+                         ImgFreqFtn & SelfE_z, std::vector<Eigen::MatrixXcd>   Gw, double mu,
                          ImgFreqFtn &  weiss_fieldTB, int atom, Eigen::MatrixXcd & SolverBasis,     int segmentsolver  ) {
     int   h2, h1F, h2F, h1H,h2H;
     cmplx iw;
@@ -36,7 +36,7 @@ void Construct_hyb_delta(int impurityDim, std::vector<int> impurityOrbit,
     for(int n=0; n<N_freq; n++) {
         Eigen::MatrixXcd temp1, temp2;
         temp1 =     ( SolverBasis.adjoint() * Gw[n]  *   SolverBasis ).eval();
-        temp2 =     ( SolverBasis.adjoint() * SelfE_w.getMatrix(n) *   SolverBasis ).eval();
+        temp2 =     ( SolverBasis.adjoint() * SelfE_z.getMatrix(n) *   SolverBasis ).eval();
         for(int h1=0; h1< impurityDim; h1++) {
             for(int h2=0; h2< impurityDim; h2++) {
                 int h1F = impurityOrbit.at(h1);

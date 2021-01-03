@@ -296,8 +296,8 @@ void ctqmc_rutgers_seg(  Eigen::MatrixXcd Local_Hamiltonian, double muTB,
 
         ifroot std::cout << "\nwrite_cix_file\n";
     }//ifroot
-        write_Delta_diag(    weiss_field );
-        write_PARMS();
+    write_Delta_diag(    weiss_field );
+    write_PARMS();
 }//ctqmc_rutgers_seg
 
 void write_PARMS() {
@@ -312,28 +312,28 @@ void write_PARMS() {
     int svd_L = read_int(std::string("input.solver"), std::string("svd_L"),  true, 15         );
     int aom = read_int(std::string("input.solver"), std::string("aom"),  true, 1              );
 
-if(mpi_rank==0){
-    FILE *fp;
-    FILE * PARMS_file = fopen("PARAMS", "w");
-    fprintf(PARMS_file, "nom %d  # number of Matsubara frequencies\n", N_freq                 );
-    fprintf(PARMS_file, "svd_lmax %d # number of SVD functions to project the solution\n", svd_lmax                 );
-    fprintf(PARMS_file, "svd_L  %d  # To compute the SVD decomposition of the kernel for analytic continuation, we need to choose the cutoff on the real axis.(default: 10).\n", svd_L                 );
-    fprintf(PARMS_file, "tsample  %d     # how often to record the measurements\n", tsample                        );
-    fprintf(PARMS_file, "aom      %d      # number of frequency points to determin high frequency tail\n", aom  );
-    fprintf(PARMS_file, "M      %llu     # Number of Monte Carlo steps\n", Num_MC_steps                                       );
-    fprintf(PARMS_file, "warmup %llu     # Number of Monte Carlo steps\n", THERMALIZATION                                       );
-    fprintf(PARMS_file, "beta %0.5f        # Inverse temperature\n", beta                                 );
-    fprintf(PARMS_file, "U 0        # Coulomb repulsion (F0), This information is wrtten in cix file\n"   );
-    fprintf(PARMS_file, "GlobalFlip 500000  # how often to perform global flip\n"                         );
-    fprintf(PARMS_file, "exe %s  # Path to executable\n", SOLVERexe.c_str()                 );
-    fprintf(PARMS_file, "mu  0   # Chemical potential\n"                                                  );
-    fprintf(PARMS_file, "mode SM   # S stands for self-energy sampling, M stands for high frequency moment tail\n");
-    fprintf(PARMS_file, "Delta delta_w_rutgers.dat  # Input bath function hybridization\n");
-    fprintf(PARMS_file,  "cix rutgers_input.cix # Input file with atomic state\n"                          );
-    fclose(PARMS_file);
-    sleep(3);
-    std::cout <<"Write ct-qmc input, PARMS\n";
-}
+    if(mpi_rank==0) {
+        FILE *fp;
+        FILE * PARMS_file = fopen("PARAMS", "w");
+        fprintf(PARMS_file, "nom %d  # number of Matsubara frequencies\n", N_freq                 );
+        fprintf(PARMS_file, "svd_lmax %d # number of SVD functions to project the solution\n", svd_lmax                 );
+        fprintf(PARMS_file, "svd_L  %d  # To compute the SVD decomposition of the kernel for analytic continuation, we need to choose the cutoff on the real axis.(default: 10).\n", svd_L                 );
+        fprintf(PARMS_file, "tsample  %d     # how often to record the measurements\n", tsample                        );
+        fprintf(PARMS_file, "aom      %d      # number of frequency points to determin high frequency tail\n", aom  );
+        fprintf(PARMS_file, "M      %llu     # Number of Monte Carlo steps\n", Num_MC_steps                                       );
+        fprintf(PARMS_file, "warmup %llu     # Number of Monte Carlo steps\n", THERMALIZATION                                       );
+        fprintf(PARMS_file, "beta %0.5f        # Inverse temperature\n", beta                                 );
+        fprintf(PARMS_file, "U 0        # Coulomb repulsion (F0), This information is wrtten in cix file\n"   );
+        fprintf(PARMS_file, "GlobalFlip 500000  # how often to perform global flip\n"                         );
+        fprintf(PARMS_file, "exe %s  # Path to executable\n", SOLVERexe.c_str()                 );
+        fprintf(PARMS_file, "mu  0   # Chemical potential\n"                                                  );
+        fprintf(PARMS_file, "mode SM   # S stands for self-energy sampling, M stands for high frequency moment tail\n");
+        fprintf(PARMS_file, "Delta delta_w_rutgers.dat  # Input bath function hybridization\n");
+        fprintf(PARMS_file,  "cix rutgers_input.cix # Input file with atomic state\n"                          );
+        fclose(PARMS_file);
+        sleep(3);
+        std::cout <<"Write ct-qmc input, PARMS\n";
+    }
 }
 
 

@@ -137,12 +137,12 @@ void  downfolding_ftn
         }
         ifroot        std::cout <<"\n";
     }
-    ifroot        std::cout <<"Himp, Matrix:\n";
-    for(int cl=0; cl<NumCluster; cl++) {
-        ifroot std::cout << std::fixed << std::setprecision(4)<<
-                         (impurity_site_Hamiltonian.block(cl*NumHartrOrbit_per_cluster,cl*NumHartrOrbit_per_cluster,
-                                 NumHartrOrbit_per_cluster, NumHartrOrbit_per_cluster) )  <<"\n";
-    }
+//    ifroot        std::cout <<"Himp, Matrix:\n";
+//    for(int cl=0; cl<NumCluster; cl++) {
+//        ifroot std::cout << std::fixed << std::setprecision(4)<<
+//                         (impurity_site_Hamiltonian.block(cl*NumHartrOrbit_per_cluster,cl*NumHartrOrbit_per_cluster,
+//                                 NumHartrOrbit_per_cluster, NumHartrOrbit_per_cluster) )  <<"\n";
+//    }
 }
 
 
@@ -167,25 +167,15 @@ void low_energy_subspace_in_KS_basis(
     for(int k=0; k< knum ; k++) {
 
         if (downfolding==1) {
-            /*Check d-orbital character in  energy window*/
-//            for (int m=0; m<N_peratom_HartrOrbit; m++) {
-//                int m0 = HartrIndex_inDFT[m];
-//                for (int i0=0; i0<NumOrbit; i0++) {
-//                    tempd2 += std::pow(std::abs(KS_eigenVectors_orthoBasis[k](m0,i0)),2);
-//                    if( (KS_eigenEnergy[k][i0]-muDFT) < lower_model_window or KS_eigenEnergy[k][i0]-muDFT > upper_model_window  ) {
-//                        HartreWeightInWindows_local[m]+=std::pow(std::abs(KS_eigenVectors_orthoBasis[k](m0,i0)),2);
-//                    }
-//                }
-//            }
             NBAND[k] = 0;
-double Emin=upper_model_window;
-double Emax=lower_model_window;
+            double Emin=upper_model_window;
+            double Emax=lower_model_window;
             for(int i=0; i<NumOrbit; i++) {
-                if(  lower_model_window < (KS_eigenEnergy[k][i]-muDFT) and (KS_eigenEnergy[k][i]-muDFT) <  upper_model_window  ){
-                         NBAND[k]++;
-if (k==0 and mpi_rank==0 and Emin>KS_eigenEnergy[k][i]-muDFT) Emin=KS_eigenEnergy[k][i]-muDFT;
-if (k==0 and mpi_rank==0 and Emax<KS_eigenEnergy[k][i]-muDFT) Emax=KS_eigenEnergy[k][i]-muDFT;
-}
+                if(  lower_model_window < (KS_eigenEnergy[k][i]-muDFT) and (KS_eigenEnergy[k][i]-muDFT) <  upper_model_window  ) {
+                    NBAND[k]++;
+                    if (k==0 and mpi_rank==0 and Emin>KS_eigenEnergy[k][i]-muDFT) Emin=KS_eigenEnergy[k][i]-muDFT;
+                    if (k==0 and mpi_rank==0 and Emax<KS_eigenEnergy[k][i]-muDFT) Emax=KS_eigenEnergy[k][i]-muDFT;
+                }
 
             }
 
@@ -218,14 +208,4 @@ if (k==0 and mpi_rank==0 and Emax<KS_eigenEnergy[k][i]-muDFT) Emax=KS_eigenEnerg
             }
         }
     }//k
-//    double tempd2GL=0;
-//    MPI_Allreduce(&tempd2, &tempd2GL, 1, MPI_DOUBLE, MPI_SUM,  MPI_COMM_WORLD);
-//    ifroot std::cout << "d-orbital normalization       : "  << tempd2GL/(knum_mpiGlobal*N_peratom_HartrOrbit)<<"\n";
-//    MPI_Allreduce(HartreWeightInWindows_local.data() , HartreWeightInWindows_global.data(), HartreWeightInWindows_global.size(), MPI_DOUBLE, MPI_SUM,  MPI_COMM_WORLD);
-//    for (int m=0; m<N_peratom_HartrOrbit; m++) {
-//        ifroot std::cout << "d-orbital in rest energy space: "  << HartreWeightInWindows_global[m] /(knum_mpiGlobal) <<"\n";
-//    }
-
-    ///////////////////////////////////////////////////////////////////
 }
-

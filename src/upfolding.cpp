@@ -7,7 +7,8 @@
 
 
 //from model basis to DFT basis.
-void upfolding_k(Eigen::MatrixXcd & densityMatDFT_k, Eigen::MatrixXcd & KS_eigenVectors_nonOrtho_DFTBasis, int k,double mu)
+void upfolding_k(Eigen::MatrixXcd & densityMatDFT_k,Eigen::MatrixXcd & densityMat_orthoWF_k,
+                 Eigen::MatrixXcd & KS_eigenVectors_nonOrtho_DFTBasis, Eigen::MatrixXcd & KS_eigenVectors_orthoBasis_k, int k,double mu)
 {
     /*densityMatDFT_k from Model to KS, |nk>, basis*/
     densityMatDFT_k =  DF_CorrBase[k].adjoint() * densityMatDFT_k * DF_CorrBase[k];
@@ -32,24 +33,53 @@ void upfolding_k(Eigen::MatrixXcd & densityMatDFT_k, Eigen::MatrixXcd & KS_eigen
     }
     /*We het Matrix in DFT base*/
     densityMatDFT_k = KS_eigenVectors_nonOrtho_DFTBasis * Matrix_KSBase * KS_eigenVectors_nonOrtho_DFTBasis.adjoint();
+    densityMat_orthoWF_k = KS_eigenVectors_orthoBasis_k* Matrix_KSBase * KS_eigenVectors_orthoBasis_k.adjoint();
 }
 
 
 void upfolding_density(std::vector<Eigen::MatrixXcd> &densityMatDFT, std::vector<Eigen::MatrixXcd> & KS_eigenVectors_orthoBasis,Eigen::MatrixXi H_Rindex, double mu,
-                       std::vector<Eigen::MatrixXcd> & S_overlap,
+//                       std::vector<Eigen::MatrixXcd> & S_overlap,
                        std::vector<Eigen::MatrixXcd> & transformMatrix_k) {
 
-    std::vector<Eigen::MatrixXcd>   dual_denMat_dual(knum);
-    std::vector<Eigen::MatrixXcd> dual_denMat_direct(knum);
-    for(int k=0; k<knum; k++) {
-        if(downfolding == 1 ) {
-            Eigen::MatrixXcd KS_eigenVectors_nonOrtho_DFT_direct_Basis = ((transformMatrix_k[k].adjoint().inverse())* KS_eigenVectors_orthoBasis[k]);
-            upfolding_k(densityMatDFT[k], KS_eigenVectors_nonOrtho_DFT_direct_Basis, k, mu);
+//    std::vector<Eigen::MatrixXcd>   dual_denMat_dual(knum);
+//    std::vector<Eigen::MatrixXcd> dual_denMat_direct(knum);
 
-            dual_denMat_dual[k] =     S_overlap[k].inverse() *densityMatDFT[k] * S_overlap[k].inverse();
-            dual_denMat_direct[k] =  (S_overlap[k].inverse() *densityMatDFT[k]  ).eval();
+    Eigen::MatrixXcd  Mulliken_occ,  Mulliken_occ_mpiloc, densityMat_orthoWF_k;
+    Mulliken_occ.setZero(NumOrbit,NumOrbit);
+    Mulliken_occ_mpiloc.setZero(NumOrbit,NumOrbit);
+    for(int k=0; k<knum; k++) {
+//        densityMat_orthoWF_k = dual_denMat_direct[k];
+        if(downfolding == 1 ) {
+//            Eigen::MatrixXcd KS_eigenVectors_nonOrtho_DFT_direct_Basis = ((transformMatrix_k[k].adjoint().inverse())* KS_eigenVectors_orthoBasis[k]);
+            Eigen::MatrixXcd KS_eigenVectors_nonOrtho_DFT_direct_Basis = (transformMatrix_k[k])* KS_eigenVectors_orthoBasis[k];
+            upfolding_k(densityMatDFT[k], densityMat_orthoWF_k,
+                        KS_eigenVectors_nonOrtho_DFT_direct_Basis,KS_eigenVectors_orthoBasis[k], k, mu);
+
+//            dual_denMat_dual[k] =     S_overlap[k].inverse() *densityMatDFT[k] * S_overlap[k].inverse();
+//            dual_denMat_direct[k] =  (S_overlap[k].inverse() *densityMatDFT[k]  ).eval();
         }
+        Mulliken_occ_mpiloc += densityMat_orthoWF_k;
     }//k
+    MPI_Allreduce(Mulliken_occ_mpiloc.data(), Mulliken_occ.data(), Mulliken_occ.size(), MPI_DOUBLE_COMPLEX, MPI_SUM, MPI_COMM_WORLD);
+    Mulliken_occ/=knum_mpiGlobal;
+
+
+    ifroot{
+        int temp=0;
+        for(int i=0; i<NumAtom; i++) {
+            std::cout <<"Atom"<<i<< ":    ";
+            for(int j=temp; j<num_subshell_forAtom[i]+temp; j++) {
+                double numele_shell_j =0;
+                for(int orb=subshell[j]; orb<subshell[j+1]; orb++) {
+                    numele_shell_j += real(Mulliken_occ(orb,orb));
+                }
+                std::cout << numele_shell_j <<"  ";
+            }
+            temp += num_subshell_forAtom[i];
+            std::cout <<"\n";
+        }
+    }
+
 
     Eigen::VectorXcd dual_DMR_dual_loc, dual_DMR_dual;
     dual_DMR_dual_loc.setZero(H_Rindex.rows());
@@ -71,19 +101,19 @@ void upfolding_density(std::vector<Eigen::MatrixXcd> &densityMatDFT, std::vector
         int i0= H_Rindex(index,3) ;
         int m0= H_Rindex(index,4) ;
         for(int k=0; k<knum; k++) {
-            dual_DMR_dual_loc(index)      +=  dual_denMat_dual[k](i0,m0) * exp ( I*( (kmesh[k][0]*ax*n)+(kmesh[k][1]*ay*l)+(kmesh[k][2]*az*m)) )  ;
-            dual_DM_direct_DFTR_loc(index) += dual_denMat_direct[k](i0,m0) * exp ( I*( (kmesh[k][0]*ax*n)+(kmesh[k][1]*ay*l)+(kmesh[k][2]*az*m)) )  ;
-            direct_DMR_direct_loc(index)   += densityMatDFT[k](i0,m0) * exp ( I*( (kmesh[k][0]*ax*n)+(kmesh[k][1]*ay*l)+(kmesh[k][2]*az*m)) )  ;
+            dual_DMR_dual_loc(index)      +=  densityMatDFT[k](i0,m0) * exp ( I*( (kmesh[k][0]*ax*n)+(kmesh[k][1]*ay*l)+(kmesh[k][2]*az*m)) )  ;
+//            dual_DM_direct_DFTR_loc(index) += dual_denMat_direct[k](i0,m0) * exp ( I*( (kmesh[k][0]*ax*n)+(kmesh[k][1]*ay*l)+(kmesh[k][2]*az*m)) )  ;
+//            direct_DMR_direct_loc(index)   += densityMatDFT[k](i0,m0) * exp ( I*( (kmesh[k][0]*ax*n)+(kmesh[k][1]*ay*l)+(kmesh[k][2]*az*m)) )  ;
         }
 
     }
     MPI_Allreduce(dual_DMR_dual_loc.data(), dual_DMR_dual.data(), dual_DMR_dual.size(), MPI_DOUBLE_COMPLEX, MPI_SUM, MPI_COMM_WORLD);
-    MPI_Allreduce(dual_DM_direct_DFTR_loc.data(), dual_DM_direct_DFTR.data(), dual_DM_direct_DFTR.size(), MPI_DOUBLE_COMPLEX, MPI_SUM, MPI_COMM_WORLD);
-    MPI_Allreduce(direct_DMR_direct_loc.data(), direct_DMR_direct.data(), direct_DMR_direct.size(), MPI_DOUBLE_COMPLEX, MPI_SUM, MPI_COMM_WORLD);
+//    MPI_Allreduce(dual_DM_direct_DFTR_loc.data(), dual_DM_direct_DFTR.data(), dual_DM_direct_DFTR.size(), MPI_DOUBLE_COMPLEX, MPI_SUM, MPI_COMM_WORLD);
+//    MPI_Allreduce(direct_DMR_direct_loc.data(), direct_DMR_direct.data(), direct_DMR_direct.size(), MPI_DOUBLE_COMPLEX, MPI_SUM, MPI_COMM_WORLD);
 
     dual_DMR_dual /= knum_mpiGlobal;
-    dual_DM_direct_DFTR/= knum_mpiGlobal;
-    direct_DMR_direct  /= knum_mpiGlobal;
+//    dual_DM_direct_DFTR/= knum_mpiGlobal;
+//    direct_DMR_direct  /= knum_mpiGlobal;
 
 
     ifroot{
@@ -105,35 +135,35 @@ void upfolding_density(std::vector<Eigen::MatrixXcd> &densityMatDFT, std::vector
 //        std::cout << "DFT+DMFT: Collinear calculation in current version!!!\n";
         fclose(fp_jh3);
 
-        fp_jh3 = fopen("dual_DM_direct.HWR","w");
-        for(int index=0; index<H_Rindex.rows(); index++) {
-            int n=  H_Rindex(index,0) ;
-            int l=  H_Rindex(index,1) ;
-            int m=  H_Rindex(index,2) ;
-            int i0= H_Rindex(index,3) ;
-            int m0= H_Rindex(index,4) ;
-            fprintf(fp_jh3, " %+d %+d %+d %d %d %d %d      %e    %e  \n",
-                    n,l,m,
-                    FromOrbitalToAtom[i0]+1,             FromOrbitalToAtom[m0]+1,
-                    FromOrbitalToLocalOrbital_DFT[i0]+1, FromOrbitalToLocalOrbital_DFT[m0]+1,
-                    real(dual_DM_direct_DFTR(index)), imag(dual_DM_direct_DFTR(index)));  //Collinear.
-        }
-        fclose(fp_jh3);
+        //fp_jh3 = fopen("dual_DM_direct.HWR","w");
+        //for(int index=0; index<H_Rindex.rows(); index++) {
+        //    int n=  H_Rindex(index,0) ;
+        //    int l=  H_Rindex(index,1) ;
+        //    int m=  H_Rindex(index,2) ;
+        //    int i0= H_Rindex(index,3) ;
+        //    int m0= H_Rindex(index,4) ;
+        //    fprintf(fp_jh3, " %+d %+d %+d %d %d %d %d      %e    %e  \n",
+        //            n,l,m,
+        //            FromOrbitalToAtom[i0]+1,             FromOrbitalToAtom[m0]+1,
+        //            FromOrbitalToLocalOrbital_DFT[i0]+1, FromOrbitalToLocalOrbital_DFT[m0]+1,
+        //            real(dual_DM_direct_DFTR(index)), imag(dual_DM_direct_DFTR(index)));  //Collinear.
+        //}
+        //fclose(fp_jh3);
 
-        fp_jh3 = fopen("direct_DM_direct.HWR","w");
-        for(int index=0; index<H_Rindex.rows(); index++) {
-            int n=  H_Rindex(index,0) ;
-            int l=  H_Rindex(index,1) ;
-            int m=  H_Rindex(index,2) ;
-            int i0= H_Rindex(index,3) ;
-            int m0= H_Rindex(index,4) ;
-            fprintf(fp_jh3, " %+d %+d %+d %d %d %d %d      %e    %e  \n",
-                    n,l,m,
-                    FromOrbitalToAtom[i0]+1,             FromOrbitalToAtom[m0]+1,
-                    FromOrbitalToLocalOrbital_DFT[i0]+1, FromOrbitalToLocalOrbital_DFT[m0]+1,
-                    real(direct_DMR_direct(index)), imag(direct_DMR_direct(index)));  //Collinear.
-        }
-        std::cout << "FILEOUT:DM_DFTDMFT_dual_direct.HWR\n" ;
-        fclose(fp_jh3);
+        //fp_jh3 = fopen("direct_DM_direct.HWR","w");
+        //for(int index=0; index<H_Rindex.rows(); index++) {
+        //    int n=  H_Rindex(index,0) ;
+        //    int l=  H_Rindex(index,1) ;
+        //    int m=  H_Rindex(index,2) ;
+        //    int i0= H_Rindex(index,3) ;
+        //    int m0= H_Rindex(index,4) ;
+        //    fprintf(fp_jh3, " %+d %+d %+d %d %d %d %d      %e    %e  \n",
+        //            n,l,m,
+        //            FromOrbitalToAtom[i0]+1,             FromOrbitalToAtom[m0]+1,
+        //            FromOrbitalToLocalOrbital_DFT[i0]+1, FromOrbitalToLocalOrbital_DFT[m0]+1,
+        //            real(direct_DMR_direct(index)), imag(direct_DMR_direct(index)));  //Collinear.
+        //}
+        //std::cout << "FILEOUT:DM_DFTDMFT_dual_direct.HWR\n" ;
+        //fclose(fp_jh3);
     }
 }

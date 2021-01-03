@@ -142,10 +142,9 @@ void qs_spectra(ImgFreqFtn & SelfE_w,std::vector<Eigen::MatrixXcd>  KS_eigenVect
         }
     }//mode 100
     if (mode == std::string("band")  )      band(KS_eigenEnergy,muDFT, knum );
-    if (mode == std::string("hartreeband")  )     band(H_k_inModelSpace, muTB,   knum);
+    if (mode == std::string("hartreeband")  )     band(H_k_inModelSpace, muDFT,   knum);
     if (mode == std::string("qsband") ) {
         band(KS_eigenEnergy, muDFT, knum);
-//        band(H_k_inModelSpace, muTB,knum);
         Eigen::MatrixXcd  retGkw_full;
         Eigen::MatrixXcd  retGkw, retGkw0;
         ifroot printf("********************************\n");

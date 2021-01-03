@@ -27,7 +27,7 @@ double read_double(const std::string &Inputfile, const std::string &keyword, boo
                 std::cout<<"Reading "<<keyword<<" : "<<result<<std::endl;
                 read=1;
 //            return result;
-break;
+                break;
             }
         }
         if(read==0 and  defaultBool == false  ) {
@@ -39,7 +39,7 @@ break;
             result = dft;
         }
     }
-MPI_Barrier(MPI_COMM_WORLD);
+    MPI_Barrier(MPI_COMM_WORLD);
     MPI_Bcast(&result, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
     return result;
 }
@@ -68,7 +68,7 @@ int read_int(const std::string &Inputfile, const std::string &keyword, bool defa
                 if(mpi_rank==0) std::cout<<"Reading "<<keyword<<" : "<<result<<std::endl;
                 read=1;
 //            return result;
-break;
+                break;
             }
         }
         if(read==0 and defaultBool==false) {
@@ -80,7 +80,7 @@ break;
             result = dft;
         }
     }
-MPI_Barrier(MPI_COMM_WORLD);
+    MPI_Barrier(MPI_COMM_WORLD);
     MPI_Bcast(&result, 1, MPI_INT, 0, MPI_COMM_WORLD);
     return result;
 }
@@ -135,7 +135,7 @@ void read_int_array(const std::string &Inputfile, const std::string &keyword, st
         }
         if(mpi_rank==0) std::cout <<"\n";
     }
-MPI_Barrier(MPI_COMM_WORLD);
+    MPI_Barrier(MPI_COMM_WORLD);
     MPI_Bcast(&var[0], length, MPI_INT, 0, MPI_COMM_WORLD);
 }
 
@@ -183,7 +183,7 @@ void read_double_array(const std::string &Inputfile, const std::string &keyword,
             exit(1);
         }
     }
-MPI_Barrier(MPI_COMM_WORLD);
+    MPI_Barrier(MPI_COMM_WORLD);
     MPI_Bcast(&var[0], length, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 }
 
@@ -208,7 +208,7 @@ std::string read_string(const std::string &Inputfile, const std::string &keyword
                 if(mpi_rank==0) std::cout<<"Reading "<<keyword<<" : "<<result<<std::endl;
                 read=1;
 //                return result;
-break;
+                break;
             }
         }
         if(read==0 and defaultBool==false) {
@@ -222,7 +222,7 @@ break;
         std::strcpy(ctemp,  result.c_str());
     }
 
-MPI_Barrier(MPI_COMM_WORLD);
+    MPI_Barrier(MPI_COMM_WORLD);
     MPI_Bcast(ctemp, 100, MPI_CHAR, 0, MPI_COMM_WORLD);
 
     result = ctemp;

@@ -43,7 +43,7 @@ void band(Eigen::VectorXd  *KS_eigenEnergy, double muDFT, int knum) {
     delete [] temp;
     delete [] band;
 }
-void band(    std::vector<Eigen::MatrixXcd> & H_k_inModelSpace, double muTB, int knum) {
+void band(    std::vector<Eigen::MatrixXcd> & H_k_inModelSpace, double mu, int knum) {
 
 
     ifroot printf("********************************\n");
@@ -72,7 +72,7 @@ void band(    std::vector<Eigen::MatrixXcd> & H_k_inModelSpace, double muTB, int
     double * band  = new double [knum_mpiGlobal*minNBAND];
     for (int k=0; k< knum; k++) {
         for(int j=0; j<minNBAND; j++) {
-            temp[k*minNBAND+j] = Model_eigenEnergy[k][j]-muTB;
+            temp[k*minNBAND+j] = Model_eigenEnergy[k][j]-mu;
         }
     }
 

@@ -15,7 +15,7 @@
 		if(n<N_freq){\
 			for(int a=0; a<N_peratom_HartrOrbit*NumCorrAtom; a++){\
 				for(int b=0; b<N_peratom_HartrOrbit*NumCorrAtom; b++){\
-					SWLOCAL(a,b) = SelfE_w.getValue(n,a,b);\
+					SWLOCAL(a,b) = SelfE_iw.getValue(n,a,b);\
 				}\
 			}\
 		}\
@@ -59,12 +59,12 @@
 
 
 void Time_print();
-double GiwToNele (double muTB, ImgFreqFtn & SelfE_w, cmplx *** eigenVal, int preComputation,std::vector<Eigen::MatrixXcd> &H_k_inModelSpace  );
+double GiwToNele (double mu, ImgFreqFtn & SelfE_iw, cmplx *** eigenVal, int preComputation,std::vector<Eigen::MatrixXcd> &H_k_inModelSpace  );
 //double traceNorm_full( cmplx *A, int n,int dim ) ;
 //double traceNorm_diag( cmplx *A, int n,int dim ) ;
 //void traceTest(cmplx **Gw) ;
 
-double GreenFtn_w_adjust_mu( std::vector<Eigen::MatrixXcd> &   H_k_inModelSpace, ImgFreqFtn & SelfE_w, double mu,  double dmu, int mu_adjustLOCAL     ) {
+double GreenFtn_iw_adjust_mu( std::vector<Eigen::MatrixXcd> &   H_k_inModelSpace, ImgFreqFtn & SelfE_iw, double mu,  double dmu, int mu_adjustLOCAL     ) {
     time_t timeStartGreen, timeEndGreen;
     timeStartGreen = clock();
     ifroot printf(" Adjusting Chemical Potential...\n");
@@ -83,7 +83,7 @@ double GreenFtn_w_adjust_mu( std::vector<Eigen::MatrixXcd> &   H_k_inModelSpace,
     std::vector<double> Nele(history);
     double muInput = mu;
     for (int i=0; i<history; i++)  Nele[i]=-1;
-    Nele[0] =  GiwToNele(mu,SelfE_w,eigenVal,0, H_k_inModelSpace); ;
+    Nele[0] =  GiwToNele(mu,SelfE_iw,eigenVal,0, H_k_inModelSpace); ;
     assert( not( std::isnan(std::abs(Nele[0]))  or   std::isinf(std::abs(Nele[0]))      ));
 
     /*Find chemical potential*/
@@ -98,7 +98,7 @@ double GreenFtn_w_adjust_mu( std::vector<Eigen::MatrixXcd> &   H_k_inModelSpace,
     while (  (Nele[0] != elecNumGoal)   and  std::abs(dmu)>1e-5 ) {
         mu += dmu;
         for(int i=history-1; i>0 ; i--) Nele[i]=Nele[i-1];
-        Nele[0] = GiwToNele(mu, SelfE_w,  eigenVal, 1, H_k_inModelSpace  );
+        Nele[0] = GiwToNele(mu, SelfE_iw,  eigenVal, 1, H_k_inModelSpace  );
 
         if (nearAns ==0) {
             if ( Nele[0] < elecNumGoal) {
@@ -124,7 +124,7 @@ double GreenFtn_w_adjust_mu( std::vector<Eigen::MatrixXcd> &   H_k_inModelSpace,
     timeEndGreen = clock(); //time
     if( mpi_rank==0 )  printf("Adjusted Chemical potential : From %2.5f to %2.5f  (RD= %+2.5f )\n",muInput, mu,  mu-muInput) ;
     ifroot    Time_print();
-    Nele[0] = GiwToNele( mu, SelfE_w,  eigenVal, 1, H_k_inModelSpace  );
+    Nele[0] = GiwToNele( mu, SelfE_iw,  eigenVal, 1, H_k_inModelSpace  );
 
     for (int n=0; n<N_freq*highFreq2+1; n++) {
         for (int k=0; k<knum; k++) {
@@ -143,7 +143,7 @@ double GreenFtn_w_adjust_mu( std::vector<Eigen::MatrixXcd> &   H_k_inModelSpace,
 
 
 void GreenFtn_w(  int NumCluster, int NumHartrOrbit_per_cluster, std::vector<Eigen::MatrixXcd> &  H_k_inModelSpace,
-                  ImgFreqFtn & SelfE_w, std::vector<Eigen::MatrixXcd>  & Gw, double mu,                  std::vector<Eigen::MatrixXcd> & densityMatDFT
+                  ImgFreqFtn & SelfE_iw, std::vector<Eigen::MatrixXcd>  & Gw, double mu,                  std::vector<Eigen::MatrixXcd> & densityMatDFT
                ) {
     ifroot  printf("*GreenFtn calculation\n");
 
@@ -192,7 +192,7 @@ void GreenFtn_w(  int NumCluster, int NumHartrOrbit_per_cluster, std::vector<Eig
     Eigen::MatrixXcd * SelfEnergy_Eig = new Eigen::MatrixXcd [N_freq];
     std::vector<Eigen::MatrixXcd >  Swmoments;
     for(int n=0; n < N_freq; n++) {
-        SelfEnergy_Eig[n] = SelfE_w.getMatrix(n);
+        SelfEnergy_Eig[n] = SelfE_iw.getMatrix(n);
     }
     getAsymto_moments(Swmoments, SelfEnergy_Eig);
 
@@ -226,7 +226,7 @@ void GreenFtn_w(  int NumCluster, int NumHartrOrbit_per_cluster, std::vector<Eig
         if(n<N_freq) {
             for(int a=0; a<NumCluster*NumHartrOrbit_per_cluster; a++) {
                 for(int b=0; b<NumCluster*NumHartrOrbit_per_cluster; b++) {
-                    SWLOCAL(a, b) = SelfE_w.getValue(n,a,b);
+                    SWLOCAL(a, b) = SelfE_iw.getValue(n,a,b);
                 }
             }
         }
@@ -546,7 +546,7 @@ void retarded_GreenFtn2( Eigen::MatrixXcd &retGkw_full,    Eigen::MatrixXcd & re
 //    //}
 //}
 
-double GiwToNele (double muTB, ImgFreqFtn & SelfE_w, cmplx *** eigenVal, int preComputation, std::vector<Eigen::MatrixXcd> &H_k_inModelSpace  ) {
+double GiwToNele (double mu, ImgFreqFtn & SelfE_iw, cmplx *** eigenVal, int preComputation, std::vector<Eigen::MatrixXcd> &H_k_inModelSpace  ) {
     cmplx w;
 
     if(preComputation==0) {
@@ -554,10 +554,10 @@ double GiwToNele (double muTB, ImgFreqFtn & SelfE_w, cmplx *** eigenVal, int pre
         Eigen::MatrixXcd * SelfEnergy_Eig = new Eigen::MatrixXcd [N_freq];
         std::vector<Eigen::MatrixXcd >  moments;
         for(int n=0; n < N_freq; n++) {
-            SelfEnergy_Eig[n] = SelfE_w.getMatrix(n);
+            SelfEnergy_Eig[n] = SelfE_iw.getMatrix(n);
         }
         getAsymto_moments(moments, SelfEnergy_Eig);
-        ifroot std::cout <<"Sw_HF    :\n" <<  moments[0] <<"\n";
+//        ifroot std::cout <<"Sw_HF    :\n" <<  moments[0] <<"\n";
 //        ifroot std::cout <<"1/(iwn)  :\n" <<  moments[1] <<"\n";
 //        ifroot std::cout <<"1/(iwn)^2:\n" <<  moments[2] <<"\n";
 //        ifroot std::cout <<"1/(iwn)^3:\n" <<  moments[3] <<"\n";
@@ -642,8 +642,8 @@ double GiwToNele (double muTB, ImgFreqFtn & SelfE_w, cmplx *** eigenVal, int pre
         w=w0+n*dw;
         for(int k=0; k<knum; k++) {
             for(int l0=0; l0<NBAND[k]; l0++) {
-                numOfElecLoc += real(  (1./(w-eigenVal[n][k][l0]+muTB))
-                                       -(1./(w-eigenVal[N_freq*highFreq2][k][l0]+muTB))
+                numOfElecLoc += real(  (1./(w-eigenVal[n][k][l0]+mu))
+                                       -(1./(w-eigenVal[N_freq*highFreq2][k][l0]+mu))
                                     );
             }
         }
@@ -652,18 +652,18 @@ double GiwToNele (double muTB, ImgFreqFtn & SelfE_w, cmplx *** eigenVal, int pre
     /*imaginary part tail*/
     for(int k=0; k<knum; k++) {
         for(int l0=0; l0<NBAND[k]; l0++) {
-            numOfElecLoc += 1./(1+std::exp( beta * (real(eigenVal[N_freq*highFreq2][k][l0])-muTB)));  //Note ::  sum 1/iw exp(-iw\beta) =  - sum 1/iw exp(-iw0+)  = 0.5
+            numOfElecLoc += 1./(1+std::exp( beta * (real(eigenVal[N_freq*highFreq2][k][l0])-mu)));  //Note ::  sum 1/iw exp(-iw\beta) =  - sum 1/iw exp(-iw0+)  = 0.5
         }
     }
 
     /*core level*/
     for(int k=0; k<knum; k++) {
         for(int l=0; l<NumOrbit; l++) {
-            numOfElecLoc +=  1./(1+std::exp( beta * (KS_eigenEnergy[k][l]-muTB)));
+            numOfElecLoc +=  1./(1+std::exp( beta * (KS_eigenEnergy[k][l]-mu)));
         }
         for(int l0=0; l0<NBAND[k]; l0++) {
             int   l=FromValToKS[k][l0];
-            numOfElecLoc -=  1./(1+std::exp( beta * (KS_eigenEnergy[k][l]-muTB)));
+            numOfElecLoc -=  1./(1+std::exp( beta * (KS_eigenEnergy[k][l]-mu)));
         }
     }
     numOfElecLoc/=knum_mpiGlobal;

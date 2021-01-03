@@ -31,6 +31,7 @@ extern double muTB;
 extern double muDFT;
 //extern Eigen::MatrixXcd * NumMatDFT;
 //extern std::vector<Eigen::MatrixXcd> NumMatDFT;   //KS_eigenVectors[k][i][n]   ith component of eigenstate with energy (E_nk),  direct rep. in non-orthogonal basis,i.e.,  <i|kn>
+extern std::vector<int> num_subshell_forAtom;
 
 //downfolding
 //extern double  low_energy_window;
@@ -175,12 +176,12 @@ void data_sync(cmplx ***A , int startRow, int endRow, int lenColumn, int lenhigh
 void read_inputFile( const std::string &hamiltonian) ;
 void on_the_fly_control() ;
 
-void cmplxEigenproblem(cmplx **a, int dim, double *eigenVal, cmplx **v_comp);
-void cmplxEigenproblem(cmplx *a, int dim, double *eigenVal, cmplx *v_comp);
-void cmplxEigenproblem(cmplx **a, int dim, double *eigenVal);
-void cmplxEigenproblem(cmplx *a, int dim, double *eigenVal);
-double GcmplxEigenproblem(cmplx *a, cmplx *b,  int dim, double *eigenVal);
-double GcmplxEigenproblem(cmplx **a,cmplx *b, int dim, double *eigenVal, cmplx **eigenvec);
+//void cmplxEigenproblem(cmplx **a, int dim, double *eigenVal, cmplx **v_comp);
+//void cmplxEigenproblem(cmplx *a, int dim, double *eigenVal, cmplx *v_comp);
+//void cmplxEigenproblem(cmplx **a, int dim, double *eigenVal);
+//void cmplxEigenproblem(cmplx *a, int dim, double *eigenVal);
+//double GcmplxEigenproblem(cmplx *a, cmplx *b,  int dim, double *eigenVal);
+//double GcmplxEigenproblem(cmplx **a,cmplx *b, int dim, double *eigenVal, cmplx **eigenvec);
 
 void optical_conductivity(Eigen::MatrixXcd *H_k_inModelSpace , ImgFreqFtn Sw, double mu, int knum, cmplx ***** H_R, double **kmesh,int alp_direc, int beta_direc) ;
 void write_hyb_t ( ImgFreqFtn & weiss_field, Eigen::MatrixXcd * delta_t, int atom) ;

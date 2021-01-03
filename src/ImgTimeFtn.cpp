@@ -363,30 +363,30 @@ void ImgFreqFtn::read_uppertrian(const std::string &filename, int spindim) {
     //start to read file
     char next;
     int w=0;
-ifroot{
-    std::ifstream DATA(filename.c_str());
-    while ( w < Nfreq_ and !DATA.eof() ) {
-        DATA>> DataFreq;
+    ifroot{
+        std::ifstream DATA(filename.c_str());
+        while ( w < Nfreq_ and !DATA.eof() ) {
+            DATA>> DataFreq;
 
-        for(int spin = 0 ; spin< spindim; spin++) {
-            for(int n=spin; n < Norbit; n+=spindim) {
-                for(int m=n; m < Norbit; m+=spindim) {
-                    DATA >> Retemp;
-                    DATA >> Imtemp;
-                    FtnOutM[w](n,m) = ( Retemp+I*Imtemp);
-                    if(n<m) FtnOutM[w](m,n) = std::conj(FtnOutM[w](n,m));
+            for(int spin = 0 ; spin< spindim; spin++) {
+                for(int n=spin; n < Norbit; n+=spindim) {
+                    for(int m=n; m < Norbit; m+=spindim) {
+                        DATA >> Retemp;
+                        DATA >> Imtemp;
+                        FtnOutM[w](n,m) = ( Retemp+I*Imtemp);
+                        if(n<m) FtnOutM[w](m,n) = std::conj(FtnOutM[w](n,m));
+                    }
                 }
             }
-        }
-        w++;
-        while(DATA.get(next)) {
-            if (next=='\n') break;
-        }
-    }//while
-    DATA.close();
-}
+            w++;
+            while(DATA.get(next)) {
+                if (next=='\n') break;
+            }
+        }//while
+        DATA.close();
+    }
     for (int w = 0; w < Nfreq_; w++)
-    MPI_Bcast(FtnOutM[w].data(), FtnOutM[w].size(), MPI_DOUBLE_COMPLEX, 0 ,MPI_COMM_WORLD  );
+        MPI_Bcast(FtnOutM[w].data(), FtnOutM[w].size(), MPI_DOUBLE_COMPLEX, 0,MPI_COMM_WORLD  );
     ImgFreqFtn::update(FtnOutM,1,0);
     delete [] FtnOutM;
 }
@@ -408,27 +408,27 @@ void ImgFreqFtn::read_diag(const std::string &filename) {
     //start to read file
     char next;
     int w=0;
-ifroot{
-    std::ifstream DATA(filename.c_str());
-    while ( w < Nfreq_ and !DATA.eof() ) {
-        DATA>> DataFreq;
-        for(int n=0; n < Norbit; n++) {
-            DATA >> Retemp[n];
-            DATA >> Imtemp[n];
-        }
+    ifroot{
+        std::ifstream DATA(filename.c_str());
+        while ( w < Nfreq_ and !DATA.eof() ) {
+            DATA>> DataFreq;
+            for(int n=0; n < Norbit; n++) {
+                DATA >> Retemp[n];
+                DATA >> Imtemp[n];
+            }
 
-        for(int n=0; n < Norbit; n++) {
-            FtnOutM[w](n,n) = ( Retemp[n]+I*Imtemp[n]);
-        }
-        w++;
-        while(DATA.get(next)) {
-            if (next=='\n') break;
-        }
-    }//while
-    DATA.close();
-}
+            for(int n=0; n < Norbit; n++) {
+                FtnOutM[w](n,n) = ( Retemp[n]+I*Imtemp[n]);
+            }
+            w++;
+            while(DATA.get(next)) {
+                if (next=='\n') break;
+            }
+        }//while
+        DATA.close();
+    }
     for (int w = 0; w < Nfreq_; w++)
-    MPI_Bcast(FtnOutM[w].data(), FtnOutM[w].size(), MPI_DOUBLE_COMPLEX, 0 ,MPI_COMM_WORLD  );
+        MPI_Bcast(FtnOutM[w].data(), FtnOutM[w].size(), MPI_DOUBLE_COMPLEX, 0,MPI_COMM_WORLD  );
     ImgFreqFtn::update(FtnOutM,1,0);
     delete [] FtnOutM;
 }
@@ -441,15 +441,15 @@ void ImgFreqFtn::read_full(const std::string &filename,double beta, double beta_
     int w=0,n,m,  wmax=0;
     double Retemp, Imtemp;
     FILE *dataIN = fopen(filename.c_str(), "r");
-ifroot{
-    while (  !feof(dataIN) ) {
-        fscanf(dataIN, "%d %d %d %lf %lf\n",&w,&m,&n,&Retemp, &Imtemp);
-        if (wmax < w) wmax=w;
+    ifroot{
+        while (  !feof(dataIN) ) {
+            fscanf(dataIN, "%d %d %d %lf %lf\n",&w,&m,&n,&Retemp, &Imtemp);
+            if (wmax < w) wmax=w;
+        }
+        fclose(dataIN);
+        wmax++;
     }
-    fclose(dataIN);
-    wmax++;
-}
-MPI_Bcast( &wmax, 1, MPI_INT, 0, MPI_COMM_WORLD);
+    MPI_Bcast( &wmax, 1, MPI_INT, 0, MPI_COMM_WORLD);
     //
     //Initialize
     //
@@ -465,20 +465,20 @@ MPI_Bcast( &wmax, 1, MPI_INT, 0, MPI_COMM_WORLD);
     //
     //Start read
     //
-ifroot{
-    dataIN = fopen(filename.c_str(), "r");
-    while (  !feof(dataIN) ) {
-        fscanf(dataIN, "%d %d %d %lf %lf\n",&w,&m,&n,&Retemp, &Imtemp);
-        if(w>=0) {
-            matsubara.at(w) = ((2*w+1)*pi/beta_prev);
-            (Swread[w])(m,n) = Retemp+I*Imtemp;
-        }
-    }//while
-    fclose(dataIN);
-}
+    ifroot{
+        dataIN = fopen(filename.c_str(), "r");
+        while (  !feof(dataIN) ) {
+            fscanf(dataIN, "%d %d %d %lf %lf\n",&w,&m,&n,&Retemp, &Imtemp);
+            if(w>=0) {
+                matsubara.at(w) = ((2*w+1)*pi/beta_prev);
+                (Swread[w])(m,n) = Retemp+I*Imtemp;
+            }
+        }//while
+        fclose(dataIN);
+    }
     MPI_Bcast(matsubara.data(), matsubara.size(), MPI_DOUBLE, 0, MPI_COMM_WORLD);
     for (int w = 0; w < wmax; w++)
-    MPI_Bcast(Swread[w].data(), Swread[w].size(), MPI_DOUBLE_COMPLEX, 0 ,MPI_COMM_WORLD  );
+        MPI_Bcast(Swread[w].data(), Swread[w].size(), MPI_DOUBLE_COMPLEX, 0,MPI_COMM_WORLD  );
 
     int    wprime=0;
     double this_matsubara;
